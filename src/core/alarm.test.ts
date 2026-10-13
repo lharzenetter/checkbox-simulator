@@ -402,6 +402,31 @@ describe("V21: Alarms of several Trupps", () => {
   const B1 = { tallyId: "b1", name: "HLF WT-F" };
   const B2 = { tallyId: "b2", name: "HLF WT-M" };
 
+  // the siren runs while anything is pending, so acknowledging one Trupp must not restart its wail
+  it("keep the siren and the LED in rhythm when an OK leaves another Alarm pending", () => {
+    const queued = run(
+      truppInAnmarsch(),
+      tickAt(0, 30),
+      hold(B1),
+      press("OK"),
+      hold(B2),
+      press("OK"),
+      press("OK"),
+      tickAt(9, 54),
+      tickAt(10, 24),
+    );
+    const midCycle = reduce(queued, {
+      type: "tick",
+      now: queued.now + 100,
+      realNow: queued.realNow + 100,
+    });
+    expect(alarmCycleMs(midCycle)).toBe(100);
+
+    const next = reduce(midCycle, press("OK"));
+    expectAlarmFor(next, 2);
+    expect(alarmCycleMs(next)).toBe(100);
+  });
+
   it("queue first in, first out, and return to the interrupted screen after the last OK", () => {
     let state = run(
       truppInAnmarsch(),

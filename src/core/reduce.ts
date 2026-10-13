@@ -115,7 +115,8 @@ function acknowledgeAlarm(state: State): State {
     throw new Error("The ALARM screen has no pending Alarm");
   }
   if (pendingAlarms.length > 0) {
-    return enterScreen({ ...state, pendingAlarms }, "alarm");
+    // S12 stays on screen, so the wail and the LED keep their cycle (point 4)
+    return { ...state, pendingAlarms };
   }
   return state.interruptedScreen === null
     ? enterScreen(
@@ -129,7 +130,9 @@ function acknowledgeAlarm(state: State): State {
 }
 
 // decided in "Decide how alarms are presented", points 4 and 5: one pending Alarm per Trupp, in
-// firing order, and S12 takes over from any screen but the Einsatzliste, which it leaves for good
+// firing order, and S12 takes over from any screen.
+// ASSUMPTION: an interrupted Einsatzliste counts as nothing interrupted, so the last OK selects the
+// acknowledged Trupp there (point 5's fallback; LCD screen catalogue, S12).
 function raiseAlarms(state: State, truppnummern: readonly number[]): State {
   const fired = truppnummern.filter(
     (truppnummer) => !state.pendingAlarms.includes(truppnummer),
