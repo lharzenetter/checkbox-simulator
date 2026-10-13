@@ -48,11 +48,15 @@ _Avoid_: standby, pause
 
 **Einsatzzeit**:
 The total time budget a Trupp is given at login, chosen from Einsatzzeit #1–#4 (defaults 30, 60, 20, 240 min).
-_Avoid_: duration, timer
+_Avoid_: duration, timer, Regelzeit
 
 **Restzeit**:
 The Einsatzzeit a Trupp has left; shown counting negative once exceeded.
 _Avoid_: remaining time, countdown
+
+**Anmarschzeit**:
+The running time from a Trupp's start until it reports Einsatzziel erreicht; doubled, it sizes the Rückzugsalarm.
+_Avoid_: approach time, Hinweg
 
 **Flaschendruck**:
 The pressure of a Trupp's breathing-air cylinders, in bar.
@@ -61,6 +65,10 @@ _Avoid_: pressure, Druck
 **Reservedruck**:
 The Flaschendruck that must remain for a safe return; it feeds the Rückzugsalarm.
 _Avoid_: reserve
+
+**Rückzugsdruck**:
+The Flaschendruck at which the Rückzugsalarm fires, shown on a Trupp's detail screen.
+_Avoid_: retreat pressure, Umkehrdruck
 
 ## Alarms
 
