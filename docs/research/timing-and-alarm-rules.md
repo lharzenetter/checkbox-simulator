@@ -32,7 +32,8 @@ Every rule is tagged:
 | 1.1 | Restzeit counts down one second per second while the Trupp is not in Bereitschaft. | [Manual] p. 14, 26 |
 | 1.2 | At 00:00:00 it keeps counting as a negative time, so the overdue time is visible at a glance. | [Manual] p. 24 |
 | 1.3 | Initial Restzeit is scaled by the Anfangsdruck: `R = T × P_0 / P_N`. Example in the figure: 30 min, 300 bar bottle, 250 bar → 00:25:00. | [Figure] p. 20, 28 |
-| 1.4 | When a new Flaschendruck `P` is entered (Druck ändern, or at Einsatzziel erreicht / Rückzug antreten), Restzeit is recomputed: `R = T × P / P_N`. The manual says only "Die neuen Druck- und Zeitinformationen werden berechnet". The p. 22 figure (295 bar → 00:28:00, not 00:29:30) does not fit this formula exactly. | [Assumption] A1 |
+| 1.4 | When a new Flaschendruck `P` is entered (Druck ändern, or at Einsatzziel erreicht / Rückzug antreten), Restzeit is recomputed: `R = T × P / P_N`. The manual says only "Die neuen Druck- und Zeitinformationen werden berechnet". The p. 22 figure (295 bar → 00:28:00, not 00:29:30) does not fit this formula exactly. | **Decided** (A1) |
+| 1.7 | The detail screen's Aktueller Flaschendruck is a live estimate `P = R × P_N / T`, shown in whole bar rounded down and clamped at 0 (an empty cylinder does not occur in practice). Druck ändern opens the editor at that estimate, snapped down to the [76] grid. | **Decided** (device behaviour) |
 | 1.5 | Pressure may only be raised during an Einsatz if [73] Druck vergrößerbar > 0, in steps of [73]; otherwise only lowered. | [Manual] p. 72 |
 | 1.6 | Anfangsdruck entry is bounded by [77]/[78]: at most +10 % / −10 % of `P_N` by default. Steps are [76] Druck-Sprunggröße. | [Manual] p. 72–73 |
 
@@ -41,9 +42,9 @@ Every rule is tagged:
 | # | Rule | Source |
 | --- | --- | --- |
 | 2.1 | Each Einsatzzeit has up to four Alarmgrenzen as a percentage of `T`; 0 = off. Defaults: #1 = 33 %, #2 = 66 %, #3 = #4 = 0. | [Manual] p. 23, 70 |
-| 2.2 | Alarmgrenze `g` fires when `g %` of the Einsatzzeit has elapsed. Example: 30 min → alarms at 10 min (Restzeit 20 min) and 20 min (Restzeit 10 min). | [Manual] p. 23–24 |
+| 2.2 | Alarmgrenze `g` fires when `g %` of the Einsatzzeit has elapsed (`t_run ≥ g × T`). Example: 30 min → alarms at 10 min (Restzeit 20 min) and 20 min (Restzeit 10 min). | [Manual] p. 23–24 |
 | 2.3 | Each Alarmgrenze fires once per Einsatz. | [Assumption] A2 |
-| 2.4 | After a pressure change (1.4), the Alarmgrenze is measured against Restzeit, firing when `R ≤ (1 − g) × T`, instead of against elapsed time. Without pressure changes both readings coincide; with them they diverge. | [Assumption] A1 |
+| 2.4 | ~~After a pressure change (1.4), the Alarmgrenze is measured against Restzeit.~~ Rejected: Alarmgrenzen stay on elapsed running time (2.2) regardless of pressure entries, matching FwDV 7's "Uhrzeit bei 1/3 und 2/3" (see [FwDV 7 cross-check](#11-fwdv-7-cross-check)). | **Decided** (A1) |
 | 2.5 | Configured order: 1/3 and 2/3 limits follow FwDV 7. | [Manual] p. 23 |
 
 ## 3. Einsatzzeit reached and overdue
@@ -74,8 +75,10 @@ Every rule is tagged:
 | 5.3 | **Mode on:** the Trupp starts in Anmarsch. The operator sets Einsatzziel erreicht, then Rückzug, on radio reports. Each change asks for the current Flaschendruck. | [Manual] p. 20, 22–23, 29–30 |
 | 5.4 | The Anmarschzeit `t_A` is the running time from start to Einsatzziel erreicht; the alarm is computed at that transition ("Die neuen Druck- und Zeitinformationen werden berechnet"). | [Manual] p. 22 |
 | 5.5 | The Rückzugsalarm fires once Restzeit falls to "die doppelte Anmarschzeit zuzüglich des eingestellten Reservedruckes": `R ≤ 2·t_A + t_res`. | [Manual] p. 25, 70–71 |
-| 5.6 | The Reservedruck is converted to time with the same linear model as 1.3: `t_res = [42] × T / P_N`. Example: 30 min, 300 bar, 50 bar reserve → 5 min. | [Assumption] A5 |
-| 5.7 | The detail screen shows a Rückzugsdruck, the "Flaschendruck bei dem der Rückzugsalarm ausgelöst wird". It is computed as `[42] + 2 × (P_0 − P_Ziel)`, where `P_Ziel` is the pressure entered at Einsatzziel erreicht. The figures (129 bar, 120 bar) are consistent with this; the manual never states it. | [Figure] p. 11, 29 / [Assumption] A5 |
+| 5.6 | The Reservedruck is converted to time with the same linear model as 1.3: `t_res = [42] × T / P_N`. Example: 30 min, 300 bar, 50 bar reserve → 5 min. | **Decided** (A5) |
+| 5.7 | The detail screen shows a Rückzugsdruck, the "Flaschendruck bei dem der Rückzugsalarm ausgelöst wird". It is the pressure equivalent of the time threshold in 5.5: `[42] + 2·t_A × P_N / T`, so the estimate in 1.7 reaches it exactly when the alarm fires. The figure-fitted `[42] + 2 × (P_0 − P_Ziel)` was rejected: it disagrees with the time-based alarm. | **Decided** (A5) |
+| 5.11 | The Rückzugsalarm stays **time-based** (5.5), as on the device, even though FwDV 7 sizes the Rückweg in Atemluftmenge (see [FwDV 7 cross-check](#11-fwdv-7-cross-check)). Deliberate: the simulator replicates the device, not the regulation. | **Decided** (A5) |
+| 5.12 | [82] Reservedruck ohne Rückzugsalarm is stored but has no effect: with the mode off no Rückzugsalarm fires and Restzeit stays `T × P / P_N`. | **Decided** (A5) |
 | 5.8 | The detail screen's bar splits the Einsatzzeit into Anmarsch, Einsatzziel erreicht and Rückmarsch (2 × Anmarsch + reserve). | [Manual] p. 11 |
 | 5.9 | The Rückzugsalarm fires once, and not at all if the Trupp is already in Rückzug when the point is reached. | [Assumption] A2 |
 | 5.10 | Anmarsch → Rückzug directly (skipping Einsatzziel erreicht) is allowed. The manual tells the operator to order a Trupp still in Anmarsch to retreat at the first Alarmgrenze (p. 23), but only shows the menu path from Einsatzziel erreicht. | [Assumption] A6 |
@@ -156,7 +159,21 @@ Section 9.1 of the manual lists numbers and units only, **no defaults**. Default
 - **[42] range** is "zwischen 0 und 2500 bar", implausible for 200/300 bar bottles.
 - **Figures disagree with each other:** p. 22 shows 295 bar → 00:28:00; p. 29 shows 40 bar, 00:02:00 and a 120 bar Rückzugsdruck. Treat figure numbers as layout references, not test vectors.
 
+## 11. FwDV 7 cross-check
+
+Checked against FwDV 7 (Ausgabe 2002 mit Änderungen 2005), page numbers as printed.
+
+| FwDV 7 | Where | Bearing on the simulator |
+| --- | --- | --- |
+| "Für den Rückweg ist in der Regel die doppelte **Atemluftmenge** wie für den Hinweg einzuplanen"; the Atemluftmenge is "der begrenzende Faktor". | 7.3 p. 11; "Hin- und Rückweg" p. 16 | The regulation measures the Rückweg in air. The device approximates it in time (`2·t_A`); the simulator follows the device (5.11). |
+| "Nach einem und nach zwei Drittel der zu erwartenden Einsatzzeit ist … der Atemschutztrupp auf die Beachtung der Behälterdrücke hinzuweisen"; registration of the "Uhrzeit bei 1/3 und 2/3". | 7.4 p. 13 | The Alarmgrenzen are clock-time reminders to check pressure, so they run on elapsed time (2.2, 2.4). |
+| Cylinders below 90 % of the Nenn-Fülldruck at Einsatzbeginn are not einsatzbereit. | 7.3 p. 11 | Matches the −10 % Anfangsdruck bound [78] (1.6). |
+| Radio reports at connecting, Einsatzziel erreicht and Antritt des Rückweges. | 7.3 p. 11 | Matches the Einsatzstatus flow (5.3). |
+| No numeric Reservedruck. | — | [42] is a device parameter only. |
+
 ## Open decisions
+
+A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm* (rows marked **Decided** above).
 
 These feed the follow-up grilling ticket.
 
