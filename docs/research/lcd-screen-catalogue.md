@@ -554,6 +554,7 @@ Trupp 01 EINSATZ
   After it, p. 30 steps 6–7 say "Ändern Sie – wenn nötig – … den aktuellen Flaschendruck … Bestätigen Sie mit der OK-Taste (C)", and the Trupp then gets Rückmarsch (I/M) (p. 30 step 8).
   §3.2.3's title also links this screen to changing the pressure.
 - **Keys** (inferred from p. 30): **Up/Down** change the pressure; **OK** → [S07](#s07-einsatzliste).
+  **Decided** (G6): S11 is read-only and is reached with OK from S07. OK → S09, X → S07, Up/Down do nothing; after `Rückzug antreten` + OK the pressure editor returns here in `RÜCKMARSCH`.
 - **Timeout:** probably parameter 13 (p. 69).
 
 ### S12 Trupp ALARM
@@ -591,9 +592,9 @@ Trupp 01 ALARM
   - Einsatzzeit used up, 00:00:00 (p. 24)
   - every 5 min after overrun, parameter 6 (p. 25)
   - Rückzugsalarm (p. 25)
-  - percentage-mode alarms for EZ#4 (p. 25)
+  - percentage-mode alarms for EZ#4 (p. 25), out of scope
   - every 5 min in Bereitschaft, parameter 5 (p. 28)
-  - Daueralarm when a member is missing at logoff or below the minimum number of members (p. 15, p. 31, p. 71)
+  - Daueralarm when a member is missing at logoff or below the minimum number of members (p. 15, p. 31, p. 71). **Decided:** a Daueralarm does not use S12; it sounds while ABMELDEN or the Anmeldefenster stays in front.
 
 ### S13 Trupp ABMELDEN
 
@@ -836,6 +837,8 @@ These screens follow from the text but have no figure. The navigation model must
 
 Keys: **Up**, **Down**, **OK**, **X** (cancel), **Check** (power-on, and where Tallys are held).
 "T@Check" = a Tally held on Check.
+
+**This table records the manual's view.** The simulator's navigation is decided in [Define the key-by-screen navigation model](../adr/0004-define-the-key-by-screen-navigation-model.md); where the two differ, the ADR wins. The main differences: OK on S07 opens S11 (not S09) and X on S09 returns to S11; S11 is read-only (OK → S09, X → S07); a Tally on S03 is ignored; S05 and the Attribute step X3 are skipped; OK on S04/S13 with members missing starts a Daueralarm.
 **Bold** cells are stated in the manual; *italic* cells are inferred; "—" = not documented.
 
 | Screen | Up / Down | OK | X | Check / T@Check | Other / automatic |
@@ -869,8 +872,9 @@ Keys: **Up**, **Down**, **OK**, **X** (cancel), **Check** (power-on, and where T
 ## Gaps and ambiguities
 
 These are points the manual does not settle.
-G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5#issuecomment-6142167472); that resolution holds the decisions, so they are not restated here. [Decide when a Daueralarm starts and ends](https://github.com/lharzenetter/checkbox-simulator/issues/14) amends G7: OK on ABMELDEN with members unmarked, and OK on the Anmeldefenster below [07], start a Daueralarm instead of doing nothing ([rules 7.3–7.6](timing-and-alarm-rules.md#7-daueralarm)).
+G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](../adr/0004-define-the-key-by-screen-navigation-model.md); that ADR holds the decisions, so they are not restated here. [Decide when a Daueralarm starts and ends](https://github.com/lharzenetter/checkbox-simulator/issues/14) amends G7: OK on ABMELDEN with members unmarked, and OK on the Anmeldefenster below [07], start a Daueralarm instead of doing nothing ([rules 7.3–7.6](timing-and-alarm-rules.md#7-daueralarm)).
 G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
+G3, G15, G16 and G17 are left to the LCD implementation, which invents them as `// ASSUMPTION:` (settled in the [spec](../spec.md)'s read-through): three figures for a three-member Trupp, `5×`/`6×` drawn like `4×`, `*` and `1` kept as drawn, and the time-split bar proportional to the Anmarsch, Einsatzziel-erreicht and Rückmarsch times.
 
 - **G1 – Right column of the Einsatzliste.**
   The text says it shows the **Restzeit** (p. 14 §5.1.3, p. 23 §5.5.1, p. 26 §5.6).

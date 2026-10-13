@@ -18,7 +18,7 @@ Every rule is tagged:
 | `P_N` | Nenndruck of the chosen Atemschutzflasche type (200 or 300 bar). |
 | `P_0` | Anfangsdruck entered at login. |
 | `P` | Latest Flaschendruck entered for the Trupp. |
-| `t_run` | Elapsed **running** time of the Einsatz — wall-clock time minus time spent in Bereitschaft. |
+| `t_run` | Elapsed **running** time of the Einsatz — simulated time (9.1) minus time spent in Bereitschaft. |
 | `t_A` | Anmarschzeit — `t_run` at the moment the Trupp was set to Einsatzziel erreicht. |
 | `R` | Restzeit as shown on the Einsatzliste. |
 | `[nn]` | Parameter number from manual 9.1. |
@@ -43,7 +43,7 @@ Every rule is tagged:
 | # | Rule | Source |
 | --- | --- | --- |
 | 2.1 | Each Einsatzzeit has up to four Alarmgrenzen as a percentage of `T`; 0 = off. Defaults: #1 = 33 %, #2 = 66 %, #3 = #4 = 0. | [Manual] p. 23, 70 |
-| 2.2 | Alarmgrenze `g` fires when `g %` of the Einsatzzeit has elapsed (`t_run ≥ g × T`). Example: 30 min → alarms at 10 min (Restzeit 20 min) and 20 min (Restzeit 10 min). | [Manual] p. 23–24 |
+| 2.2 | Alarmgrenze `g` fires when `g %` of the Einsatzzeit has elapsed (`t_run ≥ g × T`). The manual's example rounds this to 10 min (Restzeit 20 min) and 20 min (Restzeit 10 min) for 30 min; the simulator takes the percentages literally (2.6). | [Manual] p. 23–24 |
 | 2.3 | Each Alarmgrenze fires once per Einsatz, in every Einsatzstatus (Anmarsch, Einsatzziel erreicht, Rückmarsch). | **Decided** (A2) |
 | 2.4 | ~~After a pressure change (1.4), the Alarmgrenze is measured against Restzeit.~~ Rejected: Alarmgrenzen stay on elapsed running time (2.2) regardless of pressure entries, matching FwDV 7's "Uhrzeit bei 1/3 und 2/3" (see [FwDV 7 cross-check](#11-fwdv-7-cross-check)). | **Decided** (A1) |
 | 2.5 | Configured order: 1/3 and 2/3 limits follow FwDV 7. | [Manual] p. 23 |
@@ -93,6 +93,8 @@ Every rule is tagged:
 | 5.15 | Every entry into Anmarsch (from login or from Bereitschaft) starts a new **Anmarsch leg**: `t_A` is cleared and measured again from the start of the leg to the next Einsatzziel erreicht, and the Rückzugsalarm is disarmed and re-armed there. Alarmgrenzen and Restzeit stay on the whole Einsatz (`t_run`). | **Decided** (A4) |
 
 ## 6. Prozentmodus (Einsatzzeit #4)
+
+**Out of scope:** Einsatzzeit #4 and the Prozentmodus are not simulated ([Draw the simulator's scope](../adr/0002-draw-the-simulators-scope.md)). This section is kept as research only; A7 is closed without a decision.
 
 What the manual says, in full:
 
@@ -235,7 +237,7 @@ Logoff (every Atemschutzträger's Tally at Check → ABMELDEN → OK) from every
 
 ## Open decisions
 
-A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions*; A8 in *Decide when a Daueralarm starts and ends*; A9 in *Fix the factory defaults the manual leaves open* (rows marked **Decided** above).
+The decisions are recorded as ADRs in [`docs/adr/`](../adr/), under the same titles. A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions*; A8 in *Decide when a Daueralarm starts and ends*; A9 in *Fix the factory defaults the manual leaves open* (rows marked **Decided** above).
 
 These feed the follow-up grilling ticket.
 
@@ -245,6 +247,6 @@ These feed the follow-up grilling ticket.
 - **A4 — Leaving Bereitschaft.** Which Einsatzstatus does "Trupp -> Einsatz" restore?
 - **A5 — Reserve conversion.** Is the Reservedruck converted to time linearly (`[42] × T / P_N`)? Should the Rückzugsdruck be shown as `[42] + 2 × (P_0 − P_Ziel)`? And which one triggers the alarm: the time comparison or the pressure comparison?
 - **A6 — Anmarsch → Rückmarsch.** Is this transition allowed without passing Einsatzziel erreicht?
-- **A7 — Prozentmodus semantics.** Adopt reading 6.1/6.2, or leave Prozentmodus off (it only affects the 240-min Einsatzzeit #4)?
+- **A7 — Prozentmodus semantics.** *Out of scope* (section 6). Adopt reading 6.1/6.2, or leave Prozentmodus off (it only affects the 240-min Einsatzzeit #4)?
 - **A8 — Daueralarm start and cancel.** When does each Daueralarm start, and can X cancel the logoff Daueralarm?
 - **A9 — Unknown defaults.** Fix values for every **unknown** row in section 9, including whether the Rückzugsalarmmodus is on for each Einsatzzeit. *Decided:* see section 9.
