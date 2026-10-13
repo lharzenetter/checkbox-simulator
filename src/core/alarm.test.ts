@@ -276,6 +276,28 @@ describe("a pressure entry on an overdue Trupp", () => {
   });
 });
 
+// timing-and-alarm-rules §3.6 (ASSUMPTION in alarm.ts: exactly 00:00:00 counts as reached)
+describe("accepting 0 bar on an overdue Trupp", () => {
+  it("sounds nothing on OK and the next Alarm at −0:05:00", () => {
+    let state = run(
+      truppInAnmarsch(),
+      tickAt(30),
+      press("OK"),
+      tickAt(35),
+      press("OK"),
+      tickAt(37),
+    );
+    state = enter(state, "flaschendruckAendern", 0);
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(0);
+    state = reduce(state, tickAt(41, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(42));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
+  });
+});
+
 // verification-scenarios V2, its Alarmgrenzen half; timing-and-alarm-rules §1.3, 2.2
 describe("a Trupp logged in at 270 bar", () => {
   function truppAt270Bar(): State {
@@ -383,7 +405,8 @@ describe("a Trupp logged in to Bereitschaft", () => {
     expect(restzeitOf(state)).toBe((20 * 60 + 6) * 1000);
   });
 
-  // timing-and-alarm-rules §4.7: only the Bereitschaft Alarm sounds, so §3.4 waits
+  // timing-and-alarm-rules §4.7: only the Bereitschaft Alarm sounds, so §3.4 fires nothing here
+  // (ASSUMPTION in alarm.ts: the passed point is dropped, not held)
   it("sounds no Einsatzzeit erreicht for a pressure entry of 0 bar", () => {
     let state = enter(
       run(truppInBereitschaft(), tickAt(2)),

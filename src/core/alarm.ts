@@ -14,7 +14,7 @@ import type { Trupp } from "./state";
 // timing-and-alarm-rules §4.7: in Bereitschaft only the Bereitschaft Alarm sounds.
 // ASSUMPTION: an Alarm point a pressure entry passes in Bereitschaft is dropped, not held until
 // `Trupp -> Einsatz`; §4.7 pauses the other Alarms but does not say what happens to one passed
-// while paused.
+// while paused (taken in "Repeat overdue and Bereitschaft Alarms", issue #33).
 export function hasAlarmFired(before: Trupp, after: Trupp): boolean {
   if (after.einsatzstatus === "bereitschaft") {
     return hasReachedBereitschaftInterval(before, after);
@@ -46,13 +46,17 @@ function hasReachedAlarmgrenze(before: Trupp, after: Trupp): boolean {
   });
 }
 
-// timing-and-alarm-rules §3.1, 3.2, 3.3, 3.5: at 00:00:00 and each multiple of −[06], anchored to
-// the Restzeit; passing several at once fires one Alarm
+// timing-and-alarm-rules §3.1, 3.2, 3.3, 3.5, 3.6: at 00:00:00 and each multiple of −[06], anchored
+// to the Restzeit, so an OK never shifts them and an entry that raises the Restzeit re-arms them;
+// passing several at once fires one Alarm.
+// ASSUMPTION: an entry that raises an overdue Restzeit to exactly 00:00:00 has reached that point
+// already, so it fires nothing and the next Alarm comes at −[06]; §3.6 says only "when it next
+// reaches 00:00:00" (taken in "Repeat overdue and Bereitschaft Alarms", issue #33).
 function hasReachedEinsatzzeit(before: Trupp, after: Trupp): boolean {
   return overdueStep(after.restzeitMs) > overdueStep(before.restzeitMs);
 }
 
-// How many of 00:00:00, −[06], −2·[06], … the Restzeit has reached, less one.
+// Comparing step numbers rather than thresholds makes a multi-step jump count once (§3.3).
 function overdueStep(restzeitMs: number): number {
   return restzeitMs > 0
     ? -1
@@ -65,8 +69,6 @@ function alarmgrenzenPercent(einsatzzeitMs: number): readonly number[] {
       return [
         P03_ALARMGRENZE_1_EINSATZZEIT_1_PROZENT,
         P04_ALARMGRENZE_2_EINSATZZEIT_1_PROZENT,
-        P05_ALARMINTERVALL_BEREITSCHAFT_MS,
-        P06_ALARMINTERVALL_EINSATZZEIT_MS,
       ];
     case P10_EINSATZZEIT_3_MS:
       return [
