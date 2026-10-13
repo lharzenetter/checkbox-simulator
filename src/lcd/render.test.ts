@@ -430,6 +430,34 @@ describe("every Statussymbol layout", () => {
   });
 });
 
+// The core keeps a Trupp's Flaschendruck within its cylinder, so the fill level is set on the
+// screen model to reach both limits.
+function truppAnsichtWith(fillLevel: number): ScreenModel {
+  const model = screenModel(
+    [...LOGIN, press("OK"), press("OK")].reduce(
+      reduce,
+      createInitialState({ now: FIGURE_UHRZEIT, realNow: 0 }),
+    ),
+  );
+  if (model.layout !== "truppAnsicht") {
+    throw new Error(`expected the Trupp-Ansicht, got ${model.layout}`);
+  }
+  return { ...model, fillLevel };
+}
+
+// manual 3.2.3; issue #41: the shoulder and base stay solid at both fill limits
+describe("the Trupp-Ansicht's cylinder", () => {
+  // manual 5.5.3, p. 24: the body is empty
+  it("draws an empty cylinder", () => {
+    expect(toAscii(renderScreen(truppAnsichtWith(0)))).toMatchSnapshot();
+  });
+
+  // manual 5.4, p. 22: the dither reaches the shoulder
+  it("draws a full cylinder", () => {
+    expect(toAscii(renderScreen(truppAnsichtWith(1)))).toMatchSnapshot();
+  });
+});
+
 // X and Check held together on the Einsatzliste for 4 s (manual 5.9 step 2).
 const NOTAUSSCHALTUNG: readonly Event[] = [
   press("X"),

@@ -256,8 +256,6 @@ function drawTruppMenue(
 const ANSICHT_DIVIDER_X = 64;
 const ANSICHT_LABEL_Y = LCD_HEIGHT - 11;
 
-const BOTTLE = [".###.", "..#..", ".###.", "#####", "#####", "#####", "#####"];
-
 function drawTruppAnsicht(
   framebuffer: Framebuffer,
   model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
@@ -306,22 +304,55 @@ function drawAlarm(
   });
 }
 
-// manual 5.5.3, ALARM figure: the ↓↑ over the Rückzugsdruck box
-const RUECKZUG_ARROWS = [
-  ".#...#.",
-  ".#..###",
-  ".#...#.",
-  ".#...#.",
-  "###..#.",
-  ".#...#.",
+// Traced from the Trupp-Ansicht and ALARM figures (manual 3.2.3, 5.5.3, 5.7), on the figures'
+// columns.
+// ASSUMPTION: where the trace wavered by a pixel the shape was made symmetric (issue #41).
+const FLASCHE = [
+  "..##..",
+  "..##..",
+  ".####.",
+  "######",
+  "######",
+  "######",
+  "######",
+  "######",
+  "######",
+  "######",
+  ".####.",
 ];
 
-// manual 3.2.3, 5.5.3: the figures centre the icons over the value boxes
-function panelIconX(): number {
-  return Math.floor(
-    (ANSICHT_DIVIDER_X + VALUE_BOX_X + VALUE_BOX_WIDTH - 5) / 2,
-  );
-}
+// The figures' bottom row merges with the box border; the device's clock is square, so it
+// keeps its 11th row (issue #41).
+const RESTZEIT_CLOCK = [
+  "....###....",
+  "..##.####..",
+  ".#...#####.",
+  ".#...#####.",
+  "#....######",
+  "#....######",
+  "#.....#####",
+  ".#.....###.",
+  ".#.....###.",
+  "..##...##..",
+  "....###....",
+];
+
+// The ↓↑ over the time-split bar and over the Rückzugsdruck box.
+const RUECKZUG_ARROWS = [
+  "..#....#..",
+  "..#...###.",
+  "..#..#####",
+  "..#....#..",
+  "..#....#..",
+  "..#....#..",
+  "#####..#..",
+  ".###...#..",
+  "..#....#..",
+];
+
+const FLASCHENDRUCK_BOX_Y = 49;
+const RESTZEIT_BOX_Y = 71;
+const RUECKZUGSDRUCK_BOX_Y = 94;
 
 // The parts the Trupp-Ansicht and ALARM figures share (manual 3.2.3, 5.5.3).
 function drawTruppPanels(
@@ -346,13 +377,27 @@ function drawTruppPanels(
   // ASSUMPTION: the time-split bar is drawn empty until the Einsatzstatus times it splits are
   // kept (LCD screen catalogue, gap G17).
   strokeRect(framebuffer, 7, 52, 6, 68);
-  drawBitmap(framebuffer, BOTTLE, panelIconX(), 36);
-  drawValueBox(framebuffer, model.flaschendruck, 45);
-  drawBitmap(framebuffer, CLOCK, panelIconX() - 1, 60);
-  drawValueBox(framebuffer, model.restzeit, 69);
+  drawBitmap(framebuffer, RUECKZUG_ARROWS, 4, 41);
+  drawValueBox(framebuffer, model.flaschendruck, FLASCHENDRUCK_BOX_Y);
+  drawPictogramOnBox(framebuffer, FLASCHE, 95, FLASCHENDRUCK_BOX_Y);
+  drawValueBox(framebuffer, model.restzeit, RESTZEIT_BOX_Y);
+  drawPictogramOnBox(framebuffer, RESTZEIT_CLOCK, 92, RESTZEIT_BOX_Y);
   // manual 3.2.3 item 9, 5.5.3: the box is drawn empty until there is a Rückzugsdruck
-  drawBitmap(framebuffer, RUECKZUG_ARROWS, panelIconX() - 1, 85);
-  drawValueBox(framebuffer, model.rueckzugsdruck ?? "", 94);
+  drawValueBox(framebuffer, model.rueckzugsdruck ?? "", RUECKZUGSDRUCK_BOX_Y);
+  drawPictogramOnBox(framebuffer, RUECKZUG_ARROWS, 93, RUECKZUGSDRUCK_BOX_Y);
+}
+
+// The pictogram's bottom row sits on the box's top border, which is left open 2 px either side
+// of it (manual 3.2.3, 5.5.3, 5.7).
+function drawPictogramOnBox(
+  framebuffer: Framebuffer,
+  pictogram: readonly string[],
+  x: number,
+  boxY: number,
+): void {
+  const width = pictogram[0]?.length ?? 0;
+  fillRect(framebuffer, x - 2, boxY, width + 4, 1, false);
+  drawBitmap(framebuffer, pictogram, x, boxY - pictogram.length + 1);
 }
 
 function drawLines(
@@ -367,11 +412,10 @@ function drawLines(
 
 // Laid out after the S06 figure (manual 5.3).
 const VALUE_BOX_X = 66;
+// ASSUMPTION: the box keeps its 58 px, wider than the figures' 53 px, because our font is wider
+// than the device's and a negative Restzeit such as `-00:00:10` must still fit (issue #41).
 const VALUE_BOX_WIDTH = 58;
-const CYLINDER_X = 20;
-const CYLINDER_Y = 44;
-const CYLINDER_WIDTH = 35;
-const CYLINDER_HEIGHT = 80;
+const VALUE_BOX_HEIGHT = 11;
 
 function drawFlaschendruckEditor(
   framebuffer: Framebuffer,
@@ -396,8 +440,23 @@ function drawFlaschendruckEditor(
   strokeRect(framebuffer, 7, 52, 6, 68);
 }
 
+// The box casts a 1 px drop shadow down and to the right (manual 3.2.3, 5.4, 5.5.3, 5.7).
 function drawValueBox(framebuffer: Framebuffer, text: string, y: number): void {
-  strokeRect(framebuffer, VALUE_BOX_X, y, VALUE_BOX_WIDTH, 11);
+  strokeRect(framebuffer, VALUE_BOX_X, y, VALUE_BOX_WIDTH, VALUE_BOX_HEIGHT);
+  fillRect(
+    framebuffer,
+    VALUE_BOX_X + VALUE_BOX_WIDTH,
+    y + 1,
+    1,
+    VALUE_BOX_HEIGHT,
+  );
+  fillRect(
+    framebuffer,
+    VALUE_BOX_X + 1,
+    y + VALUE_BOX_HEIGHT,
+    VALUE_BOX_WIDTH,
+    1,
+  );
   drawRightAlignedText(
     framebuffer,
     text,
@@ -406,39 +465,71 @@ function drawValueBox(framebuffer: Framebuffer, text: string, y: number): void {
   );
 }
 
+// Traced from the figures (manual 3.2.3, 5.3, 5.5.3, 5.7): a valve cap on a neck, a solid
+// stepped shoulder and base, and a 1 px outlined body between them, symmetric about its middle
+// column (issue #41).
+const CYLINDER_BODY_ROWS = 63;
+const CYLINDER = [
+  "............###########............",
+  "............###########............",
+  "............###########............",
+  "..............#######..............",
+  "..............#######..............",
+  "..............#######..............",
+  ".........#################.........",
+  "....###########################....",
+  "..###############################..",
+  ".#################################.",
+  "###################################",
+  "###################################",
+  "###################################",
+  ...Array.from(
+    { length: CYLINDER_BODY_ROWS },
+    () => "#.................................#",
+  ),
+  "###################################",
+  "###################################",
+  "###################################",
+  "###################################",
+  ".#################################.",
+  "..###############################..",
+  "....###########################....",
+  ".........#################.........",
+];
+const CYLINDER_X = 20;
+const CYLINDER_Y = 41;
+const CYLINDER_WIDTH = 35;
+const CYLINDER_BODY_TOP = CYLINDER_Y + 13;
+const CYLINDER_BASE_Y = CYLINDER_BODY_TOP + CYLINDER_BODY_ROWS;
+// issue #41: a tick every 22 rows up from the base, as traced from the figures
+const CYLINDER_TICK_PITCH = 22;
+
 // ASSUMPTION: the tick mark `1` is kept as drawn in the figure (LCD screen catalogue, gap G16).
 function drawCylinder(framebuffer: Framebuffer, fillLevel: number): void {
-  const x = CYLINDER_X;
-  const y = CYLINDER_Y;
-  fillRect(framebuffer, x + 12, y - 6, 11, 3);
-  fillRect(framebuffer, x + 15, y - 3, 5, 3);
-  strokeRect(framebuffer, x, y, CYLINDER_WIDTH, CYLINDER_HEIGHT);
-  for (const [cornerX, cornerY] of [
-    [x, y],
-    [x + CYLINDER_WIDTH - 1, y],
-    [x, y + CYLINDER_HEIGHT - 1],
-    [x + CYLINDER_WIDTH - 1, y + CYLINDER_HEIGHT - 1],
-  ] as const) {
-    setPixel(framebuffer, cornerX, cornerY, false);
-  }
-  const innerHeight = CYLINDER_HEIGHT - 4;
-  const filled = Math.round(innerHeight * fillLevel);
-  for (
-    let row = y + 2 + innerHeight - filled;
-    row < y + 2 + innerHeight;
-    row++
-  ) {
-    for (let column = x + 2; column < x + CYLINDER_WIDTH - 2; column++) {
+  drawBitmap(framebuffer, CYLINDER, CYLINDER_X, CYLINDER_Y);
+  const filled = Math.round(CYLINDER_BODY_ROWS * fillLevel);
+  for (let row = CYLINDER_BASE_Y - filled; row < CYLINDER_BASE_Y; row++) {
+    for (
+      let column = CYLINDER_X + 1;
+      column < CYLINDER_X + CYLINDER_WIDTH - 1;
+      column++
+    ) {
       setPixel(framebuffer, column, row, (row + column) % 2 === 0);
     }
   }
-  const tickYs = [1 / 3, 2 / 3, 1].map(
-    (fraction) => y + 1 + Math.round(innerHeight * fraction),
+  const tickYs = [0, 1, 2].map(
+    (index) => CYLINDER_BASE_Y - index * CYLINDER_TICK_PITCH,
   );
   for (const tickY of tickYs) {
-    fillRect(framebuffer, x + CYLINDER_WIDTH, tickY, 3, 1);
+    fillRect(framebuffer, CYLINDER_X + CYLINDER_WIDTH, tickY, 3, 1);
   }
-  drawText(framebuffer, "1", x + CYLINDER_WIDTH + 3, (tickYs[0] ?? y) + 2);
+  // the `1` stands one row below the top tick (issue #41)
+  drawText(
+    framebuffer,
+    "1",
+    CYLINDER_X + CYLINDER_WIDTH + 4,
+    CYLINDER_BASE_Y - 2 * CYLINDER_TICK_PITCH + 1,
+  );
 }
 
 // Laid out after the Einsatzliste figures (manual 3.2.1, 5.3).
