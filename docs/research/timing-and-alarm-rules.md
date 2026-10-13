@@ -128,7 +128,7 @@ The manual does not say when either one starts. Decided (A8, device behaviour):
 | # | Rule | Source |
 | --- | --- | --- |
 | 8.1 | Every non-Daueralarm is acknowledged with OK (C). | [Manual] p. 14, 23–28 |
-| 8.2 | How simultaneous Alarms from several Trupps are queued, and which screen shows them, is not described. | [Assumption], for the ticket *Decide how alarms are presented* |
+| 8.2 | Coincident or later Alarms of one Trupp merge into its single pending Alarm; pending Alarms of different Trupps queue first in, first out, one C each, all on the ALARM screen. A Daueralarm cannot be acknowledged with C, so it is never queued. | **Decided** in *Decide how alarms are presented* |
 | 8.3 | Starting a Langzeiteinsatz (any Einsatzzeit except 30 min) needs an extra OK confirmation. | [Manual] p. 18 |
 
 ## 9. Factory defaults

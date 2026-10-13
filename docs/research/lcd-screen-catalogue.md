@@ -398,7 +398,7 @@ B1-{BAT}+ {UHR} 10:20:00
   - **D + E held ≈ 4 s** → [S14](#s14-notausschaltung--auswahl) (p. 31 §5.9 step 2).
   - **D** alone: not documented.
 - **Automatic transitions:**
-  - At each Alarmgrenze, at the Rückzugsalarm, when the Einsatzzeit runs out, and every 5 min in Bereitschaft or overrun, an Alarm sounds (pp. 23–25, p. 28). The screen presumably switches to [S12](#s12-trupp-alarm) (gap G5).
+  - At each Alarmgrenze, at the Rückzugsalarm, when the Einsatzzeit runs out, and every 5 min in Bereitschaft or overrun, an Alarm sounds (pp. 23–25, p. 28). The screen switches to [S12](#s12-trupp-alarm) (gap G5, decided).
   - Display backlight switch-off (p. 17 Hinweis, p. 90).
 
 ### S08 Druck ändern ("Esz-Zeit ändern")
@@ -584,7 +584,7 @@ Trupp 01 ALARM
   - **negative Restzeit `-00:00:10`**
   - empty Rückzug-pressure box
   - `Alarmende mit OK` instead of `Ansicht`
-- **Keys:** **C** acknowledges ("Bestätigen Sie den Alarm mit der OK-Taste (C)", pp. 24, 25, 28) → presumably back to [S07](#s07-einsatzliste).
+- **Keys:** **C** acknowledges ("Bestätigen Sie den Alarm mit der OK-Taste (C)", pp. 24, 25, 28) → the next pending S12, else the screen it interrupted, else [S07](#s07-einsatzliste) with the Trupp selected. A, B, D and Transponders are ignored (decided in [Decide how alarms are presented](https://github.com/lharzenetter/checkbox-simulator/issues/8)).
 - **Triggers** (screen shown only for the overrun case):
   - Alarmgrenze 1 and 2 (33 % / 66 %; up to 4 Alarmgrenzen) (pp. 23–24)
   - Einsatzzeit used up, 00:00:00 (p. 24)
@@ -851,7 +851,7 @@ Keys: **A** up, **B** down, **C** OK, **D** Abbruch, **E** = Transponder-/Check-
 | S09 Trupp-Menü | **choose item** | **Einsatzziel erreicht → S10** (p. 22); **Rückzug antreten → S11/X4** (p. 29); **Bereitschaft → S07** (p. 27); **Druck ändern → S08** (p. 28); *Trupp -> Einsatz → S07* | *→ S07* (p. 9) | — | **param 13 timeout → S07** (p. 69) |
 | S10 Esz-Ziel erreicht | **± pressure** (p. 23) | **→ S07**, status H/L (p. 23) | — | — | — |
 | S11 Trupp-Ansicht | *± pressure* (p. 30) | *→ S07*, status I/M (p. 30) | — | — | *param 13 timeout* |
-| S12 ALARM | — | **acknowledge** (p. 24–25) → *S07* | — | — | repeats every 5 min (p. 25, 28) |
+| S12 ALARM | *ignored* | **acknowledge** (p. 24–25) → *next pending S12, else the interrupted screen, else S07* | *ignored* | *ignored, not buffered* | repeats every 5 min (p. 25, 28); *interrupts any screen* |
 | S13 ABMELDEN | — | **logoff → S07** (p. 31) | **→ S07, no logoff** (p. 31) | **T@E marks member** (p. 30) | Daueralarm if member missing (p. 31) |
 | S14 Notaus Auswahl | **choose** (p. 31) | **Trupp/alle → S15**; **zurueck → *S07*** (p. 31–32) | — | — | — |
 | S15 Notaus Bestätigung | **cancel** | **delete Trupp(s) → *S07*** (p. 32) | **cancel** (p. 32) | **cancel** (p. 32) | — |
@@ -889,6 +889,7 @@ G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
 - **G5 – Alarm presentation.**
   Only one ALARM screen is shown, for the overrun case (p. 24).
   It is unclear whether the 1/3, 2/3, Rückzugsalarm, Bereitschaft, Daueralarm and battery Alarms use the same screen, what happens when several Trupps alarm at once, and where C leads afterwards.
+  **Decided** in [Decide how alarms are presented](https://github.com/lharzenetter/checkbox-simulator/issues/8): every non-Daueralarm uses S12 with no cause text; one pending Alarm per Trupp, FIFO across Trupps; S12 interrupts any screen and C returns to it. The resolution holds the detail.
 - **G6 – The two detail layouts and the `Ansicht` label.**
   It is unclear how the graphic Trupp-Ansicht (S11) is reached, compared with the menu (S09), and what `Ansicht` means.
   §3.2.3 calls it "Druck der Atemschutzflaschen ändern" (p. 11), but its layout differs from the pressure-entry screens S06, S08 and S10.
