@@ -1,5 +1,5 @@
 import { assertNever } from "../core/index";
-import { CHARACTER_PITCH } from "./font";
+import { CHARACTER_PITCH, GLYPH_HEIGHT } from "./font";
 import {
   createFramebuffer,
   drawBitmap,
@@ -257,8 +257,7 @@ const ANSICHT_DIVIDER_X = 64;
 
 // manual 3.2.3: the `Ansicht` button spans the value boxes' columns and ends level with the
 // cylinder's base, set in from the divider, the right edge and the bottom.
-// ASSUMPTION: a 1 px light gap between the frame and the inverse bar, which the figure is too
-// coarse to show, and a bar one row taller than the figure's, for our taller font (issue #42).
+// ASSUMPTION: the bar is taller than the figure's, for our taller font (issue #42).
 const ANSICHT_BUTTON_X = ANSICHT_DIVIDER_X + 2;
 const ANSICHT_BUTTON_WIDTH = 58;
 const ANSICHT_BUTTON_HEIGHT = 13;
@@ -279,29 +278,22 @@ function drawTruppAnsicht(
   drawAnsichtButton(framebuffer, model.label);
 }
 
-// The selected soft-key label: an inverse bar inside a frame (manual 3.2.3).
+// The selected soft-key label: an inverse bar, the text centred in it (manual 3.2.3).
 function drawAnsichtButton(framebuffer: Framebuffer, label: string): void {
   const top = CYLINDER_Y + CYLINDER.length - ANSICHT_BUTTON_HEIGHT;
-  strokeRect(
+  fillRect(
     framebuffer,
     ANSICHT_BUTTON_X,
     top,
     ANSICHT_BUTTON_WIDTH,
     ANSICHT_BUTTON_HEIGHT,
   );
-  const barWidth = ANSICHT_BUTTON_WIDTH - 4;
-  fillRect(
-    framebuffer,
-    ANSICHT_BUTTON_X + 2,
-    top + 2,
-    barWidth,
-    ANSICHT_BUTTON_HEIGHT - 4,
-  );
   drawText(
     framebuffer,
     label,
-    ANSICHT_BUTTON_X + 2 + Math.floor((barWidth - textWidth(label)) / 2),
-    top + 3,
+    ANSICHT_BUTTON_X +
+      Math.floor((ANSICHT_BUTTON_WIDTH - textWidth(label)) / 2),
+    top + Math.floor((ANSICHT_BUTTON_HEIGHT - GLYPH_HEIGHT) / 2),
     { inverse: true },
   );
 }
