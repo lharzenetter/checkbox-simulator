@@ -78,6 +78,8 @@ function drawAnmarsch(
   drawBitmap(framebuffer, HOUSE, left, y);
   if (count > 3) {
     drawBitmap(framebuffer, ARROW_IN, left + 1, y + ARROW_Y);
+  } else if (count > 2) {
+    drawCentredInside(framebuffer, left, y);
   } else {
     drawInside(framebuffer, 1, left, y);
   }
@@ -114,7 +116,11 @@ function drawEinsatzzielErreicht(
 ): void {
   const house = drawCount(framebuffer, count, x, y);
   drawBitmap(framebuffer, HOUSE, house, y);
-  drawInside(framebuffer, count > 3 ? 1 : Math.min(count, 2), house, y);
+  if (count > 3) {
+    drawCentredInside(framebuffer, house, y);
+  } else {
+    drawInside(framebuffer, Math.min(count, 2), house, y);
+  }
 }
 
 // All but one Atemschutzträger inside the house and the last one leaving on the right (I); more
@@ -157,6 +163,21 @@ function drawInside(
       y + INSIDE_Y,
     );
   }
+}
+
+// The one figure standing for a Trupp of more than two stands in the middle of the house, as on
+// the device.
+function drawCentredInside(
+  framebuffer: Framebuffer,
+  house: number,
+  y: number,
+): void {
+  drawBitmap(
+    framebuffer,
+    ATEMSCHUTZTRAEGER,
+    house + Math.floor((HOUSE_WIDTH - ATEMSCHUTZTRAEGER_WIDTH) / 2),
+    y + INSIDE_Y,
+  );
 }
 
 // Draws a larger Trupp's `4×`, centred on the symbol's height so it sits level with the
