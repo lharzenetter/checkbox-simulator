@@ -29,7 +29,7 @@ export function useKeyMap({
   onTallyKeyPressed,
 }: {
   onKeyPressed: (key: Key) => void;
-  /** Ends the hold of a key, as the Notausschaltung needs X and Check held. */
+  // The Notausschaltung needs X and Check held, so the core hears when a key goes up.
   onKeyReleased: (key: Key) => void;
   /** Called with the Roster index of the Tally whose number key was pressed. */
   onTallyKeyPressed: (rosterIndex: number) => void;

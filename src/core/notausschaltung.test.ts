@@ -28,7 +28,7 @@ function hold(tally: { tallyId: string; name: string }): Event {
   return { type: "tallyHeld", ...tally };
 }
 
-// The simulation clock at 10×: ten simulated milliseconds pass for every real one.
+// 10× speed, verification scenario V23
 function tickAtTenfoldAfter(state: State, realElapsedMs: number): Event {
   return {
     type: "tick",
@@ -45,7 +45,7 @@ function tickAfter(state: State, elapsedMs: number): Event {
   };
 }
 
-/** Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste. */
+// Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste.
 function truppInAnmarsch(): State {
   return run(
     createInitialState(SESSION_START),
@@ -57,7 +57,7 @@ function truppInAnmarsch(): State {
   );
 }
 
-/** Trupp 01 of A1 and A2 in Anmarsch and Trupp 02 of B1 and B2 in Bereitschaft; 02 is marked. */
+// Trupp 01 of A1 and A2 in Anmarsch and Trupp 02 of B1 and B2 in Bereitschaft; 02 is marked.
 function zweiTrupps(): State {
   return run(
     truppInAnmarsch(),
@@ -70,7 +70,7 @@ function zweiTrupps(): State {
   );
 }
 
-/** S14, opened by holding X and Check for 4 s on the Einsatzliste. */
+// S14, opened by holding X and Check for 4 s on the Einsatzliste.
 function notausschaltungAuswahl(einsatzliste = truppInAnmarsch()): State {
   const holding = run(einsatzliste, press("X"), press("Check"));
   return run(
@@ -100,6 +100,7 @@ describe("holding X and Check on the Einsatzliste", () => {
     expect(later.screen).toBe("einsatzliste");
   });
 
+  // manual 5.9 step 2
   it("measures a new hold from the moment both keys are held again", () => {
     const holding = run(truppInAnmarsch(), press("X"), press("Check"));
     const rehold = run(
@@ -115,6 +116,7 @@ describe("holding X and Check on the Einsatzliste", () => {
     );
   });
 
+  // manual 5.9 step 2
   it("does nothing while only X is held", () => {
     const holding = reduce(truppInAnmarsch(), press("X"));
     expect(reduce(holding, tickAfter(holding, 10_000)).screen).toBe(
@@ -122,7 +124,8 @@ describe("holding X and Check on the Einsatzliste", () => {
     );
   });
 
-  // decided in "Define the key-by-screen navigation model": S14 opens on the marked Trupp
+  // ASSUMPTION in reduce: S14 opens on the marked Trupp ("Define the key-by-screen navigation
+  // model"), so without one the hold does nothing
   it("does nothing on an empty Einsatzliste", () => {
     const empty = run(
       truppInAnmarsch(),
@@ -210,6 +213,18 @@ describe("S14 Notausschaltung – Auswahl", () => {
   it("ignores Tallys", () => {
     const state = notausschaltungAuswahl();
     expect(reduce(state, hold(A1))).toBe(state);
+  });
+
+  // decided in "Decide how alarms are presented", points 4 and 5: S12 takes over and the last OK
+  // returns to the interrupted screen
+  it("returns to the same choice for the same Trupp after an Alarm interrupts it", () => {
+    const auswahl = reduce(notausschaltungAuswahl(zweiTrupps()), press("Down"));
+    const alarm = reduce(auswahl, tickAfter(auswahl, ALARMGRENZE_1_MS));
+    expect(alarm.screen).toBe("alarm");
+    const back = reduce(alarm, press("OK"));
+    expect(back.screen).toBe("notausschaltungAuswahl");
+    expect(back.notausschaltung).toBe("alleTrupps");
+    expect(back.selectedTruppnummer).toBe(2);
   });
 });
 

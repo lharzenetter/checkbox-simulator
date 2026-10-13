@@ -164,7 +164,8 @@ function drawAbmelden(
 // band, the prompt below it and the three choices further down, with a full-width selection bar
 // (decided in "Define the key-by-screen navigation model").
 // ASSUMPTION: `->` is drawn as one arrow cell, so `-> markierten Trupp 01` fits the 21 columns as
-// the figure squeezes it in; the screen model keeps the device's text.
+// the figure squeezes it in (LCD screen catalogue, S14, "Character grid"); the screen model keeps
+// the device's text.
 const NOTAUSSCHALTUNG_ITEMS_Y = 72;
 
 const ARROW = ["..#..", "...#.", "#####", "...#.", "..#.."];

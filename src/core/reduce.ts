@@ -123,7 +123,8 @@ export const NOTAUSSCHALTUNG_AKTIONEN: readonly NotausschaltungAktion[] = [
 ];
 
 // manual 5.9 steps 3–4; decided in "Define the key-by-screen navigation model".
-// ASSUMPTION: X is inert, as only `-> zurueck` is named as the way back.
+// ASSUMPTION: X is inert, as "Define the key-by-screen navigation model" names only `-> zurueck`
+// as the way back.
 function handleNotausschaltungAuswahlKey(state: State, key: Key): State {
   const aktion = requireNotausschaltung(state);
   switch (key) {
@@ -158,8 +159,10 @@ function requireNotausschaltung(state: State): NotausschaltungAktion {
 
 // manual 5.9 step 2; decided in "Define the key-by-screen navigation model": from the
 // Einsatzliste only, so S12 needs its OK first.
-// ASSUMPTION: without a marked Trupp there is nothing to end, so the hold does nothing (the
-// navigation model starts S14 on `-> markierten Trupp NN`).
+// ASSUMPTION: without a marked Trupp there is nothing to end, so the hold does nothing, and a key
+// already down when the Einsatzliste opens counts only once pressed again; the navigation model
+// starts S14 on `-> markierten Trupp NN` but says no more ("Define the key-by-screen navigation
+// model").
 function holdNotausschaltungKey(state: State, key: Key): State {
   if (
     !isNotausschaltungKey(key) ||
@@ -898,7 +901,7 @@ function endTrupps(state: State, ended: readonly Trupp[]): State {
   return {
     ...state,
     trupps,
-    selectedTruppnummer: selectionAfterLogoff(state, trupps),
+    selectedTruppnummer: selectionAfterEnding(state, trupps),
     einsatzprotokolle: [
       ...state.einsatzprotokolle,
       ...ended.map((trupp) => einsatzprotokoll(state, trupp)),
@@ -919,9 +922,9 @@ function einsatzprotokoll(state: State, trupp: Trupp): Einsatzprotokoll {
 }
 
 // ASSUMPTION: the selection stays where it was, or moves to the first remaining Trupp when the
-// selected one logs off; the navigation model does not say ("Define the key-by-screen
+// selected one is logged off or ended; the navigation model does not say ("Define the key-by-screen
 // navigation model").
-function selectionAfterLogoff(
+function selectionAfterEnding(
   state: State,
   trupps: readonly Trupp[],
 ): number | null {
@@ -1065,7 +1068,9 @@ function runDown(trupp: Trupp, elapsedMs: number): Trupp {
 
 // ASSUMPTION: entering a screen restarts its display timing, so returning to the Startdisplay
 // from SERVICE shows the full Abschaltzeit again; the manual leaves SERVICE's timing open
-// (LCD screen catalogue, S02). Leaving the Einsatzliste also drops a Notausschaltung hold.
+// (LCD screen catalogue, S02).
+// A Notausschaltung hold counts only while the Einsatzliste stays on screen, so S12 taking over
+// ends it (decided in "Decide how alarms are presented", point 6).
 function enterScreen(state: State, screen: Screen): State {
   return {
     ...state,
