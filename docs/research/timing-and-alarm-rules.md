@@ -43,7 +43,7 @@ Every rule is tagged:
 | --- | --- | --- |
 | 2.1 | Each Einsatzzeit has up to four Alarmgrenzen as a percentage of `T`; 0 = off. Defaults: #1 = 33 %, #2 = 66 %, #3 = #4 = 0. | [Manual] p. 23, 70 |
 | 2.2 | Alarmgrenze `g` fires when `g %` of the Einsatzzeit has elapsed (`t_run ≥ g × T`). Example: 30 min → alarms at 10 min (Restzeit 20 min) and 20 min (Restzeit 10 min). | [Manual] p. 23–24 |
-| 2.3 | Each Alarmgrenze fires once per Einsatz. | [Assumption] A2 |
+| 2.3 | Each Alarmgrenze fires once per Einsatz, in every Einsatzstatus (Anmarsch, Einsatzziel erreicht, Rückzug). | **Decided** (A2) |
 | 2.4 | ~~After a pressure change (1.4), the Alarmgrenze is measured against Restzeit.~~ Rejected: Alarmgrenzen stay on elapsed running time (2.2) regardless of pressure entries, matching FwDV 7's "Uhrzeit bei 1/3 und 2/3" (see [FwDV 7 cross-check](#11-fwdv-7-cross-check)). | **Decided** (A1) |
 | 2.5 | Configured order: 1/3 and 2/3 limits follow FwDV 7. | [Manual] p. 23 |
 
@@ -53,7 +53,9 @@ Every rule is tagged:
 | --- | --- | --- |
 | 3.1 | When Restzeit reaches 00:00:00 an Alarm fires ("Alarm bei Erreichen der gesamten Einsatzzeit"). | [Manual] p. 24 |
 | 3.2 | After that, an Alarm repeats every [06] Alarmintervall Regelzeit minutes (manual text: "alle 5 Minuten"; range 0–60, 0 = off). | [Manual] p. 25, 69 |
-| 3.3 | The repeat clock is anchored at 00:00:00 (alarms at −5:00, −10:00, …), not at the operator's acknowledgement. | [Assumption] A3 |
+| 3.3 | The repeat alarms are anchored to Restzeit values: one fires each time Restzeit crosses a multiple of −[06] (−05:00, −10:00, …). Acknowledging never shifts them. A pressure entry that jumps Restzeit across several steps fires one alarm on confirmation; missed steps are not replayed, and the next one comes at the next multiple. | **Decided** (A3) |
+| 3.4 | A pressure entry that drops Restzeit to 00:00:00 or below fires the Einsatzzeit-erreicht alarm as soon as OK confirms the entry. | **Decided** (A2) |
+| 3.5 | The 00:00:00 alarm and the repeats fire in every Einsatzstatus, Rückzug included. | **Decided** (A2) |
 
 ## 4. Bereitschaft
 
@@ -62,7 +64,8 @@ Every rule is tagged:
 | 4.1 | In Bereitschaft the running Einsatzzeit stops; the display shows the last value. Monitoring resumes when the Trupp is set back to EINSATZ ("Trupp -> Einsatz"). | [Manual] p. 27 |
 | 4.2 | A Trupp can enter Bereitschaft at login (members log on while en route) or from a running Einsatz via the Trupp detail menu. | [Manual] p. 18–19, 27 |
 | 4.3 | While in Bereitschaft an Alarm sounds every [05] Alarmintervall Bereitschaft minutes (text: "alle fünf Minuten"; range 0–60, 0 = off). | [Manual] p. 28, 69 |
-| 4.4 | The Bereitschaft interval is anchored at the moment the Trupp entered Bereitschaft and restarts on each entry. | [Assumption] A3 |
+| 4.4 | The Bereitschaft interval is anchored to simulated time since the Trupp entered Bereitschaft (+5, +10, … min) and restarts on each entry. Acknowledging never shifts it. | **Decided** (A3) |
+| 4.7 | While a Trupp is in Bereitschaft only the Bereitschaft alarm sounds. Alarmgrenzen, the Rückzugsalarm and the overdue repeats pause with `t_run` and Restzeit, even for a Trupp that was already overdue. | **Decided** (A3) |
 | 4.5 | Because Alarmgrenzen and Anmarschzeit are measured in `t_run` (or Restzeit), Bereitschaft shifts all pending alarm points by its duration. | Follows from 4.1 |
 | 4.6 | "Trupp -> Einsatz" returns the Trupp to the Einsatzstatus it had before Bereitschaft, or to Anmarsch when it came straight from login (Einsatzziel erreicht when the Rückzugsalarmmodus is off). | [Assumption] A4 |
 
@@ -80,7 +83,9 @@ Every rule is tagged:
 | 5.11 | The Rückzugsalarm stays **time-based** (5.5), as on the device, even though FwDV 7 sizes the Rückweg in Atemluftmenge (see [FwDV 7 cross-check](#11-fwdv-7-cross-check)). Deliberate: the simulator replicates the device, not the regulation. | **Decided** (A5) |
 | 5.12 | [82] Reservedruck ohne Rückzugsalarm is stored but has no effect: with the mode off no Rückzugsalarm fires and Restzeit stays `T × P / P_N`. | **Decided** (A5) |
 | 5.8 | The detail screen's bar splits the Einsatzzeit into Anmarsch, Einsatzziel erreicht and Rückmarsch (2 × Anmarsch + reserve). | [Manual] p. 11 |
-| 5.9 | The Rückzugsalarm fires once, and not at all if the Trupp is already in Rückzug when the point is reached. | [Assumption] A2 |
+| 5.9 | The Rückzugsalarm fires at most once per Einsatz, and not at all if the Trupp is already in Rückzug when the point is reached. A pressure raise via [73] that lifts Restzeit back above the threshold does not re-arm it. Rückzug is the only Einsatzstatus that suppresses an alarm. | **Decided** (A2) |
+| 5.13 | The Rückzugsalarm is armed only from Einsatzziel erreicht onwards (`t_A` has no value before). In Anmarsch, the first Alarmgrenze is the cue to order a retreat (p. 23). | **Decided** (A2) |
+| 5.14 | The threshold is checked against the current Restzeit ("als Restzeit unterschritten", p. 70–71). When a pressure entry or the switch to Einsatzziel erreicht leaves Restzeit already at or below `2·t_A + t_res`, the alarm fires as soon as OK confirms it. | **Decided** (A2) |
 | 5.10 | Anmarsch → Rückzug directly (skipping Einsatzziel erreicht) is allowed. The manual tells the operator to order a Trupp still in Anmarsch to retreat at the first Alarmgrenze (p. 23), but only shows the menu path from Einsatzziel erreicht. | [Assumption] A6 |
 
 ## 6. Prozentmodus (Einsatzzeit #4)
@@ -173,7 +178,7 @@ Checked against FwDV 7 (Ausgabe 2002 mit Änderungen 2005), page numbers as prin
 
 ## Open decisions
 
-A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm* (rows marked **Decided** above).
+A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire* (rows marked **Decided** above).
 
 These feed the follow-up grilling ticket.
 
