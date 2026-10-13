@@ -1,5 +1,40 @@
-/** The LCD screen the Checkbox is showing; ids S00–S02 from the LCD screen catalogue. */
-export type Screen = "aus" | "startdisplay" | "service";
+/** The LCD screen the Checkbox is showing; ids S00–S07 from the LCD screen catalogue. */
+export type Screen =
+  | "aus"
+  | "startdisplay"
+  | "service"
+  | "einsatzzeitWaehlen"
+  | "anmeldefenster"
+  | "anfangsdruckEditor"
+  | "einsatzliste";
+
+/** An Atemschutzträger as the Checkbox knows them: by their Tally and the name stored on it. */
+export interface Atemschutztraeger {
+  readonly tallyId: string;
+  readonly name: string;
+}
+
+/** The Einsatzstatus values simulated so far. */
+export type Einsatzstatus = "anmarsch";
+
+/** A logged-in Trupp. */
+export interface Trupp {
+  readonly truppnummer: number;
+  readonly einsatzzeitMs: number;
+  readonly atemschutztraeger: readonly Atemschutztraeger[];
+  readonly einsatzstatus: Einsatzstatus;
+  /** Negative once the Einsatzzeit is exceeded. */
+  readonly restzeitMs: number;
+}
+
+/** A Trupp being logged in, from Einsatzzeit wählen to the Anfangsdruck editor (S06). */
+export interface Login {
+  readonly truppnummer: number;
+  readonly einsatzzeitMs: number;
+  readonly atemschutztraeger: readonly Atemschutztraeger[];
+  /** The Anfangsdruck editor's current value. */
+  readonly anfangsdruckBar: number;
+}
 
 /** The whole device state: plain immutable data that serialises to storage as-is. */
 export interface State {
@@ -10,6 +45,11 @@ export interface State {
   readonly realNow: number;
   /** Real time at which the current screen was entered; drives the display timings. */
   readonly screenEnteredRealMs: number;
+  readonly login: Login | null;
+  /** The logged-in Trupps, ordered by Truppnummer. */
+  readonly trupps: readonly Trupp[];
+  /** The Truppnummer marked on the Einsatzliste. */
+  readonly selectedTruppnummer: number | null;
 }
 
 /**
@@ -26,5 +66,13 @@ export interface Clocks {
 
 /** The Checkbox as it is when a new session begins: switched off. */
 export function createInitialState({ now, realNow }: Clocks): State {
-  return { screen: "aus", now, realNow, screenEnteredRealMs: realNow };
+  return {
+    screen: "aus",
+    now,
+    realNow,
+    screenEnteredRealMs: realNow,
+    login: null,
+    trupps: [],
+    selectedTruppnummer: null,
+  };
 }

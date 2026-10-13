@@ -47,7 +47,7 @@ export function useSimulator(): {
 
   const dispatch = useCallback(
     (event: Event) => {
-      if (event.type === "keyPressed" && !acceptsDeviceKeys(clock)) {
+      if (event.type !== "tick" && !acceptsDeviceKeys(clock)) {
         return;
       }
       dispatchToCore(event);

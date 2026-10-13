@@ -12,6 +12,10 @@ function press(key: Key): Event {
   return { type: "keyPressed", key };
 }
 
+const HLF_AT_F: Event = { type: "tallyHeld", tallyId: "1", name: "HLF AT-F" };
+const HLF_AT_M: Event = { type: "tallyHeld", tallyId: "2", name: "HLF AT-M" };
+const LOGIN = [HLF_AT_F, press("OK"), HLF_AT_M, press("OK")] as const;
+
 function framebufferAfter(...events: readonly Event[]): Framebuffer {
   const state = events.reduce(
     reduce,
@@ -58,6 +62,55 @@ describe("the LCD framebuffer", () => {
   it("draws the SERVICE menu", () => {
     expect(
       toAscii(framebufferAfter(press("Check"), press("OK"))),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.3, login figure
+  it("draws Einsatzzeit wählen", () => {
+    expect(toAscii(framebufferAfter(HLF_AT_F))).toMatchSnapshot();
+  });
+
+  // manual 5.3, Anmeldefenster figure
+  it("draws the Anmeldefenster", () => {
+    expect(
+      toAscii(framebufferAfter(HLF_AT_F, press("OK"), HLF_AT_M)),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.3, S06 figure; its 250 bar lies below the 270 bar floor, so this draws 270
+  it("draws the Anfangsdruck editor", () => {
+    const tenStepsDown = Array.from({ length: 10 }, () => press("Down"));
+    expect(
+      toAscii(framebufferAfter(...LOGIN, ...tenStepsDown)),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.3, Einsatzliste figure with one Trupp
+  it("draws the Einsatzliste with one Trupp in Anmarsch", () => {
+    expect(toAscii(framebufferAfter(...LOGIN, press("OK")))).toMatchSnapshot();
+  });
+
+  // manual 3.2.2: more than three Atemschutzträger show as a count
+  it("draws the Einsatzliste with a second Trupp of four", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          { type: "tallyHeld", tallyId: "5", name: "LF AT-F" },
+          press("OK"),
+          { type: "tallyHeld", tallyId: "6", name: "LF AT-M" },
+          { type: "tallyHeld", tallyId: "7", name: "LF WT-F" },
+          { type: "tallyHeld", tallyId: "8", name: "LF WT-M" },
+          press("OK"),
+          press("OK"),
+          {
+            type: "tick",
+            now: FIGURE_UHRZEIT + 31 * 60_000,
+            realNow: 31 * 60_000,
+          },
+        ),
+      ),
     ).toMatchSnapshot();
   });
 });

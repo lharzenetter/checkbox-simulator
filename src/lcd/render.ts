@@ -2,14 +2,18 @@ import { assertNever } from "../core/index";
 import { CHARACTER_PITCH } from "./font";
 import {
   createFramebuffer,
+  drawBitmap,
   drawCenteredText,
+  drawRightAlignedText,
   drawText,
   fillRect,
+  setPixel,
   strokeRect,
   textWidth,
 } from "./framebuffer";
 import type { Framebuffer } from "./framebuffer";
 import type { ScreenModel } from "./screen-model";
+import { drawStatussymbol, statussymbolWidth } from "./statussymbol";
 
 // Estimated from the manual's figures (LCD screen catalogue, "Character grid").
 /** The LCD's width in pixels. */
@@ -30,6 +34,31 @@ export function renderScreen(model: ScreenModel): Framebuffer {
       break;
     case "service":
       drawService(framebuffer, model);
+      break;
+    case "einsatzzeitWaehlen":
+      drawMenuScreen(
+        framebuffer,
+        model.title,
+        model.items,
+        model.selectedIndex,
+      );
+      drawLines(framebuffer, model.prompt, 14);
+      drawLines(framebuffer, model.atemschutztraeger, 36);
+      break;
+    case "anmeldefenster":
+      drawMenuScreen(
+        framebuffer,
+        model.title,
+        model.items,
+        model.selectedIndex,
+      );
+      drawLines(framebuffer, model.atemschutztraeger, 14);
+      break;
+    case "flaschendruckEditor":
+      drawFlaschendruckEditor(framebuffer, model);
+      break;
+    case "einsatzliste":
+      drawEinsatzliste(framebuffer, model);
       break;
     default:
       assertNever(model);
@@ -68,6 +97,167 @@ function drawService(
       fillRect(framebuffer, 0, y - 1, textWidth(item) + 3, LINE_PITCH);
     }
     drawText(framebuffer, item, 1, y, { inverse: selected });
+  });
+}
+
+// The login screens of manual 5.3: a title over a rule, a body, and the choices below a second
+// rule with a full-width selection bar, as the figures draw it.
+const MENU_RULE_Y = 77;
+
+function drawMenuScreen(
+  framebuffer: Framebuffer,
+  title: string,
+  items: readonly string[],
+  selectedIndex: number,
+): void {
+  drawText(framebuffer, title, 1, 2);
+  fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
+  fillRect(framebuffer, 0, MENU_RULE_Y, LCD_WIDTH, 1);
+  items.forEach((item, index) => {
+    const y = MENU_RULE_Y + 4 + index * LINE_PITCH;
+    const selected = index === selectedIndex;
+    if (selected) {
+      fillRect(framebuffer, 0, y - 1, LCD_WIDTH, LINE_PITCH);
+    }
+    drawText(framebuffer, item, 1, y, { inverse: selected });
+  });
+}
+
+function drawLines(
+  framebuffer: Framebuffer,
+  lines: readonly string[],
+  y: number,
+): void {
+  lines.forEach((line, index) => {
+    drawText(framebuffer, line, 1, y + index * LINE_PITCH);
+  });
+}
+
+// Laid out after the S06 figure (manual 5.3).
+const VALUE_BOX_X = 66;
+const VALUE_BOX_WIDTH = 58;
+const CYLINDER_X = 20;
+const CYLINDER_Y = 44;
+const CYLINDER_WIDTH = 35;
+const CYLINDER_HEIGHT = 80;
+
+function drawFlaschendruckEditor(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "flaschendruckEditor" }>,
+): void {
+  const right = VALUE_BOX_X + VALUE_BOX_WIDTH - 4;
+  drawText(framebuffer, model.title, 8, 6);
+  drawRightAlignedText(framebuffer, model.truppnummer, right, 6);
+  drawText(framebuffer, "Flasche:", 8, 25);
+  drawValueBox(framebuffer, model.cylinder, 23);
+  drawRightAlignedText(framebuffer, "Druck", right, 50);
+  drawValueBox(framebuffer, model.flaschendruck, 61);
+  drawRightAlignedText(framebuffer, "Restzeit", right, 84);
+  drawValueBox(framebuffer, model.restzeit, 95);
+  drawCylinder(framebuffer, model.fillLevel);
+  // ASSUMPTION: the time-split bar is drawn empty, as in the figure, before any time has run
+  // (LCD screen catalogue, gap G17).
+  strokeRect(framebuffer, 7, 52, 6, 68);
+}
+
+function drawValueBox(framebuffer: Framebuffer, text: string, y: number): void {
+  strokeRect(framebuffer, VALUE_BOX_X, y, VALUE_BOX_WIDTH, 11);
+  drawRightAlignedText(
+    framebuffer,
+    text,
+    VALUE_BOX_X + VALUE_BOX_WIDTH - 4,
+    y + 2,
+  );
+}
+
+// ASSUMPTION: the tick mark `1` is kept as drawn in the figure (LCD screen catalogue, gap G16).
+function drawCylinder(framebuffer: Framebuffer, fillLevel: number): void {
+  const x = CYLINDER_X;
+  const y = CYLINDER_Y;
+  fillRect(framebuffer, x + 12, y - 6, 11, 3);
+  fillRect(framebuffer, x + 15, y - 3, 5, 3);
+  strokeRect(framebuffer, x, y, CYLINDER_WIDTH, CYLINDER_HEIGHT);
+  for (const [cornerX, cornerY] of [
+    [x, y],
+    [x + CYLINDER_WIDTH - 1, y],
+    [x, y + CYLINDER_HEIGHT - 1],
+    [x + CYLINDER_WIDTH - 1, y + CYLINDER_HEIGHT - 1],
+  ] as const) {
+    setPixel(framebuffer, cornerX, cornerY, false);
+  }
+  const innerHeight = CYLINDER_HEIGHT - 4;
+  const filled = Math.round(innerHeight * fillLevel);
+  for (
+    let row = y + 2 + innerHeight - filled;
+    row < y + 2 + innerHeight;
+    row++
+  ) {
+    for (let column = x + 2; column < x + CYLINDER_WIDTH - 2; column++) {
+      setPixel(framebuffer, column, row, (row + column) % 2 === 0);
+    }
+  }
+  const tickYs = [1 / 3, 2 / 3, 1].map(
+    (fraction) => y + 1 + Math.round(innerHeight * fraction),
+  );
+  for (const tickY of tickYs) {
+    fillRect(framebuffer, x + CYLINDER_WIDTH, tickY, 3, 1);
+  }
+  drawText(framebuffer, "1", x + CYLINDER_WIDTH + 3, (tickYs[0] ?? y) + 2);
+}
+
+// Laid out after the Einsatzliste figures (manual 3.2.1, 5.3).
+const ROW_TOP = 27;
+const ROW_HEIGHT = 16;
+const RESTZEIT_RIGHT = LCD_WIDTH - 1;
+const SYMBOL_COLUMN_LEFT = 20;
+const SYMBOL_COLUMN_RIGHT = 78;
+
+const CLOCK = [
+  "..###..",
+  ".#...#.",
+  "#..#..#",
+  "#..#..#",
+  "#..##.#",
+  ".#...#.",
+  "..###..",
+];
+
+function drawEinsatzliste(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "einsatzliste" }>,
+): void {
+  drawCenteredText(framebuffer, model.feuerwehrname, 1);
+  strokeRect(framebuffer, 0, 10, LCD_WIDTH, 3);
+  drawText(framebuffer, model.batteriefach, 1, 16);
+  const gaugeX = 1 + textWidth(model.batteriefach) + 2;
+  drawBatteryGauge(framebuffer, gaugeX, 16, model.batteriefuellstand);
+  drawText(framebuffer, model.batterySign, gaugeX + 20, 16);
+  drawBitmap(framebuffer, CLOCK, gaugeX + 30, 16);
+  drawRightAlignedText(framebuffer, model.uhrzeit, RESTZEIT_RIGHT, 16);
+  fillRect(framebuffer, 0, ROW_TOP - 2, LCD_WIDTH, 1);
+  model.rows.forEach((row, index) => {
+    const top = ROW_TOP + index * ROW_HEIGHT;
+    if (index < model.rows.length - 1) {
+      fillRect(framebuffer, 0, top + ROW_HEIGHT - 2, LCD_WIDTH, 1);
+    }
+    if (row === null) {
+      return;
+    }
+    const textY = top + 4;
+    if (row.selected) {
+      fillRect(framebuffer, 1, textY - 2, textWidth(row.truppnummer) + 4, 11);
+    }
+    drawText(framebuffer, row.truppnummer, 3, textY, {
+      inverse: row.selected,
+    });
+    const symbolX = Math.floor(
+      (SYMBOL_COLUMN_LEFT +
+        SYMBOL_COLUMN_RIGHT -
+        statussymbolWidth(row.statussymbol)) /
+        2,
+    );
+    drawStatussymbol(framebuffer, row.statussymbol, symbolX, top + 1);
+    drawRightAlignedText(framebuffer, row.restzeit, RESTZEIT_RIGHT, textY);
   });
 }
 

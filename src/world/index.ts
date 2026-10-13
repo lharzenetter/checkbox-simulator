@@ -1,3 +1,5 @@
+export { ROSTER, rosterLabel, tallyHeld, truppHint } from "./roster";
+export type { RosterTally, Role } from "./roster";
 export {
   acceptsDeviceKeys,
   pauseClock,

@@ -9,3 +9,12 @@
   box-sizing: border-box;
   background: #2b2f33;
 }
+
+.stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+}

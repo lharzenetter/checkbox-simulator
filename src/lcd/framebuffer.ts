@@ -95,3 +95,29 @@ export function drawCenteredText(
   );
   drawText(framebuffer, text, x, y, options);
 }
+
+// Rows of `#` (dark) and `.` (left as is), like the font's glyphs; (x, y) is the top-left corner.
+export function drawBitmap(
+  framebuffer: Framebuffer,
+  rows: readonly string[],
+  x: number,
+  y: number,
+): void {
+  rows.forEach((row, rowIndex) => {
+    for (let column = 0; column < row.length; column++) {
+      if (row.charAt(column) === "#") {
+        setPixel(framebuffer, x + column, y + rowIndex, true);
+      }
+    }
+  });
+}
+
+export function drawRightAlignedText(
+  framebuffer: Framebuffer,
+  text: string,
+  right: number,
+  y: number,
+  options: { readonly inverse?: boolean } = {},
+): void {
+  drawText(framebuffer, text, right - textWidth(text), y, options);
+}

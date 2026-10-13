@@ -88,8 +88,8 @@ function reanchor(clock: SimulationClock, realNow: number): SimulationClock {
 }
 
 /**
- * Whether the device keys act; while paused they do nothing. Decided in "Decide how alarms are
- * presented".
+ * Whether the device keys and Tallys on Check act; while paused they do nothing. Decided in
+ * "Decide how alarms are presented".
  */
 export function acceptsDeviceKeys(clock: SimulationClock): boolean {
   return !clock.paused;
