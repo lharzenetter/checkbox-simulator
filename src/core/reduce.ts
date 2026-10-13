@@ -245,7 +245,7 @@ export const ANMELDEAKTIONEN: readonly Anmeldeaktion[] = [
   "truppOkEinsatz",
   "truppOkBereitschaft",
   "sicherheitstruppOk",
-  "druckAendern",
+  "flaschendruckAendern",
 ];
 
 // decided in "Define the key-by-screen navigation model"
@@ -259,7 +259,7 @@ function handleAnmeldefensterKey(state: State, key: Key): State {
         anmeldeaktion: moveCursor(ANMELDEAKTIONEN, login.anmeldeaktion, key),
       });
     case "OK":
-      return login.anmeldeaktion === "druckAendern"
+      return login.anmeldeaktion === "flaschendruckAendern"
         ? enterScreen(
             withLogin(state, {
               ...login,

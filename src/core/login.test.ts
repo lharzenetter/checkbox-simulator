@@ -75,6 +75,7 @@ describe("Einsatzzeit wählen", () => {
     });
   });
 
+  // decided in "Define the key-by-screen navigation model"
   it("moves between 30 and 20 min with Up and Down", () => {
     expect(run(aus(), hold(A1), press("Down")).login?.einsatzzeitMs).toBe(
       20 * 60_000,
@@ -153,6 +154,7 @@ describe("the Anmeldefenster", () => {
     expect(reduce(discarded, hold(B1)).login?.truppnummer).toBe(2);
   });
 
+  // decided in "Define the key-by-screen navigation model": the members are discarded
   it("lets a discarded Atemschutzträger start a new login", () => {
     const discarded = run(anmeldefenster(), hold(A2), press("X"));
     expect(reduce(discarded, hold(A2)).screen).toBe("einsatzzeitWaehlen");
@@ -246,6 +248,7 @@ describe("Sicherheitstrupp OK", () => {
     }
   });
 
+  // manual 5.3.1 step 4; timing-and-alarm-rules §12.8
   it("never shows SICHER for a Trupp that is not a Sicherheitstrupp", () => {
     const bereitschaft = run(
       aus(),
@@ -268,7 +271,7 @@ describe("Sicherheitstrupp OK", () => {
 });
 
 describe("Druck ändern on the Anmeldefenster", () => {
-  function druckAendern(): State {
+  function flaschendruckAendern(): State {
     return run(
       aus(),
       hold(A1),
@@ -281,7 +284,7 @@ describe("Druck ändern on the Anmeldefenster", () => {
 
   // decided in "Define the key-by-screen navigation model"
   it("opens the Flaschendruck editor at the Anfangsdruck", () => {
-    const state = druckAendern();
+    const state = flaschendruckAendern();
     expect(state.screen).toBe("flaschendruckAendern");
     expect(state.login?.draftFlaschendruckBar).toBe(300);
   });
@@ -289,7 +292,7 @@ describe("Druck ändern on the Anmeldefenster", () => {
   // decided in "Define the key-by-screen navigation model"
   it("keeps the changed Flaschendruck as the Anfangsdruck on OK", () => {
     const anmeldefenster = run(
-      druckAendern(),
+      flaschendruckAendern(),
       press("Down"),
       press("Down"),
       press("OK"),
@@ -309,7 +312,7 @@ describe("Druck ändern on the Anmeldefenster", () => {
 
   // decided in "Define the key-by-screen navigation model"
   it("returns unchanged on X", () => {
-    const state = run(druckAendern(), press("Down"), press("X"));
+    const state = run(flaschendruckAendern(), press("Down"), press("X"));
     expect(state.screen).toBe("anmeldefenster");
     expect(state.login?.anfangsdruckBar).toBe(300);
   });
@@ -317,8 +320,8 @@ describe("Druck ändern on the Anmeldefenster", () => {
   // manual 9.1 [76]–[78]; timing-and-alarm-rules §1.6
   it("stays between 270 and 330 bar", () => {
     function draftAfter(key: Key): number | null | undefined {
-      return run(druckAendern(), ...Array<Key>(20).fill(key).map(press)).login
-        ?.draftFlaschendruckBar;
+      return run(flaschendruckAendern(), ...Array<Key>(20).fill(key).map(press))
+        .login?.draftFlaschendruckBar;
     }
     expect(draftAfter("Down")).toBe(270);
     expect(draftAfter("Up")).toBe(330);
@@ -326,7 +329,7 @@ describe("Druck ändern on the Anmeldefenster", () => {
 
   // decided in "Define the key-by-screen navigation model"
   it("ignores a Tally", () => {
-    const state = druckAendern();
+    const state = flaschendruckAendern();
     expect(reduce(state, hold(B1))).toBe(state);
   });
 });

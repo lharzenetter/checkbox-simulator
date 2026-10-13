@@ -8,9 +8,9 @@ export const SICHER_PHASE_MS = 1_000;
 
 // manual 9.1; defaults from timing-and-alarm-rules §9.
 export const P01_EINSATZZEIT_1_MS = 30 * 60_000;
-export const P10_EINSATZZEIT_3_MS = 20 * 60_000;
 export const P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 2;
 export const P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 6;
+export const P10_EINSATZZEIT_3_MS = 20 * 60_000;
 
 // [14] fixes the Atemschutzflaschentyp to Flaschentyp 2, so every cylinder's Nenndruck is [81].
 export const P81_FLASCHENTYP_2_BAR = 300;

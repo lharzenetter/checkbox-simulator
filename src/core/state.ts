@@ -35,7 +35,7 @@ export type Anmeldeaktion =
   | "truppOkEinsatz"
   | "truppOkBereitschaft"
   | "sicherheitstruppOk"
-  | "druckAendern";
+  | "flaschendruckAendern";
 
 /** A Trupp being logged in, from Einsatzzeit wählen to the Anfangsdruck editor (S06). */
 export interface Login {

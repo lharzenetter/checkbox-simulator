@@ -115,7 +115,7 @@ const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
   truppOkEinsatz: "Trupp OK Einsatz",
   truppOkBereitschaft: "Trupp OK Bereitschaft",
   sicherheitstruppOk: "Sicherheitstrupp OK",
-  druckAendern: "Druck ändern",
+  flaschendruckAendern: "Druck ändern",
 };
 
 // manual 9.1 [72]
@@ -150,11 +150,7 @@ export function screenModel(state: State): ScreenModel {
     case "anmeldefenster":
       return anmeldefensterModel(requireLogin(state));
     case "anfangsdruckEditor":
-      return flaschendruckEditorModel(
-        requireLogin(state),
-        "Trupp Nr.:",
-        requireLogin(state).anfangsdruckBar,
-      );
+      return anfangsdruckEditorModel(requireLogin(state));
     case "flaschendruckAendern":
       return flaschendruckAendernModel(requireLogin(state));
     case "einsatzliste":
@@ -191,6 +187,10 @@ function anmeldefensterModel(login: Login): ScreenModel {
     items: ANMELDEAKTIONEN.map((aktion) => ANMELDEFENSTER_ITEMS[aktion]),
     selectedIndex: ANMELDEAKTIONEN.indexOf(login.anmeldeaktion),
   };
+}
+
+function anfangsdruckEditorModel(login: Login): ScreenModel {
+  return flaschendruckEditorModel(login, "Trupp Nr.:", login.anfangsdruckBar);
 }
 
 // The Druck ändern figure: the S06 layout titled `Esz-Zeit ändern`, without a Truppnummer

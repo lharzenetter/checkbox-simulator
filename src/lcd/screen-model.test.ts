@@ -100,6 +100,7 @@ describe("S03 Einsatzzeit wählen", () => {
     });
   });
 
+  // manual 5.3 step 3
   it("moves the cursor to 20 min on Down", () => {
     expect(screenModel(stateAfter(HLF_AT_F, press("Down")))).toMatchObject({
       items: ["Einsatzzeit  30 min?", "Einsatzzeit  20 min?"],
@@ -138,6 +139,7 @@ describe("S04 Anmeldefenster", () => {
     expect(model).toMatchObject({ layout: "anmeldefenster", selectedIndex: 0 });
   });
 
+  // manual 5.3, Anmeldefenster figure: the header carries the chosen Einsatzzeit
   it("heads a Langzeiteinsatz with its 20 min", () => {
     const model = screenModel(
       stateAfter(HLF_AT_F, press("Down"), press("OK"), press("OK")),
@@ -145,6 +147,8 @@ describe("S04 Anmeldefenster", () => {
     expect(screenText(model)[0]).toBe("Trupp 01   20 min");
   });
 
+  // wrapping is decided for the Einsatzliste in "Define the key-by-screen navigation model";
+  // the menus wrap the same way by ASSUMPTION
   it("moves the cursor with Up and Down, wrapping", () => {
     const anmeldefenster = [HLF_AT_F, press("OK"), HLF_AT_M] as const;
     expect(
@@ -384,6 +388,7 @@ describe("S07 Einsatzliste", () => {
     });
   });
 
+  // timing-and-alarm-rules §4.1, 12.8
   it("shows a frozen Restzeit for a Sicherheitstrupp", () => {
     expect(firstRestzeit(tickBy(sicherheitstrupp(), 5 * 60_000))).toBe(
       "00:30:00",
