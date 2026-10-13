@@ -172,6 +172,14 @@ function drawRueckmarsch(
   drawBitmap(framebuffer, HOUSE, house, y);
   if (count > 3) {
     drawBitmap(framebuffer, ARROW_IN, house + HOUSE_WIDTH - 7, y + ARROW_Y);
+  } else if (count === 2) {
+    // The one left inside stands by the right wall, behind the one leaving, as on the device.
+    drawBitmap(
+      framebuffer,
+      ATEMSCHUTZTRAEGER,
+      house + HOUSE_WIDTH - INSIDE_LEFT - ATEMSCHUTZTRAEGER_WIDTH,
+      y + INSIDE_Y,
+    );
   } else {
     drawInside(framebuffer, count - 1, house, y);
   }
