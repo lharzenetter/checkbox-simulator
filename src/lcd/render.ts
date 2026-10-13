@@ -206,7 +206,20 @@ function drawTruppAnsicht(
   drawBitmap(framebuffer, CLOCK, iconX - 1, 60);
   drawValueBox(framebuffer, model.restzeit, 69);
   // ASSUMPTION: the Rückzugsdruck box is left out until the Rückzugsalarm is simulated
-  // (manual 3.2.3 item 9).
+  // (manual 3.2.3 item 9), and the Statussymbol, which the figure does not draw, takes its place
+  // as issue #30 asks.
+  drawStatussymbol(
+    framebuffer,
+    model.statussymbol,
+    Math.floor(
+      (ANSICHT_DIVIDER_X +
+        1 +
+        LCD_WIDTH -
+        statussymbolWidth(model.statussymbol)) /
+        2,
+    ),
+    93,
+  );
   fillRect(
     framebuffer,
     ANSICHT_DIVIDER_X + 1,

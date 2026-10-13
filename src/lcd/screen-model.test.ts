@@ -459,6 +459,15 @@ describe("S11 Trupp-Ansicht", () => {
     expect(model).toMatchObject({ layout: "truppAnsicht", fillLevel: 0.5 });
   });
 
+  // manual 3.2.2: the Trupp's Statussymbol, as on the Einsatzliste
+  it("shows the Trupp's Statussymbol", () => {
+    expect(
+      screenModel(reduce(stateAfter(...TRUPP_01), press("OK"))),
+    ).toMatchObject({
+      statussymbol: { einsatzstatus: "anmarsch", count: 2 },
+    });
+  });
+
   // timing-and-alarm-rules §1.7: whole bar, rounded down
   it("shows the Aktueller Flaschendruck rounded down", () => {
     const model = screenModel(
@@ -477,6 +486,7 @@ describe("S11 Trupp-Ansicht", () => {
     expect(model).toMatchObject({ fillLevel: 0 });
   });
 
+  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
   it("heads a Trupp in Bereitschaft with `BEREITSCHAFT`", () => {
     const model = screenModel(
       stateAfter(
@@ -540,11 +550,13 @@ describe("S09 Trupp-Menü", () => {
     });
   });
 
+  // timing-and-alarm-rules §1.1
   it("shows the Restzeit running down", () => {
     const model = screenModel(tickBy(stateAfter(...TRUPP_MENUE), 5_000));
     expect(screenText(model)).toContain("Restzeit 00:29:55");
   });
 
+  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
   it("lists the Bereitschaft items under `BEREITSCHAFT`", () => {
     const model = screenModel(
       stateAfter(
@@ -570,7 +582,7 @@ describe("S09 Trupp-Menü", () => {
   });
 });
 
-describe("S08 Esz-Zeit ändern from the Trupp-Menü", () => {
+describe("S08 `Esz-Zeit ändern` from the Trupp-Menü", () => {
   // manual 5.6.4, Druck ändern figure; timing-and-alarm-rules §1.4, 1.7
   it("opens at the snapped estimate with the Restzeit it gives", () => {
     const model = screenModel(

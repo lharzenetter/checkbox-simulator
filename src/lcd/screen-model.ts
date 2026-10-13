@@ -107,6 +107,7 @@ export type ScreenModel =
       readonly layout: "truppAnsicht";
       readonly title: string;
       readonly atemschutztraeger: readonly string[];
+      readonly statussymbol: Statussymbol;
       /** The Aktueller Flaschendruck. */
       readonly flaschendruck: string;
       readonly restzeit: string;
@@ -327,6 +328,7 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
     layout: "truppAnsicht",
     title: truppHeader(trupp),
     atemschutztraeger: trupp.atemschutztraeger.map(formatName),
+    statussymbol: statussymbolOf(trupp),
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
@@ -382,11 +384,15 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
     truppnummer: formatTruppnummer(trupp.truppnummer),
     selected: trupp.truppnummer === state.selectedTruppnummer,
     sicher: isSicherShown(state, trupp),
-    statussymbol: {
-      einsatzstatus: trupp.einsatzstatus,
-      count: trupp.atemschutztraeger.length,
-    },
+    statussymbol: statussymbolOf(trupp),
     restzeit: formatRestzeit(trupp.restzeitMs),
+  };
+}
+
+function statussymbolOf(trupp: Trupp): Statussymbol {
+  return {
+    einsatzstatus: trupp.einsatzstatus,
+    count: trupp.atemschutztraeger.length,
   };
 }
 

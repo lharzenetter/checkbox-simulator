@@ -738,7 +738,7 @@ function handleTick(state: State, elapsedMs: number): State {
     ...state,
     trupps: state.trupps.map((trupp) => runDown(trupp, elapsedMs)),
   };
-  if (isTruppDetailansichtTimedOut(ticked)) {
+  if (hasP13TimeoutRunOut(ticked)) {
     return enterScreen(withTruppMenue(ticked, null), "einsatzliste");
   }
   return abschaltzeitRestMs(ticked) === 0 ? enterScreen(ticked, "aus") : ticked;
@@ -747,7 +747,7 @@ function handleTick(state: State, elapsedMs: number): State {
 // timing-and-alarm-rules §9 [13], 9.1
 // ASSUMPTION: the pressure editor `Esz-Zeit ändern` has no timeout; [13] names only the Trupp-
 // Ansicht and the Trupp-Menü ("Define the key-by-screen navigation model").
-function isTruppDetailansichtTimedOut(state: State): boolean {
+function hasP13TimeoutRunOut(state: State): boolean {
   return (
     (state.screen === "truppAnsicht" || state.screen === "truppMenue") &&
     state.realNow - state.idleSinceRealMs >= P13_TRUPP_DETAILANSICHT_MS

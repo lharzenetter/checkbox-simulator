@@ -15,10 +15,10 @@ export const P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 2;
 export const P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 6;
 export const P10_EINSATZZEIT_3_MS = 20 * 60_000;
 export const P13_TRUPP_DETAILANSICHT_MS = 15_000;
+export const P73_DRUCK_VERGROESSERBAR_BAR = 5;
 
 // [14] fixes the Atemschutzflaschentyp to Flaschentyp 2, so every cylinder's Nenndruck is [81].
 export const P81_FLASCHENTYP_2_BAR = 300;
-export const P73_DRUCK_VERGROESSERBAR_BAR = 5;
 export const P76_DRUCK_SPRUNGGROESSE_BAR = 5;
 export const P77_MAX_UEBER_SOLL_PROZENT = 10;
 export const P78_MIN_UNTER_SOLL_PROZENT = 10;

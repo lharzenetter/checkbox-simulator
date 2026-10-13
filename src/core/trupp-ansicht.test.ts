@@ -67,12 +67,15 @@ describe("the Trupp-Ansicht", () => {
     expect(state.screen).toBe("einsatzliste");
   });
 
+  // decided in "Define the key-by-screen navigation model"
   it("opens the Trupp-Menü on OK", () => {
     const state = run(truppInAnmarsch(), press("OK"), press("OK"));
     expect(state.screen).toBe("truppMenue");
   });
 
-  it.each<Key>(["Up", "Down", "Check"])("ignores %s", (key) => {
+  // decided in "Define the key-by-screen navigation model": read-only; the key press only
+  // restarts the [13] timeout
+  it.each<Key>(["Up", "Down", "Check"])("changes nothing else on %s", (key) => {
     const ansicht = reduce(truppInAnmarsch(), press("OK"));
     expect(reduce(ansicht, press(key))).toEqual(ansicht);
   });
@@ -95,6 +98,7 @@ describe("the Trupp-Menü", () => {
     ]);
   });
 
+  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
   it("offers the Bereitschaft items", () => {
     expect(truppMenueAktionen(truppMenue(truppInBereitschaft()))).toEqual([
       "truppEinsatz",
@@ -111,7 +115,9 @@ describe("the Trupp-Menü", () => {
     );
   });
 
-  it("moves the cursor with Up and Down", () => {
+  // ASSUMPTION in the reducer: the cursor wraps, as on the Einsatzliste ("Define the key-by-screen
+  // navigation model")
+  it("moves the cursor with Up and Down, wrapping", () => {
     const menue = truppMenue(truppInAnmarsch());
     expect(run(menue, press("Down"), press("Down")).truppMenue?.aktion).toBe(
       "einsatzzielErreicht",
@@ -147,7 +153,7 @@ function restzeitMs(state: State): number | undefined {
   return state.trupps[0]?.restzeitMs;
 }
 
-describe("Druck ändern on the Trupp-Menü", () => {
+describe("`Druck ändern` on the Trupp-Menü", () => {
   // verification scenario V3; timing-and-alarm-rules §1.4, 1.7
   it("opens at the estimate snapped down to the 5 bar grid and resets the Restzeit on OK", () => {
     const editor = run(truppInAnmarsch(), tickAt(6, 3), ...DRUCK_AENDERN);
@@ -165,35 +171,30 @@ describe("Druck ändern on the Trupp-Menü", () => {
   });
 
   // verification scenario V4; timing-and-alarm-rules §1.4, 1.5, 1.8
-  describe("raising the Flaschendruck", () => {
-    it("opens at 200 bar after 10 min and raises it in 5 bar steps", () => {
-      const editor = run(truppInAnmarsch(), tickAt(10), ...DRUCK_AENDERN);
-      expect(editor.truppMenue?.draftFlaschendruckBar).toBe(200);
-      const raised = run(editor, press("Up"), press("OK"));
-      expect(restzeitMs(raised)).toBe((20 * 60 + 30) * 1000);
-    });
+  it("raises the Flaschendruck in 5 bar steps up to 330 bar", () => {
+    const opened = run(truppInAnmarsch(), tickAt(10), ...DRUCK_AENDERN);
+    expect(opened.truppMenue?.draftFlaschendruckBar).toBe(200);
 
-    it("returns to the Trupp-Menü on X with the Restzeit unchanged", () => {
-      const before = run(truppInAnmarsch(), tickAt(11));
-      const state = run(before, ...DRUCK_AENDERN, press("Up"), press("X"));
-      expect(state.screen).toBe("truppMenue");
-      expect(state.truppMenue).toEqual({
-        aktion: "flaschendruckAendern",
-        draftFlaschendruckBar: null,
-      });
-      expect(restzeitMs(state)).toBe(restzeitMs(before));
-    });
+    const raised = run(opened, press("Up"), press("OK"));
+    expect(restzeitMs(raised)).toBe((20 * 60 + 30) * 1000);
 
-    it("stops at 330 bar", () => {
-      const editor = run(
-        truppInAnmarsch(),
-        tickAt(12),
-        ...DRUCK_AENDERN,
-        ...Array.from({ length: 40 }, () => press("Up")),
-      );
-      expect(editor.truppMenue?.draftFlaschendruckBar).toBe(330);
-      expect(restzeitMs(reduce(editor, press("OK")))).toBe(33 * 60_000);
+    const kept = run(raised, tickAt(11), ...DRUCK_AENDERN, press("X"));
+    expect(kept.screen).toBe("truppMenue");
+    expect(kept.truppMenue).toEqual({
+      aktion: "flaschendruckAendern",
+      draftFlaschendruckBar: null,
     });
+    expect(restzeitMs(kept)).toBe((19 * 60 + 30) * 1000);
+
+    // the Trupp-Menü left open at 11:00 has timed out by 12:00
+    const ceiling = run(
+      kept,
+      tickAt(12),
+      ...DRUCK_AENDERN,
+      ...Array.from({ length: 40 }, () => press("Up")),
+    );
+    expect(ceiling.truppMenue?.draftFlaschendruckBar).toBe(330);
+    expect(restzeitMs(reduce(ceiling, press("OK")))).toBe(33 * 60_000);
   });
 
   // verification scenario V5
@@ -213,6 +214,7 @@ describe("Druck ändern on the Trupp-Menü", () => {
     expect(editor.truppMenue?.draftFlaschendruckBar).toBe(0);
   });
 
+  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
   it("is offered to a Trupp in Bereitschaft", () => {
     const editor = run(
       truppInBereitschaft(),
@@ -235,7 +237,7 @@ describe("Druck ändern on the Trupp-Menü", () => {
 });
 
 // timing-and-alarm-rules §9 [13], 9.1: 15 s idle, on real time
-describe("the Trupp Detailansicht timeout", () => {
+describe("the [13] timeout", () => {
   function realTickAfter(state: State, elapsedMs: number): Event {
     return {
       type: "tick",
