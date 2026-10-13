@@ -13,7 +13,7 @@ export function VehicleNamesForm({
   initialVehicles: Vehicles;
   submitLabel: string;
   onSubmit: (vehicles: Vehicles) => void;
-  /** Further buttons next to the submit button. */
+  // Further buttons next to the submit button.
   children?: ReactNode;
 }) {
   const [vehicles, setVehicles] = useState(initialVehicles);

@@ -97,11 +97,13 @@ describe("a vehicle's names", () => {
     ).toBe(false);
   });
 
+  // ASSUMPTION in roster.ts, decided while implementing #38
   it("needs a Funkrufname and a Kurzname", () => {
     expect(isValidVehicle({ funkrufname: " ", kurzname: "HLF" })).toBe(false);
     expect(isValidVehicle({ funkrufname: "HLF", kurzname: "" })).toBe(false);
   });
 
+  // ASSUMPTION in roster.ts, decided while implementing #38
   it("accepts only characters the LCD can show in a Kurzname", () => {
     expect(isValidVehicle({ funkrufname: "HLF", kurzname: "Größe" })).toBe(
       true,

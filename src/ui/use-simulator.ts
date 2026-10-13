@@ -30,7 +30,7 @@ export function useSimulator(): {
   readonly setSpeed: (speed: Speed) => void;
   readonly vehicles: Vehicles;
   readonly firstLaunchDone: boolean;
-  /** Keeps the vehicles' names and marks the first launch done. */
+  // Keeps the vehicles' names and marks the first launch done.
   readonly nameVehicles: (vehicles: Vehicles) => void;
   readonly muted: boolean;
   readonly toggleMute: () => void;

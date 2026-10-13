@@ -9,7 +9,7 @@ export function ModalDialog({
   children,
 }: {
   title: string;
-  /** Called on Escape; without it, Escape does not close the dialog. */
+  // Called on Escape; without it, Escape does not close the dialog.
   onCancel?: () => void;
   children: ReactNode;
 }) {

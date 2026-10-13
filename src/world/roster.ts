@@ -45,10 +45,14 @@ export const DEFAULT_VEHICLES: Vehicles = [
   { funkrufname: "LF", kurzname: "LF" },
 ];
 
-/** The longest Kurzname, so the longest LCD text (`<Kurzname> AT-F`) fits a line. */
+/**
+ * The longest Kurzname, so the longest LCD text (`<Kurzname> AT-F`) fits a line. Decided in
+ * "Decide the contents of the fixed Tally roster".
+ */
 export const KURZNAME_MAX_LENGTH = 10;
 
-// The characters the LCD font draws: printable ASCII plus the German umlauts and ß.
+// ASSUMPTION: a Kurzname may use only the characters the LCD font draws (printable ASCII plus
+// the German umlauts and ß), so no name can break the LCD; decided while implementing #38.
 const KURZNAME_PATTERN = /^[\x20-\x7EÄÖÜäöüß]+$/;
 
 /**
@@ -83,6 +87,8 @@ export function rosterLabel(tally: RosterTally, vehicles: Vehicles): string {
  * most {@link KURZNAME_MAX_LENGTH} characters that the LCD can show.
  */
 export function isValidVehicle(vehicle: Vehicle): boolean {
+  // ASSUMPTION: neither name may be blank, so every Tally keeps a readable label; decided while
+  // implementing #38.
   return (
     vehicle.funkrufname.trim() !== "" &&
     vehicle.kurzname.trim() !== "" &&

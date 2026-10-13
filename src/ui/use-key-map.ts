@@ -29,7 +29,7 @@ export function useKeyMap({
   onKeyReleased,
   onTallyKeyPressed,
 }: {
-  /** Off while a dialog is open, so typing a name presses no device key. */
+  // Off while a dialog is open, so typing a name presses no device key.
   enabled: boolean;
   onKeyPressed: (key: Key) => void;
   // The Notausschaltung needs X and Check held, so the core hears when a key goes up.

@@ -32,7 +32,7 @@ const DEVICE_MEMORY_KEY = `${KEY_PREFIX}device-memory`;
 // "Decide what survives a page reload").
 const DEVICE_MEMORY_VERSION = 1;
 
-const EINSATZSTATUS: readonly Einsatzstatus[] = [
+const EINSATZSTATUS_VALUES: readonly Einsatzstatus[] = [
   "bereitschaft",
   "anmarsch",
   "einsatzzielErreicht",
@@ -126,7 +126,7 @@ function isEinsatzprotokoll(value: unknown): value is Einsatzprotokoll {
     Number.isInteger(value.einsatzzeitMs) &&
     Array.isArray(value.atemschutztraeger) &&
     value.atemschutztraeger.every(isAtemschutztraeger) &&
-    EINSATZSTATUS.some(
+    EINSATZSTATUS_VALUES.some(
       (einsatzstatus) => einsatzstatus === value.einsatzstatus,
     ) &&
     typeof value.sicherheitstrupp === "boolean" &&
