@@ -43,8 +43,8 @@ const SYMBOL_HEIGHT = HOUSE.length;
 const OUTSIDE_Y = SYMBOL_HEIGHT - ATEMSCHUTZTRAEGER.length;
 const INSIDE_Y = 2;
 const INSIDE_LEFT = 4;
-const PERSON_WIDTH = 7;
-const PERSON_PITCH = PERSON_WIDTH + 2;
+const ATEMSCHUTZTRAEGER_WIDTH = 7;
+const ATEMSCHUTZTRAEGER_PITCH = ATEMSCHUTZTRAEGER_WIDTH + 2;
 const ARROW_Y = Math.floor(SYMBOL_HEIGHT / 2);
 
 /** Draws a Statussymbol whose top-left corner is at (x, y). */
@@ -71,7 +71,7 @@ function drawAnmarsch(
   const outside = count > 3 ? 1 : count - 1;
   for (let index = 0; index < outside; index++) {
     drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left, y + OUTSIDE_Y);
-    left += PERSON_PITCH;
+    left += ATEMSCHUTZTRAEGER_PITCH;
   }
   drawBitmap(framebuffer, HOUSE, left, y);
   if (count > 3) {
@@ -95,7 +95,7 @@ function drawBereitschaft(
   const outside = count > 3 ? 1 : count;
   for (let index = 0; index < outside; index++) {
     drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left, y + OUTSIDE_Y);
-    left += PERSON_PITCH;
+    left += ATEMSCHUTZTRAEGER_PITCH;
   }
   drawBitmap(framebuffer, HOUSE, left, y);
 }
@@ -136,7 +136,7 @@ function drawRueckmarsch(
   drawBitmap(
     framebuffer,
     ATEMSCHUTZTRAEGER,
-    house + HOUSE_WIDTH + PERSON_PITCH - PERSON_WIDTH,
+    house + HOUSE_WIDTH + ATEMSCHUTZTRAEGER_PITCH - ATEMSCHUTZTRAEGER_WIDTH,
     y + OUTSIDE_Y,
   );
 }
@@ -151,7 +151,7 @@ function drawInside(
     drawBitmap(
       framebuffer,
       ATEMSCHUTZTRAEGER,
-      house + INSIDE_LEFT + index * PERSON_PITCH,
+      house + INSIDE_LEFT + index * ATEMSCHUTZTRAEGER_PITCH,
       y + INSIDE_Y,
     );
   }
@@ -191,16 +191,16 @@ export function statussymbolWidth(statussymbol: Statussymbol): number {
   switch (einsatzstatus) {
     case "bereitschaft":
       return count > 3
-        ? countWidth + PERSON_PITCH + HOUSE_WIDTH
-        : count * PERSON_PITCH + HOUSE_WIDTH;
+        ? countWidth + ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH
+        : count * ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH;
     case "anmarsch":
       return count > 3
-        ? countWidth + PERSON_PITCH + HOUSE_WIDTH
-        : (count - 1) * PERSON_PITCH + HOUSE_WIDTH;
+        ? countWidth + ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH
+        : (count - 1) * ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH;
     case "einsatzzielErreicht":
       return countWidth + HOUSE_WIDTH;
     case "rueckmarsch":
-      return countWidth + HOUSE_WIDTH + PERSON_PITCH;
+      return countWidth + HOUSE_WIDTH + ATEMSCHUTZTRAEGER_PITCH;
     default:
       return assertNever(einsatzstatus);
   }
