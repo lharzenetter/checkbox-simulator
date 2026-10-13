@@ -59,10 +59,26 @@ describe("opening ABMELDEN", () => {
   it("opens ABMELDEN for the Trupp with the member marked when their Tally is held to Check", () => {
     const state = reduce(truppInAnmarsch(), hold(A2));
     expect(state.screen).toBe("abmelden");
-    expect(state.abmeldung).toEqual({
+    expect(state.logoff).toEqual({
       truppnummer: 1,
-      markierteTallyIds: [A2.tallyId],
+      markedTallyIds: [A2.tallyId],
     });
+  });
+  // decided in "Define the key-by-screen navigation model": logoffs still work while 6 Trupps run
+  it("opens ABMELDEN while six Trupps run", () => {
+    let state = truppInAnmarsch();
+    for (let trupp = 2; trupp <= 6; trupp++) {
+      state = run(
+        state,
+        hold({ tallyId: `t${String(trupp)}f`, name: "F" }),
+        press("OK"),
+        hold({ tallyId: `t${String(trupp)}m`, name: "M" }),
+        press("OK"),
+        press("OK"),
+      );
+    }
+    expect(state.trupps).toHaveLength(6);
+    expect(reduce(state, hold(A1)).screen).toBe("abmelden");
   });
 });
 
@@ -70,10 +86,7 @@ describe("marking on ABMELDEN", () => {
   // manual 5.8 steps 2–3
   it("marks each further member of the Trupp", () => {
     const state = run(truppInAnmarsch(), hold(A2), hold(A1));
-    expect(state.abmeldung?.markierteTallyIds).toEqual([
-      A2.tallyId,
-      A1.tallyId,
-    ]);
+    expect(state.logoff?.markedTallyIds).toEqual([A2.tallyId, A1.tallyId]);
   });
 
   // decided in "Define the key-by-screen navigation model"
@@ -122,7 +135,7 @@ describe("leaving ABMELDEN", () => {
     const before = truppInAnmarsch();
     const state = run(before, hold(A1), hold(A2), press("X"));
     expect(state.screen).toBe("einsatzliste");
-    expect(state.abmeldung).toBeNull();
+    expect(state.logoff).toBeNull();
     expect(state.trupps).toEqual(before.trupps);
   });
 });
@@ -144,7 +157,7 @@ describe.each([
       const state = loggedOff();
       expect(state.screen).toBe("einsatzliste");
       expect(state.trupps).toEqual([]);
-      expect(state.abmeldung).toBeNull();
+      expect(state.logoff).toBeNull();
     });
 
     // manual 5.8 step 4: "Alle Einsatzdaten werden gespeichert"
@@ -156,8 +169,8 @@ describe.each([
           atemschutztraeger: [A1, A2],
           einsatzstatus,
           sicherheitstrupp: false,
-          einsatzVonMs: SESSION_START.now,
-          einsatzBisMs: SESSION_START.now + 10 * 60_000,
+          loggedInAtMs: SESSION_START.now,
+          loggedOffAtMs: SESSION_START.now + 10 * 60_000,
         },
       ]);
     });
@@ -239,10 +252,10 @@ describe("the Einsatzprotokolle", () => {
       state = logInAndOff(state);
     }
     expect(state.einsatzprotokolle).toHaveLength(100);
-    expect(state.einsatzprotokolle[0]?.einsatzBisMs).toBe(
+    expect(state.einsatzprotokolle[0]?.loggedOffAtMs).toBe(
       SESSION_START.now + 2 * 60_000,
     );
-    expect(state.einsatzprotokolle[99]?.einsatzBisMs).toBe(
+    expect(state.einsatzprotokolle[99]?.loggedOffAtMs).toBe(
       SESSION_START.now + 101 * 60_000,
     );
   });

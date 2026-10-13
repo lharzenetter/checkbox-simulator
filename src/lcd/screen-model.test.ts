@@ -411,8 +411,8 @@ describe("S13 ABMELDEN", () => {
     expect(model).toMatchObject({
       layout: "abmelden",
       atemschutztraeger: [
-        { name: "*HLF AT-F", markiert: true },
-        { name: "*HLF AT-M", markiert: false },
+        { name: "*HLF AT-F", marked: true },
+        { name: "*HLF AT-M", marked: false },
       ],
     });
     expect(screenText(model)).toEqual([

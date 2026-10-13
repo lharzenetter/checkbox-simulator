@@ -4,10 +4,10 @@ export type { Event, Key } from "./event";
 export { P81_FLASCHENTYP_2_BAR } from "./parameters";
 export { ANMELDEAKTIONEN, EINSATZZEITEN_MS, reduce } from "./reduce";
 export { computeRestzeitMs } from "./restzeit";
-export { isSicherShown, truppOfTally } from "./selectors";
+export { isSicherShown, truppLoggingOff, truppOfTally } from "./selectors";
 export { createInitialState } from "./state";
 export type {
-  Abmeldung,
+  Logoff,
   Anmeldeaktion,
   Login,
   Atemschutztraeger,

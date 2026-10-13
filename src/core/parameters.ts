@@ -7,7 +7,7 @@ export const ABSCHALTZEIT_MS = 25_000;
 export const SICHER_PHASE_MS = 1_000;
 
 // The Einsatzprotokoll memory has no parameter number either: manual p. 15, p. 32.
-export const EINSATZPROTOKOLL_SPEICHERPLAETZE = 100;
+export const EINSATZPROTOKOLL_CAPACITY = 100;
 
 // manual 9.1; defaults from timing-and-alarm-rules §9.
 export const P01_EINSATZZEIT_1_MS = 30 * 60_000;

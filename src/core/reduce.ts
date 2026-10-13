@@ -2,7 +2,7 @@ import { abschaltzeitRestMs } from "./abschaltzeit";
 import { assertNever } from "./assert-never";
 import type { Event, Key } from "./event";
 import {
-  EINSATZPROTOKOLL_SPEICHERPLAETZE,
+  EINSATZPROTOKOLL_CAPACITY,
   P01_EINSATZZEIT_1_MS,
   P10_EINSATZZEIT_3_MS,
   P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER,
@@ -14,9 +14,9 @@ import {
   P81_FLASCHENTYP_2_BAR,
 } from "./parameters";
 import { computeRestzeitMs } from "./restzeit";
-import { truppOfTally } from "./selectors";
+import { truppLoggingOff, truppOfTally } from "./selectors";
 import type {
-  Abmeldung,
+  Logoff,
   Anmeldeaktion,
   Atemschutztraeger,
   Einsatzprotokoll,
@@ -292,7 +292,7 @@ function logIn(state: State, login: Login): State {
       login.anmeldeaktion === "truppOkEinsatz" ? "anmarsch" : "bereitschaft",
     sicherheitstrupp: login.anmeldeaktion === "sicherheitstruppOk",
     restzeitMs: computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
-    einsatzVonMs: state.now,
+    loggedInAtMs: state.now,
   };
   return enterScreen(
     {
@@ -375,9 +375,9 @@ function openAbmelden(
   return enterScreen(
     {
       ...state,
-      abmeldung: {
+      logoff: {
         truppnummer: trupp.truppnummer,
-        markierteTallyIds: [atemschutztraeger.tallyId],
+        markedTallyIds: [atemschutztraeger.tallyId],
       },
     },
     "abmelden",
@@ -388,7 +388,7 @@ function openAbmelden(
 function handleAbmeldenKey(state: State, key: Key): State {
   switch (key) {
     case "X":
-      return enterScreen({ ...state, abmeldung: null }, "einsatzliste");
+      return enterScreen({ ...state, logoff: null }, "einsatzliste");
     case "OK":
       return isEveryoneMarked(state) ? logOff(state) : state;
     case "Up":
@@ -401,27 +401,26 @@ function handleAbmeldenKey(state: State, key: Key): State {
 }
 
 function isEveryoneMarked(state: State): boolean {
-  const abmeldung = requireAbmeldung(state);
-  return requireTrupp(state, abmeldung.truppnummer).atemschutztraeger.every(
-    (atemschutztraeger) =>
-      abmeldung.markierteTallyIds.includes(atemschutztraeger.tallyId),
+  const logoff = requireLogoff(state);
+  return truppLoggingOff(state).atemschutztraeger.every((atemschutztraeger) =>
+    logoff.markedTallyIds.includes(atemschutztraeger.tallyId),
   );
 }
 
 // manual 5.8 step 4; timing-and-alarm-rules §12.7
 function logOff(state: State): State {
-  const trupp = requireTrupp(state, requireAbmeldung(state).truppnummer);
+  const trupp = truppLoggingOff(state);
   const trupps = state.trupps.filter((candidate) => candidate !== trupp);
   return enterScreen(
     {
       ...state,
-      abmeldung: null,
+      logoff: null,
       trupps,
       selectedTruppnummer: selectionAfterLogoff(state, trupps),
       einsatzprotokolle: [
         ...state.einsatzprotokolle,
         einsatzprotokoll(state, trupp),
-      ].slice(-EINSATZPROTOKOLL_SPEICHERPLAETZE),
+      ].slice(-EINSATZPROTOKOLL_CAPACITY),
     },
     "einsatzliste",
   );
@@ -434,8 +433,8 @@ function einsatzprotokoll(state: State, trupp: Trupp): Einsatzprotokoll {
     atemschutztraeger: trupp.atemschutztraeger,
     einsatzstatus: trupp.einsatzstatus,
     sicherheitstrupp: trupp.sicherheitstrupp,
-    einsatzVonMs: trupp.einsatzVonMs,
-    einsatzBisMs: state.now,
+    loggedInAtMs: trupp.loggedInAtMs,
+    loggedOffAtMs: state.now,
   };
 }
 
@@ -454,40 +453,30 @@ function selectionAfterLogoff(
     : (trupps[0]?.truppnummer ?? null);
 }
 
-function requireTrupp(state: State, truppnummer: number): Trupp {
-  const trupp = state.trupps.find(
-    (candidate) => candidate.truppnummer === truppnummer,
-  );
-  if (trupp === undefined) {
-    throw new Error(`Trupp ${String(truppnummer)} is not logged in`);
-  }
-  return trupp;
-}
-
 // manual 5.8 steps 2–3; decided in "Define the key-by-screen navigation model": anyone else is
 // ignored
 function markAtemschutztraeger(state: State, tallyId: string): State {
-  const abmeldung = requireAbmeldung(state);
+  const logoff = requireLogoff(state);
   if (
-    truppOfTally(state, tallyId)?.truppnummer !== abmeldung.truppnummer ||
-    abmeldung.markierteTallyIds.includes(tallyId)
+    truppOfTally(state, tallyId)?.truppnummer !== logoff.truppnummer ||
+    logoff.markedTallyIds.includes(tallyId)
   ) {
     return state;
   }
   return {
     ...state,
-    abmeldung: {
-      ...abmeldung,
-      markierteTallyIds: [...abmeldung.markierteTallyIds, tallyId],
+    logoff: {
+      ...logoff,
+      markedTallyIds: [...logoff.markedTallyIds, tallyId],
     },
   };
 }
 
-function requireAbmeldung(state: State): Abmeldung {
-  if (state.abmeldung === null) {
-    throw new Error(`The ${state.screen} screen has no Abmeldung`);
+function requireLogoff(state: State): Logoff {
+  if (state.logoff === null) {
+    throw new Error(`The ${state.screen} screen has no Logoff`);
   }
-  return state.abmeldung;
+  return state.logoff;
 }
 
 function requireTruppOfTally(state: State, tallyId: string): Trupp {

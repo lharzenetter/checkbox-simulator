@@ -30,8 +30,7 @@ export interface Trupp {
   readonly sicherheitstrupp: boolean;
   /** Negative once the Einsatzzeit is exceeded. */
   readonly restzeitMs: number;
-  /** The Uhrzeit at login. */
-  readonly einsatzVonMs: number;
+  readonly loggedInAtMs: number;
 }
 
 /** The record of one Trupp's Einsatz, written at logoff. */
@@ -42,9 +41,8 @@ export interface Einsatzprotokoll {
   /** The Einsatzstatus at logoff. */
   readonly einsatzstatus: Einsatzstatus;
   readonly sicherheitstrupp: boolean;
-  readonly einsatzVonMs: number;
-  /** The Uhrzeit at logoff. */
-  readonly einsatzBisMs: number;
+  readonly loggedInAtMs: number;
+  readonly loggedOffAtMs: number;
 }
 
 /** The Anmeldefenster's choices, top to bottom. */
@@ -71,10 +69,10 @@ export interface Login {
 }
 
 /** A Trupp being logged off on ABMELDEN. */
-export interface Abmeldung {
+export interface Logoff {
   readonly truppnummer: number;
   /** The Atemschutzträger who have held their Tally to Check, in that order. */
-  readonly markierteTallyIds: readonly string[];
+  readonly markedTallyIds: readonly string[];
 }
 
 /** The whole device state: plain immutable data that serialises to storage as-is. */
@@ -87,7 +85,7 @@ export interface State {
   /** Real time at which the current screen was entered; drives the display timings. */
   readonly screenEnteredRealMs: number;
   readonly login: Login | null;
-  readonly abmeldung: Abmeldung | null;
+  readonly logoff: Logoff | null;
   /** The logged-in Trupps, ordered by Truppnummer. */
   readonly trupps: readonly Trupp[];
   /** The Truppnummer marked on the Einsatzliste. */
@@ -116,7 +114,7 @@ export function createInitialState({ now, realNow }: Clocks): State {
     realNow,
     screenEnteredRealMs: realNow,
     login: null,
-    abmeldung: null,
+    logoff: null,
     trupps: [],
     selectedTruppnummer: null,
     einsatzprotokolle: [],

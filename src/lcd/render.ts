@@ -134,12 +134,12 @@ function drawAbmelden(
   model: Extract<ScreenModel, { layout: "abmelden" }>,
 ): void {
   drawText(framebuffer, model.title, 1, 2);
-  model.atemschutztraeger.forEach((zeile, index) => {
+  model.atemschutztraeger.forEach((row, index) => {
     const y = 13 + index * LINE_PITCH;
-    if (zeile.markiert) {
+    if (row.marked) {
       fillRect(framebuffer, 0, y - 1, LCD_WIDTH, LINE_PITCH);
     }
-    drawText(framebuffer, zeile.name, 1, y, { inverse: zeile.markiert });
+    drawText(framebuffer, row.name, 1, y, { inverse: row.marked });
   });
   fillRect(framebuffer, 0, 99, LCD_WIDTH, 1);
   drawLines(framebuffer, model.hinweis, 104);

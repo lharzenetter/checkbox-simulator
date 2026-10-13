@@ -10,6 +10,18 @@ export function truppOfTally(state: State, tallyId: string): Trupp | undefined {
   );
 }
 
+/** The Trupp ABMELDEN is logging off; only valid while ABMELDEN is open. */
+export function truppLoggingOff(state: State): Trupp {
+  const truppnummer = state.logoff?.truppnummer;
+  const trupp = state.trupps.find(
+    (candidate) => candidate.truppnummer === truppnummer,
+  );
+  if (trupp === undefined) {
+    throw new Error(`The ${state.screen} screen logs no Trupp off`);
+  }
+  return trupp;
+}
+
 /**
  * Whether the Einsatzliste shows `SICHER` in the Trupp's row now, instead of its Statussymbol.
  * The alternation runs on real time and starts with `SICHER` when the screen is entered.

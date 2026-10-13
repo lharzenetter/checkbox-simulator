@@ -6,6 +6,7 @@ import {
   EINSATZZEITEN_MS,
   isSicherShown,
   P81_FLASCHENTYP_2_BAR,
+  truppLoggingOff,
 } from "../core/index";
 import type {
   Anmeldeaktion,
@@ -33,10 +34,10 @@ export interface EinsatzlisteRow {
 }
 
 /** An Atemschutzträger's line on ABMELDEN. */
-export interface AbmeldenZeile {
+export interface AbmeldenRow {
   readonly name: string;
   /** Has held their Tally to Check; drawn inverse. */
-  readonly markiert: boolean;
+  readonly marked: boolean;
 }
 
 /** What the LCD shows, per screen layout, with every value already formatted for display. */
@@ -100,7 +101,7 @@ export type ScreenModel =
   | {
       readonly layout: "abmelden";
       readonly title: string;
-      readonly atemschutztraeger: readonly AbmeldenZeile[];
+      readonly atemschutztraeger: readonly AbmeldenRow[];
       readonly hinweis: readonly string[];
     };
 
@@ -274,22 +275,14 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
 
 // manual 5.8, ABMELDEN figure
 function abmeldenModel(state: State): ScreenModel {
-  if (state.abmeldung === null) {
-    throw new Error("ABMELDEN has no Abmeldung");
-  }
-  const { truppnummer, markierteTallyIds } = state.abmeldung;
-  const trupp = state.trupps.find(
-    (candidate) => candidate.truppnummer === truppnummer,
-  );
-  if (trupp === undefined) {
-    throw new Error(`Trupp ${String(truppnummer)} is not logged in`);
-  }
+  const trupp = truppLoggingOff(state);
+  const markedTallyIds = state.logoff?.markedTallyIds ?? [];
   return {
     layout: "abmelden",
-    title: `Trupp ${formatTruppnummer(truppnummer)} ABMELDEN`,
+    title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ABMELDEN`,
     atemschutztraeger: trupp.atemschutztraeger.map((atemschutztraeger) => ({
       name: formatName(atemschutztraeger),
-      markiert: markierteTallyIds.includes(atemschutztraeger.tallyId),
+      marked: markedTallyIds.includes(atemschutztraeger.tallyId),
     })),
     hinweis: ["OK  =  abmelden", " X  =  nicht abmelden"],
   };
@@ -341,7 +334,7 @@ export function screenText(model: ScreenModel): readonly string[] {
       return [
         model.title,
         ...model.atemschutztraeger.map(
-          (zeile) => `${zeile.name}${zeile.markiert ? " markiert" : ""}`,
+          (row) => `${row.name}${row.marked ? " markiert" : ""}`,
         ),
         ...model.hinweis,
       ];
