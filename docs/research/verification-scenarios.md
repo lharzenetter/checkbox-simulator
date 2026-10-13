@@ -2,7 +2,7 @@
 
 Research for the wayfinder ticket _Choose the timing and alarm scenarios for the verification suite_.
 These are the scenarios the reducer-core suite drives through `reduce` with `tick` events. They are derived from the [timing and alarm rules](timing-and-alarm-rules.md) (§ numbers below), sections 1–9 and 12.
-Every **Decided** rule there is covered at least once (see the [coverage matrix](#coverage-matrix)). Rules that the fixed defaults make unreachable are listed under [Unreachable rules](#unreachable-rules). Points the scenarios exposed but the rules leave open are listed under [Open points](#open-points).
+Every **Decided** rule there is covered at least once (see the [coverage matrix](#coverage-matrix)). Rules that the fixed defaults make unreachable are listed under [Not implemented](#not-implemented). The edge cases the scenarios exposed were settled in _Settle the edge cases the verification scenarios exposed_ (§1.8, 2.6, 3.6, 5.7, 9.2, 9.3).
 
 ## Conventions
 
@@ -15,7 +15,7 @@ Every **Decided** rule there is covered at least once (see the [coverage matrix]
   | 30 min (#1) | 6 s     | 5:00             | 9:54                  | 19:48                 |
   | 20 min (#3) | 4 s     | 3:20             | 6:36                  | 13:12                 |
 
-  `G1`/`G2` take 33 % and 66 % literally (`t_run ≥ g × T`, §2.2); see [open point O1](#open-points).
+  `G1`/`G2` take 33 % and 66 % literally (`t_run ≥ g × T`, §2.2, 2.6), not as thirds.
 
 - **Trupps.** Trupp 01 is made of Tallys A1 + A2 and Trupp 02 of Tallys B1 + B2 (any two roster Tallys). A login is the Einsatzzeit choice, the Anmeldefenster with both Tallys, the `Trupp OK …` item and the Anfangsdruck. Unless stated it is 30 min, `Trupp OK Einsatz`, Anfangsdruck 300 bar.
 - **Inputs** are written as Trupp-Menü actions ("Einsatzziel erreicht, enter 250"). A test helper expands them into key events. "enter P" means the pressure editor is set to P and confirmed with OK; "accept" means OK on the value the editor opened with.
@@ -75,15 +75,14 @@ A second login with 330 bar gives `R` = 33:00. Restzeit may exceed the Einsatzze
 
 ### V4 — Druck ändern may raise the pressure
 
-§1.5, 1.4
+§1.5, 1.4, 1.8
 
-| `t`   | Input           | Expected                                      |
-| ----- | --------------- | --------------------------------------------- |
-| 10:00 | Druck ändern    | editor opens at 200 bar                       |
-| 10:00 | Up once, OK     | `R` = 20:30 (205 bar)                         |
-| 11:00 | Druck ändern, X | `R` unchanged (19:30), back on the Trupp-Menü |
-
-How far above the estimate Up may go is [open point O3](#open-points).
+| `t`   | Input                               | Expected                                                |
+| ----- | ----------------------------------- | ------------------------------------------------------- |
+| 10:00 | Druck ändern                        | editor opens at 200 bar                                 |
+| 10:00 | Up once, OK                         | `R` = 20:30 (205 bar)                                   |
+| 11:00 | Druck ändern, X                     | `R` unchanged (19:30), back on the Trupp-Menü           |
+| 12:00 | Druck ändern, Up until it stops, OK | the editor stops at 330 bar (`P_N` + 10 %), `R` = 33:00 |
 
 ### V5 — A pressure entry of 0 bar reaches Einsatzzeit erreicht at once
 
@@ -94,6 +93,19 @@ How far above the estimate Up may go is [open point O3](#open-points).
 | 8:00  | Druck ändern, enter 0 | Alarm (Einsatzzeit erreicht) on OK, `R` = 0:00:00 |
 | 9:54  | —                     | Alarm (`G1`)                                      |
 | 13:00 | —                     | Alarm, `R` = −0:05:00                             |
+
+### V24 — A pressure entry on an overdue Trupp re-arms Einsatzzeit erreicht
+
+§3.6, 1.7 (clamp)
+
+| `t`   | Input        | Expected                                 |
+| ----- | ------------ | ---------------------------------------- |
+| 30:00 | —            | Alarm (Einsatzzeit erreicht)             |
+| 35:00 | —            | Alarm, `R` = −0:05:00                    |
+| 37:00 | Druck ändern | editor opens at 0 bar (estimate clamped) |
+| 37:00 | Up to 30, OK | `R` = 3:00, no Alarm                     |
+| 40:00 | —            | Alarm (Einsatzzeit erreicht, again)      |
+| 45:00 | —            | Alarm, `R` = −0:05:00 (again)            |
 
 ## B. Alarmgrenzen, Rückmarsch and every-status alarms
 
@@ -127,6 +139,8 @@ How far above the estimate Up may go is [open point O3](#open-points).
 | 19:48 | —                                  | Alarm (`G2`)                                                            |
 | 30:00 | —                                  | Alarm (Einsatzzeit erreicht)                                            |
 
+Variant, rounding (§5.7): Einsatzziel erreicht at 5:04 instead. `R` = 24:56, so the editor opens at 245 bar (estimate 249, snapped down); accept → `R` = 24:30. `t_A` = 5:04, threshold 15:08, Rückzugsdruck 151 bar (151.33 rounded down). Rückzugsalarm at 14:26, estimate 151 bar.
+
 ### V8 — Rückzugsalarm with the 20-min Einsatzzeit (Langzeiteinsatz)
 
 §5.6 (`t_res` scales with `T`), 5.7, 8.3
@@ -153,7 +167,7 @@ How far above the estimate Up may go is [open point O3](#open-points).
 
 ### V10 — Pressure entry crosses the threshold; a raise does not re-arm
 
-§5.14, 5.9 (no re-arm)
+§5.14, 5.9 (no re-arm), 1.8
 
 | `t`  | Input                                    | Expected                                       |
 | ---- | ---------------------------------------- | ---------------------------------------------- |
@@ -161,8 +175,6 @@ How far above the estimate Up may go is [open point O3](#open-points).
 | 7:00 | Druck ändern, enter 145                  | `R` = 14:30 → Rückzugsalarm on OK              |
 | 7:30 | Druck ändern, enter 155 (raise, 3 steps) | `R` = 15:30, above the threshold again         |
 | 8:31 | —                                        | `R` = 14:59, below again: **no** Rückzugsalarm |
-
-The raise at 7:30 depends on [open point O3](#open-points).
 
 ### V11 — Anmarsch → Rückmarsch skips the Rückzugsalarm; Rückmarsch is final
 
@@ -342,7 +354,7 @@ Trupp 01 logs in at 0:00, Trupp 02 at 0:30.
 
 ### V23 — Display timings ignore the speed control; pause freezes both (`world/`)
 
-§9.1, 8.2. The `tick` must carry real time as well as simulated time (see [open point O6](#open-points)).
+§9.1, 9.2, 8.2. Each `tick` carries `now` (simulated) and `realNow` (real).
 
 | Setup                                     | Input                                    | Expected                                                     |
 | ----------------------------------------- | ---------------------------------------- | ------------------------------------------------------------ |
@@ -403,25 +415,15 @@ Trupp 01 logs in at 0:00, Trupp 02 at 0:30.
 
 (D) marks a **Decided** rule.
 
-## Unreachable rules
+## Not implemented
 
-With the fixed defaults (§9) and no Workbench, the Trainee can never reach these. No scenario can drive them through the public API:
+With the fixed defaults (§9) and no Workbench, the Trainee can never reach these, so they are not implemented (§9.3) and have no scenarios:
 
 - **Rückzugsalarmmodus off**: 5.2, 5.12, the mode-off halves of 4.6, 12.1 and 12.4, and `Rückzug antreten (mode on only)`. [41]/[70] are on for both simulated Einsatzzeiten. 5.1 (per-Einsatzzeit switch) is unobservable for the same reason.
 - **[73] = 0** (pressure may only be lowered, 1.5): [73] is fixed at 5 bar.
-- **3.3, multi-step clause**: a pressure entry sets `R = T × P / P_N ≥ 0`, so it can never jump Restzeit down across several overdue steps. Only 0:00:00 can be reached by an entry (3.4, V5).
+
+Also without a scenario:
+
+- **3.3, multi-step clause**: a pressure entry sets `R = T × P / P_N ≥ 0`, so it can never jump Restzeit down across several overdue steps. Only 0:00:00 can be reached by an entry (3.4, V5); an overdue Trupp's entry re-arms instead (3.6, V24).
 - **Section 6** (Prozentmodus) and Einsatzzeit #2/#4: out of scope.
 - **5.8** (the bar split on the Trupp-Ansicht) is a screen-model assertion for `lcd/`, not a reducer rule.
-
-See [open point O5](#open-points) for what to do about them.
-
-## Open points
-
-Working the numbers exposed these. The rules do not settle them, so the scenarios above avoid depending on them or flag where they do.
-
-- **O1 — Is 33 % one third?** Taken literally, `G1` at 30 min is 9:54 and `G2` is 19:48. The manual's example (p. 23–24) and FwDV 7 say 10 and 20 min. This changes every Alarmgrenze vector.
-- **O2 — Does an overdue Trupp's pressure entry re-fire Einsatzzeit erreicht?** An entry while `R < 0` resets `R` to `T × P / P_N ≥ 0`. When it counts down through 0:00:00 again, does the Alarm fire again? And do the −5/−10 repeats restart? 5.9's "no re-arm" covers only the Rückzugsalarm.
-- **O3 — How far may Druck ändern raise?** [73] = 5 bar allows raising "in steps of [73]". Is the ceiling one step above the estimate, the last entered pressure, the [77] limit (330 bar), or none? V4 and V10 depend on it.
-- **O4 — Rounding the Rückzugsdruck.** `[42] + 2·t_A × P_N / T` is fractional unless `t_A` is a whole multiple of 3 s (30 min) or 2 s (20 min). The estimate rounds down (1.7). Rounding the Rückzugsdruck down too keeps "the estimate reaches it when the alarm fires" (5.7) true to the bar. Confirm.
-- **O5 — Unreachable branches.** Implement the mode-off and [73] = 0 behaviour behind `core/parameters.ts` anyway (untestable through the public API without a parameter seam)? Or leave them out until a Workbench or trainer mode needs them?
-- **O6 — Two clocks in the core.** 9.1 needs display timings ([13], Abschaltzeit, SICHER, the X + Check hold) on real time inside a core that only learns time from `tick`. Should the tick carry both clocks (`{ type: "tick", now, realNow }`)? Or should the display timings live outside `core/`?

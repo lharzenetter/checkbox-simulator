@@ -44,9 +44,11 @@ One Vite app, one folder per layer under `src/`:
 - **State** is plain, immutable data: `readonly` types, no classes, no methods. It must
   serialise to storage as-is.
 - **Events** are a discriminated union on `type`, named in the past tense for what happened:
-  `{ type: "keyPressed", key: "OK" }`, `{ type: "tallyHeld", tallyId }`, `{ type: "tick", now }`.
+  `{ type: "keyPressed", key: "OK" }`, `{ type: "tallyHeld", tallyId }`, `{ type: "tick", now, realNow }`.
 - **Time** reaches the core only through `tick` events or `now` fields. The core never reads a
-  clock.
+  clock. Each `tick` carries two clocks: `now` is simulated time (scaled by the speed control) for
+  Einsatz timing, `realNow` is real time for the display timings (timing-and-alarm-rules §9.2).
+  Pause stops both.
 - **The reducer** `reduce(state, event): State` is total and pure. Input with no meaning on the
   current screen returns the state unchanged. Throw only for broken invariants (programmer
   errors).
