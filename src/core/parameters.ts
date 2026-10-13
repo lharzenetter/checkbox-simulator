@@ -11,6 +11,10 @@ export const SICHER_PHASE_MS = 1_000;
 // alarms are presented" (point 2) asks for until the real device is recorded.
 export const ALARM_BLINK_PHASE_MS = 250;
 
+// The Notausschaltung's hold has no parameter number either: X + Check "ca. 4 Sekunden",
+// manual 5.9 step 2.
+export const NOTAUSSCHALTUNG_HALTEZEIT_MS = 4_000;
+
 // The Einsatzprotokoll memory has no parameter number either: manual p. 15, p. 32.
 export const EINSATZPROTOKOLL_CAPACITY = 100;
 

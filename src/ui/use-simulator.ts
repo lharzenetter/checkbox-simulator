@@ -49,7 +49,12 @@ export function useSimulator(): {
 
   const dispatch = useCallback(
     (event: Event) => {
-      if (event.type !== "tick" && !acceptsDeviceKeys(clock)) {
+      // A release always gets through, so a key let go while paused is not held on play.
+      if (
+        event.type !== "tick" &&
+        event.type !== "keyReleased" &&
+        !acceptsDeviceKeys(clock)
+      ) {
         return;
       }
       dispatchToCore(event);

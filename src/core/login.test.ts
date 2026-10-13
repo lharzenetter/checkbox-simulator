@@ -570,8 +570,11 @@ describe("the Einsatzliste", () => {
   });
 
   // decided in "Define the key-by-screen navigation model"
-  it("ignores X", () => {
+  it("does nothing on X alone", () => {
     const einsatzliste = loggedIn(aus(), [A1, A2]);
-    expect(reduce(einsatzliste, press("X"))).toBe(einsatzliste);
+    const state = reduce(einsatzliste, press("X"));
+    expect(state.screen).toBe("einsatzliste");
+    expect(state.trupps).toBe(einsatzliste.trupps);
+    expect(state.selectedTruppnummer).toBe(einsatzliste.selectedTruppnummer);
   });
 });

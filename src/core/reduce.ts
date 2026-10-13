@@ -4,6 +4,7 @@ import { assertNever } from "./assert-never";
 import type { Event, Key } from "./event";
 import {
   EINSATZPROTOKOLL_CAPACITY,
+  NOTAUSSCHALTUNG_HALTEZEIT_MS,
   P01_EINSATZZEIT_1_MS,
   P10_EINSATZZEIT_3_MS,
   P13_TRUPP_DETAILANSICHT_MS,
@@ -33,6 +34,7 @@ import type {
   Atemschutztraeger,
   Einsatzprotokoll,
   Login,
+  NotausschaltungAktion,
   Screen,
   State,
   Trupp,
@@ -43,7 +45,12 @@ import type {
 export function reduce(state: State, event: Event): State {
   switch (event.type) {
     case "keyPressed":
-      return handleKeyPress(state, event.key);
+      return handleKeyPress(
+        holdNotausschaltungKey(state, event.key),
+        event.key,
+      );
+    case "keyReleased":
+      return releaseKey(state, event.key);
     case "tallyHeld":
       return handleTallyHeld(state, {
         tallyId: event.tallyId,
@@ -87,9 +94,118 @@ function handleKeyPress(state: State, key: Key): State {
       return handleAbmeldenKey(state, key);
     case "alarm":
       return handleAlarmKey(state, key);
+    case "notausschaltungAuswahl":
+      return handleNotausschaltungAuswahlKey(state, key);
+    case "notausschaltungBestaetigung":
+      return handleNotausschaltungBestaetigungKey(state, key);
     default:
       return assertNever(state.screen);
   }
+}
+
+// manual 5.9 steps 4–5: OK ends the Trupp(s), any other key cancels
+function handleNotausschaltungBestaetigungKey(state: State, key: Key): State {
+  if (key !== "OK") {
+    return leaveNotausschaltung(state);
+  }
+  const ended =
+    requireNotausschaltung(state) === "alleTrupps"
+      ? state.trupps
+      : [selectedTrupp(state)];
+  return leaveNotausschaltung(endTrupps(state, ended));
+}
+
+/** The choices of Notausschaltung – Auswahl, top to bottom. */
+export const NOTAUSSCHALTUNG_AKTIONEN: readonly NotausschaltungAktion[] = [
+  "markierterTrupp",
+  "alleTrupps",
+  "zurueck",
+];
+
+// manual 5.9 steps 3–4; decided in "Define the key-by-screen navigation model".
+// ASSUMPTION: X is inert, as only `-> zurueck` is named as the way back.
+function handleNotausschaltungAuswahlKey(state: State, key: Key): State {
+  const aktion = requireNotausschaltung(state);
+  switch (key) {
+    case "Up":
+    case "Down":
+      return {
+        ...state,
+        notausschaltung: moveCursor(NOTAUSSCHALTUNG_AKTIONEN, aktion, key),
+      };
+    case "OK":
+      return aktion === "zurueck"
+        ? leaveNotausschaltung(state)
+        : enterScreen(state, "notausschaltungBestaetigung");
+    case "X":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+function leaveNotausschaltung(state: State): State {
+  return enterScreen({ ...state, notausschaltung: null }, "einsatzliste");
+}
+
+function requireNotausschaltung(state: State): NotausschaltungAktion {
+  if (state.notausschaltung === null) {
+    throw new Error(`The ${state.screen} screen has no Notausschaltung`);
+  }
+  return state.notausschaltung;
+}
+
+// manual 5.9 step 2; decided in "Define the key-by-screen navigation model": from the
+// Einsatzliste only, so S12 needs its OK first.
+// ASSUMPTION: without a marked Trupp there is nothing to end, so the hold does nothing (the
+// navigation model starts S14 on `-> markierten Trupp NN`).
+function holdNotausschaltungKey(state: State, key: Key): State {
+  if (
+    !isNotausschaltungKey(key) ||
+    state.screen !== "einsatzliste" ||
+    state.selectedTruppnummer === null ||
+    state.notausschaltungKeysHeld.includes(key)
+  ) {
+    return state;
+  }
+  const notausschaltungKeysHeld = [...state.notausschaltungKeysHeld, key];
+  return {
+    ...state,
+    notausschaltungKeysHeld,
+    notausschaltungHeldSinceRealMs:
+      notausschaltungKeysHeld.length === 2 ? state.realNow : null,
+  };
+}
+
+function isNotausschaltungKey(key: Key): key is "X" | "Check" {
+  return key === "X" || key === "Check";
+}
+
+function releaseKey(state: State, key: Key): State {
+  if (
+    !isNotausschaltungKey(key) ||
+    !state.notausschaltungKeysHeld.includes(key)
+  ) {
+    return state;
+  }
+  return {
+    ...state,
+    notausschaltungKeysHeld: state.notausschaltungKeysHeld.filter(
+      (held) => held !== key,
+    ),
+    notausschaltungHeldSinceRealMs: null,
+  };
+}
+
+// decided in "Design how the Trainee handles Tallys and the clock": ~4 s of real time at any
+// speed
+function hasNotausschaltungHoldRunOut(state: State): boolean {
+  return (
+    state.notausschaltungHeldSinceRealMs !== null &&
+    state.realNow - state.notausschaltungHeldSinceRealMs >=
+      NOTAUSSCHALTUNG_HALTEZEIT_MS
+  );
 }
 
 // decided in "Decide how alarms are presented", points 5 and 6: only OK works, and nothing else
@@ -683,6 +799,8 @@ function handleTallyHeld(
     case "flaschendruckAendern":
     case "truppFlaschendruckAendern":
     case "alarm":
+    case "notausschaltungAuswahl":
+    case "notausschaltungBestaetigung":
       return state;
     default:
       return assertNever(state.screen);
@@ -768,21 +886,24 @@ function isEveryoneMarked(state: State): boolean {
 
 // manual 5.8 step 4; timing-and-alarm-rules §12.7
 function logOff(state: State): State {
-  const trupp = truppLoggingOff(state);
-  const trupps = state.trupps.filter((candidate) => candidate !== trupp);
   return enterScreen(
-    {
-      ...state,
-      logoff: null,
-      trupps,
-      selectedTruppnummer: selectionAfterLogoff(state, trupps),
-      einsatzprotokolle: [
-        ...state.einsatzprotokolle,
-        einsatzprotokoll(state, trupp),
-      ].slice(-EINSATZPROTOKOLL_CAPACITY),
-    },
+    { ...endTrupps(state, [truppLoggingOff(state)]), logoff: null },
     "einsatzliste",
   );
+}
+
+// manual p. 31: a logoff and a Notausschaltung each write an Einsatzprotokoll
+function endTrupps(state: State, ended: readonly Trupp[]): State {
+  const trupps = state.trupps.filter((trupp) => !ended.includes(trupp));
+  return {
+    ...state,
+    trupps,
+    selectedTruppnummer: selectionAfterLogoff(state, trupps),
+    einsatzprotokolle: [
+      ...state.einsatzprotokolle,
+      ...ended.map((trupp) => einsatzprotokoll(state, trupp)),
+    ].slice(-EINSATZPROTOKOLL_CAPACITY),
+  };
 }
 
 function einsatzprotokoll(state: State, trupp: Trupp): Einsatzprotokoll {
@@ -903,6 +1024,12 @@ function handleTick(state: State, elapsedMs: number): State {
 }
 
 function runDisplayTimings(state: State): State {
+  if (hasNotausschaltungHoldRunOut(state)) {
+    return enterScreen(
+      { ...state, notausschaltung: "markierterTrupp" },
+      "notausschaltungAuswahl",
+    );
+  }
   if (hasP13TimeoutRunOut(state)) {
     return enterScreen(withTruppMenue(state, null), "einsatzliste");
   }
@@ -938,12 +1065,14 @@ function runDown(trupp: Trupp, elapsedMs: number): Trupp {
 
 // ASSUMPTION: entering a screen restarts its display timing, so returning to the Startdisplay
 // from SERVICE shows the full Abschaltzeit again; the manual leaves SERVICE's timing open
-// (LCD screen catalogue, S02).
+// (LCD screen catalogue, S02). Leaving the Einsatzliste also drops a Notausschaltung hold.
 function enterScreen(state: State, screen: Screen): State {
   return {
     ...state,
     screen,
     screenEnteredRealMs: state.realNow,
     idleSinceRealMs: state.realNow,
+    notausschaltungKeysHeld: [],
+    notausschaltungHeldSinceRealMs: null,
   };
 }

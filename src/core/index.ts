@@ -2,7 +2,12 @@ export { abschaltzeitRestMs } from "./abschaltzeit";
 export { assertNever } from "./assert-never";
 export type { Event, Key } from "./event";
 export { ALARM_BLINK_PHASE_MS, P81_FLASCHENTYP_2_BAR } from "./parameters";
-export { ANMELDEAKTIONEN, EINSATZZEITEN_MS, reduce } from "./reduce";
+export {
+  ANMELDEAKTIONEN,
+  EINSATZZEITEN_MS,
+  NOTAUSSCHALTUNG_AKTIONEN,
+  reduce,
+} from "./reduce";
 export {
   computeRestzeitMs,
   estimateFlaschendruckBar,
@@ -24,6 +29,7 @@ export type {
   Logoff,
   Anmeldeaktion,
   Login,
+  NotausschaltungAktion,
   Atemschutztraeger,
   Clocks,
   Einsatzprotokoll,

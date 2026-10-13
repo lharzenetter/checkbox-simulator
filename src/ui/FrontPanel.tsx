@@ -18,6 +18,10 @@ export function FrontPanel({
     dispatch({ type: "keyPressed", key });
   }
 
+  function release(key: Key): void {
+    dispatch({ type: "keyReleased", key });
+  }
+
   return (
     <section className={styles.housing} aria-label="Checkbox 5+1">
       <div className={styles.faceplate}>
@@ -36,22 +40,43 @@ export function FrontPanel({
           <Lcd state={state} />
         </div>
         <div className={styles.keypad}>
-          <DeviceKey keyName="Up" className={styles.up} onPress={press}>
+          <DeviceKey
+            keyName="Up"
+            className={styles.up}
+            onPress={press}
+            onRelease={release}
+          >
             <Chevron direction="up" />
           </DeviceKey>
-          <DeviceKey keyName="X" className={styles.x} onPress={press}>
+          <DeviceKey
+            keyName="X"
+            className={styles.x}
+            onPress={press}
+            onRelease={release}
+          >
             C<span className={styles.cross}>×</span>
           </DeviceKey>
-          <DeviceKey keyName="OK" className={styles.ok} onPress={press}>
+          <DeviceKey
+            keyName="OK"
+            className={styles.ok}
+            onPress={press}
+            onRelease={release}
+          >
             OK
           </DeviceKey>
-          <DeviceKey keyName="Down" className={styles.down} onPress={press}>
+          <DeviceKey
+            keyName="Down"
+            className={styles.down}
+            onPress={press}
+            onRelease={release}
+          >
             <Chevron direction="down" />
           </DeviceKey>
           <DeviceKey
             keyName="Check"
             className={styles.check}
             onPress={press}
+            onRelease={release}
             onTallyDropped={onTallyDropped}
           >
             CHECK
@@ -62,20 +87,24 @@ export function FrontPanel({
   );
 }
 
-// Keys act on pointer-down like a physical key. A click with `detail === 0` comes from the
-// keyboard (Enter or Space on a focused key), so the key stays operable without a pointer.
+// Keys act on pointer-down like a physical key and are held until that pointer lifts or slides
+// off, so two fingers can hold X and Check together for the Notausschaltung. A click with `detail === 0`
+// comes from the keyboard (Enter or Space on a focused key), so the key stays operable without a
+// pointer; it is pressed and released at once.
 // Dropping a dragged Tally on a key taps it there; only Check accepts one, decided in "Design
 // how the Trainee handles Tallys and the clock".
 function DeviceKey({
   keyName,
   className,
   onPress,
+  onRelease,
   onTallyDropped,
   children,
 }: {
   keyName: Key;
   className: string | undefined;
   onPress: (key: Key) => void;
+  onRelease: (key: Key) => void;
   onTallyDropped?: (tallyId: string) => void;
   children: ReactNode;
 }) {
@@ -100,9 +129,14 @@ function DeviceKey({
     }
   }
 
+  function handlePointerUp(): void {
+    onRelease(keyName);
+  }
+
   function handleClick(event: MouseEvent<HTMLButtonElement>): void {
     if (event.detail === 0) {
       onPress(keyName);
+      onRelease(keyName);
     }
   }
 
@@ -112,6 +146,9 @@ function DeviceKey({
       className={`${styles.key ?? ""} ${className ?? ""}`}
       aria-label={`Taste ${keyName}`}
       onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
       onClick={handleClick}
       {...(onTallyDropped && {
         onDragOver: handleDragOver,

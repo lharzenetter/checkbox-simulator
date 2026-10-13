@@ -21,7 +21,11 @@ export type Screen =
   /** S13 Trupp ABMELDEN. */
   | "abmelden"
   /** S12 Trupp ALARM, for the Trupp whose Alarm is pending first. */
-  | "alarm";
+  | "alarm"
+  /** S14 Notausschaltung – Auswahl. */
+  | "notausschaltungAuswahl"
+  /** S15 Notausschaltung – Bestätigung, for the choice made on S14. */
+  | "notausschaltungBestaetigung";
 
 /** An Atemschutzträger as the Checkbox knows them: by their Tally and the name stored on it. */
 export interface Atemschutztraeger {
@@ -109,6 +113,10 @@ export interface TruppMenue {
   readonly draftFlaschendruckBar: number | null;
 }
 
+/** The choices of Notausschaltung – Auswahl, top to bottom. */
+export type NotausschaltungAktion =
+  "markierterTrupp" | "alleTrupps" | "zurueck";
+
 /** The whole device state: plain immutable data that serialises to storage as-is. */
 export interface State {
   readonly screen: Screen;
@@ -133,6 +141,12 @@ export interface State {
   readonly pendingAlarms: readonly number[];
   /** The screen S12 took over from, shown again after the last OK; `null` for the Einsatzliste. */
   readonly interruptedScreen: Screen | null;
+  /** Of X and Check, those held down since they were pressed on the Einsatzliste. */
+  readonly notausschaltungKeysHeld: readonly ("X" | "Check")[];
+  /** Real time since X and Check are held together on the Einsatzliste; `null` while they are not. */
+  readonly notausschaltungHeldSinceRealMs: number | null;
+  /** The choice under the cursor on S14, and the one S15 confirms; `null` on every other screen. */
+  readonly notausschaltung: NotausschaltungAktion | null;
 }
 
 /**
@@ -163,5 +177,8 @@ export function createInitialState({ now, realNow }: Clocks): State {
     einsatzprotokolle: [],
     pendingAlarms: [],
     interruptedScreen: null,
+    notausschaltungKeysHeld: [],
+    notausschaltungHeldSinceRealMs: null,
+    notausschaltung: null,
   };
 }

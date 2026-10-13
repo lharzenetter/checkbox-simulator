@@ -346,7 +346,35 @@ describe("the LCD framebuffer", () => {
       ),
     ).toMatchSnapshot();
   });
+
+  // manual 5.9 step 2, right figure, with the inverse bar on the marked Trupp
+  it("draws Notausschaltung – Auswahl", () => {
+    expect(
+      toAscii(framebufferAfter(...LOGIN, press("OK"), ...NOTAUSSCHALTUNG)),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.9 step 4, left figure
+  it("draws Notausschaltung – Bestätigung", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          ...NOTAUSSCHALTUNG,
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
 });
+
+// X and Check held together on the Einsatzliste for 4 s (manual 5.9 step 2).
+const NOTAUSSCHALTUNG: readonly Event[] = [
+  press("X"),
+  press("Check"),
+  { type: "tick", now: FIGURE_UHRZEIT + 4_000, realNow: 4_000 },
+];
 
 // From the Einsatzliste: Trupp-Ansicht, Trupp-Menü, `Einsatzziel erreicht`, accept.
 const TO_EINSATZZIEL = [

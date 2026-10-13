@@ -870,3 +870,62 @@ describe("the Einsatzstatus screens", () => {
     ).toContain("01 markiert  2× Rückmarsch  00:24:00");
   });
 });
+
+// Trupp 01 logged in, and X and Check held together on the Einsatzliste for 4 s.
+function notausschaltungAuswahl(): State {
+  return tickBy(
+    stateAfter(
+      HLF_AT_F,
+      press("OK"),
+      HLF_AT_M,
+      press("OK"),
+      press("OK"),
+      press("X"),
+      press("Check"),
+    ),
+    4_000,
+  );
+}
+
+describe("S14 Notausschaltung – Auswahl", () => {
+  // manual 5.9 step 2, right figure; decided in "Define the key-by-screen navigation model": the
+  // inverse bar starts on the marked Trupp
+  it("reads as in the figure, with the cursor on the marked Trupp", () => {
+    const model = screenModel(notausschaltungAuswahl());
+    expect(model).toMatchObject({
+      layout: "notausschaltungAuswahl",
+      selectedIndex: 0,
+    });
+    expect(screenText(model)).toEqual([
+      "A C H T U N G !",
+      "Einsatz-ABBRUCH",
+      "fuer . . .",
+      "-> markierten Trupp 01",
+      "-> alle Trupps",
+      "-> zurueck",
+    ]);
+  });
+
+  // manual 5.9 step 3
+  it("moves the inverse bar to the choice under the cursor", () => {
+    const model = screenModel(reduce(notausschaltungAuswahl(), press("Up")));
+    expect(model).toMatchObject({ selectedIndex: 2 });
+  });
+});
+
+describe("S15 Notausschaltung – Bestätigung", () => {
+  // manual 5.9 step 4, left figure, verbatim with its mixed `druecken` and `drücken`
+  it("reads as in the figure", () => {
+    const model = screenModel(reduce(notausschaltungAuswahl(), press("OK")));
+    expect(model).toMatchObject({ layout: "notausschaltungBestaetigung" });
+    expect(screenText(model)).toEqual([
+      "A C H T U N G !",
+      "WOLLEN SIE",
+      "WIRKLICH DEN/DIE",
+      "TRUPP(S) LOESCHEN?",
+      "dann OK druecken",
+      "sonst die X Taste",
+      "drücken",
+    ]);
+  });
+});

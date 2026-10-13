@@ -25,9 +25,12 @@ const TALLY_KEYS: Readonly<Partial<Record<string, number>>> = {
 
 export function useKeyMap({
   onKeyPressed,
+  onKeyReleased,
   onTallyKeyPressed,
 }: {
   onKeyPressed: (key: Key) => void;
+  /** Ends the hold of a key, as the Notausschaltung needs X and Check held. */
+  onKeyReleased: (key: Key) => void;
   /** Called with the Roster index of the Tally whose number key was pressed. */
   onTallyKeyPressed: (rosterIndex: number) => void;
 }): void {
@@ -46,9 +49,27 @@ export function useKeyMap({
         onTallyKeyPressed(rosterIndex);
       }
     }
+    function handleKeyUp(event: KeyboardEvent): void {
+      const key = KEYBOARD_KEYS[event.key.toLowerCase()];
+      if (key !== undefined) {
+        onKeyReleased(key);
+      }
+    }
+    // A window that loses focus never sees the key-up, so every key counts as released.
+    function handleBlur(): void {
+      for (const key of Object.values(KEYBOARD_KEYS)) {
+        if (key !== undefined) {
+          onKeyReleased(key);
+        }
+      }
+    }
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
     };
-  }, [onKeyPressed, onTallyKeyPressed]);
+  }, [onKeyPressed, onKeyReleased, onTallyKeyPressed]);
 }

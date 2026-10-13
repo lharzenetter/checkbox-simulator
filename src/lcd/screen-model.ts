@@ -7,6 +7,7 @@ import {
   EINSATZZEITEN_MS,
   estimateFlaschendruckBar,
   isSicherShown,
+  NOTAUSSCHALTUNG_AKTIONEN,
   P81_FLASCHENTYP_2_BAR,
   rueckzugsdruckBar,
   selectedTrupp,
@@ -18,6 +19,7 @@ import type {
   Login,
   Atemschutztraeger,
   Einsatzstatus,
+  NotausschaltungAktion,
   State,
   Trupp,
   TruppMenue,
@@ -148,6 +150,20 @@ export type ScreenModel =
       readonly title: string;
       readonly atemschutztraeger: readonly AbmeldenRow[];
       readonly hinweis: readonly string[];
+    }
+  | {
+      readonly layout: "notausschaltungAuswahl";
+      readonly title: string;
+      readonly prompt: readonly string[];
+      readonly items: readonly string[];
+      readonly selectedIndex: number;
+    }
+  | {
+      readonly layout: "notausschaltungBestaetigung";
+      readonly title: string;
+      readonly frage: readonly string[];
+      readonly bestaetigen: string;
+      readonly abbrechen: readonly string[];
     };
 
 // The Startdisplay figure's values (manual 5.2). The SERVICE menu that would edit the name is
@@ -249,6 +265,16 @@ export function screenModel(state: State): ScreenModel {
       return abmeldenModel(state);
     case "alarm":
       return alarmModel(alarmTrupp(state));
+    case "notausschaltungAuswahl":
+      return notausschaltungAuswahlModel(state);
+    case "notausschaltungBestaetigung":
+      return {
+        layout: "notausschaltungBestaetigung",
+        title: ACHTUNG,
+        frage: ["WOLLEN SIE", "WIRKLICH DEN/DIE", "TRUPP(S) LOESCHEN?"],
+        bestaetigen: "dann OK druecken",
+        abbrechen: ["sonst die X Taste", "drücken"],
+      };
     default:
       return assertNever(state.screen);
   }
@@ -475,6 +501,30 @@ function abmeldenModel(state: State): ScreenModel {
   };
 }
 
+// manual 5.9, both Notausschaltung figures
+const ACHTUNG = "A C H T U N G !";
+
+// manual 5.9 step 2, right figure
+function notausschaltungAuswahlModel(state: State): ScreenModel {
+  const aktion = state.notausschaltung;
+  if (aktion === null) {
+    throw new Error(`The ${state.screen} screen has no Notausschaltung`);
+  }
+  const markierterTrupp = formatTruppnummer(selectedTrupp(state).truppnummer);
+  const items: Readonly<Record<NotausschaltungAktion, string>> = {
+    markierterTrupp: `-> markierten Trupp ${markierterTrupp}`,
+    alleTrupps: "-> alle Trupps",
+    zurueck: "-> zurueck",
+  };
+  return {
+    layout: "notausschaltungAuswahl",
+    title: ACHTUNG,
+    prompt: ["Einsatz-ABBRUCH", "fuer . . ."],
+    items: NOTAUSSCHALTUNG_AKTIONEN.map((choice) => items[choice]),
+    selectedIndex: NOTAUSSCHALTUNG_AKTIONEN.indexOf(aktion),
+  };
+}
+
 // Only the Trupp-Menü and its editor have one, so its absence is a broken invariant.
 function requireTruppMenue(state: State): TruppMenue {
   if (state.truppMenue === null) {
@@ -557,6 +607,15 @@ export function screenText(model: ScreenModel): readonly string[] {
           (row) => `${row.name}${row.marked ? " markiert" : ""}`,
         ),
         ...model.hinweis,
+      ];
+    case "notausschaltungAuswahl":
+      return [model.title, ...model.prompt, ...model.items];
+    case "notausschaltungBestaetigung":
+      return [
+        model.title,
+        ...model.frage,
+        model.bestaetigen,
+        ...model.abbrechen,
       ];
     case "einsatzliste":
       return [

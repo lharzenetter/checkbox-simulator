@@ -27,6 +27,12 @@ export function App() {
     },
     [dispatch],
   );
+  const releaseKey = useCallback(
+    (key: Key) => {
+      dispatch({ type: "keyReleased", key });
+    },
+    [dispatch],
+  );
   const tapTally = useCallback(
     (tally: RosterTally | undefined) => {
       if (tally !== undefined) {
@@ -47,7 +53,11 @@ export function App() {
     },
     [tapTally],
   );
-  useKeyMap({ onKeyPressed: pressKey, onTallyKeyPressed: tapTallyAt });
+  useKeyMap({
+    onKeyPressed: pressKey,
+    onKeyReleased: releaseKey,
+    onTallyKeyPressed: tapTallyAt,
+  });
 
   return (
     <main className={styles.app}>

@@ -73,6 +73,12 @@ export function renderScreen(model: ScreenModel): Framebuffer {
     case "abmelden":
       drawAbmelden(framebuffer, model);
       break;
+    case "notausschaltungAuswahl":
+      drawNotausschaltungAuswahl(framebuffer, model);
+      break;
+    case "notausschaltungBestaetigung":
+      drawNotausschaltungBestaetigung(framebuffer, model);
+      break;
     default:
       assertNever(model);
   }
@@ -152,6 +158,71 @@ function drawAbmelden(
   });
   fillRect(framebuffer, 0, 99, LCD_WIDTH, 1);
   drawLines(framebuffer, model.hinweis, 104);
+}
+
+// Laid out after the Notausschaltung – Auswahl figure (manual 5.9 step 2): the title on an inverse
+// band, the prompt below it and the three choices further down, with a full-width selection bar
+// (decided in "Define the key-by-screen navigation model").
+// ASSUMPTION: `->` is drawn as one arrow cell, so `-> markierten Trupp 01` fits the 21 columns as
+// the figure squeezes it in; the screen model keeps the device's text.
+const NOTAUSSCHALTUNG_ITEMS_Y = 72;
+
+const ARROW = ["..#..", "...#.", "#####", "...#.", "..#.."];
+
+function drawNotausschaltungAuswahl(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "notausschaltungAuswahl" }>,
+): void {
+  fillRect(framebuffer, 0, 8, LCD_WIDTH, 12);
+  drawText(
+    framebuffer,
+    model.title,
+    Math.floor((LCD_WIDTH - textWidth(model.title)) / 2),
+    10,
+    { inverse: true },
+  );
+  drawLines(framebuffer, model.prompt, 30);
+  model.items.forEach((item, index) => {
+    const y = NOTAUSSCHALTUNG_ITEMS_Y + index * LINE_PITCH;
+    const selected = index === model.selectedIndex;
+    if (selected) {
+      fillRect(framebuffer, 0, y - 1, LCD_WIDTH, LINE_PITCH);
+    }
+    drawArrow(framebuffer, 1, y + 1, selected);
+    drawText(framebuffer, item.replace(/^->/, ""), 1 + CHARACTER_PITCH, y, {
+      inverse: selected,
+    });
+  });
+}
+
+function drawArrow(
+  framebuffer: Framebuffer,
+  x: number,
+  y: number,
+  inverse: boolean,
+): void {
+  ARROW.forEach((row, rowIndex) => {
+    for (let column = 0; column < row.length; column++) {
+      if (row.charAt(column) === "#") {
+        setPixel(framebuffer, x + column, y + rowIndex, !inverse);
+      }
+    }
+  });
+}
+
+// Laid out after the Notausschaltung – Bestätigung figure (manual 5.9 step 4): the centred title
+// over a rule, the centred question, and the key hints left-aligned below.
+function drawNotausschaltungBestaetigung(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "notausschaltungBestaetigung" }>,
+): void {
+  drawCenteredText(framebuffer, model.title, 10);
+  fillRect(framebuffer, 0, 23, LCD_WIDTH, 1);
+  model.frage.forEach((line, index) => {
+    drawCenteredText(framebuffer, line, 31 + index * LINE_PITCH);
+  });
+  drawText(framebuffer, model.bestaetigen, 1, 72);
+  drawLines(framebuffer, model.abbrechen, 92);
 }
 
 // Laid out after the Trupp-Menü figures (manual 5.4, 5.6.2): names under the title, the Restzeit
