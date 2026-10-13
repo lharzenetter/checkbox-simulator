@@ -1,5 +1,6 @@
 import { assertNever } from "../core/index";
 import type { Einsatzstatus } from "../core/index";
+import { GLYPH_HEIGHT } from "./font";
 import { drawBitmap, drawText, textWidth } from "./framebuffer";
 import type { Framebuffer } from "./framebuffer";
 import type { Statussymbol } from "./screen-model";
@@ -46,6 +47,7 @@ const INSIDE_LEFT = 4;
 const ATEMSCHUTZTRAEGER_WIDTH = 7;
 const ATEMSCHUTZTRAEGER_PITCH = ATEMSCHUTZTRAEGER_WIDTH + 2;
 const ARROW_Y = Math.floor(SYMBOL_HEIGHT / 2);
+const COUNT_Y = Math.floor((SYMBOL_HEIGHT - GLYPH_HEIGHT) / 2);
 
 /** Draws a Statussymbol whose top-left corner is at (x, y). */
 export function drawStatussymbol(
@@ -157,7 +159,8 @@ function drawInside(
   }
 }
 
-// Draws a larger Trupp's `4×` and returns where the rest of the symbol starts.
+// Draws a larger Trupp's `4×`, centred on the symbol's height so it sits level with the
+// Einsatzliste row's text, and returns where the rest of the symbol starts.
 function drawCount(
   framebuffer: Framebuffer,
   count: number,
@@ -168,7 +171,7 @@ function drawCount(
     return x;
   }
   const countText = `${String(count)}×`;
-  drawText(framebuffer, countText, x, y + OUTSIDE_Y + 1);
+  drawText(framebuffer, countText, x, y + COUNT_Y);
   return x + textWidth(countText) + 2;
 }
 
