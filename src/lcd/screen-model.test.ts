@@ -667,6 +667,51 @@ describe("S12 Trupp ALARM", () => {
     ]);
     expect(model).toMatchObject({ fillLevel: 0 });
   });
+
+  // verification-scenarios V21; timing-and-alarm-rules §8.2; decided in "Decide how alarms are
+  // presented", points 1 and 4: the head of the queue, live, and no queue indicator
+  it("shows the Trupp at the head of the queue with its live values", () => {
+    const HLF_WT_F: Event = {
+      type: "tallyHeld",
+      tallyId: "3",
+      name: "HLF WT-F",
+    };
+    const HLF_WT_M: Event = {
+      type: "tallyHeld",
+      tallyId: "4",
+      name: "HLF WT-M",
+    };
+    const bothLoggedIn = [
+      HLF_WT_F,
+      press("OK"),
+      HLF_WT_M,
+      press("OK"),
+      press("OK"),
+    ].reduce(reduce, tickBy(stateAfter(...TRUPP_01), 30_000));
+
+    // Trupp 01's first Alarmgrenze at 9:54, Trupp 02's at 10:24
+    const queued = tickBy(tickBy(bothLoggedIn, 564_000), 30_000);
+    expect(screenText(screenModel(queued))).toEqual([
+      "Trupp 01 ALARM",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Druck 196 bar",
+      "Restzeit 00:19:36",
+      "Alarmende",
+      "mit OK",
+    ]);
+
+    const next = tickBy(reduce(queued, press("OK")), 6_000);
+    expect(screenText(screenModel(next))).toEqual([
+      "Trupp 02 ALARM",
+      "*HLF WT-F",
+      "*HLF WT-M",
+      "Druck 200 bar",
+      "Restzeit 00:20:00",
+      "Alarmende",
+      "mit OK",
+    ]);
+  });
 });
 
 describe("the Einsatzstatus screens", () => {

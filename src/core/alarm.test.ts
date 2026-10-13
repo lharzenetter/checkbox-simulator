@@ -374,3 +374,81 @@ describe("V6: Alarms in every Einsatzstatus", () => {
     expect(state.trupps[0]?.einsatzstatus).toBe("rueckmarsch");
   });
 });
+
+// verification-scenarios V20; timing-and-alarm-rules §8.2
+describe("V20: later Alarms of one Trupp", () => {
+  it("merge into its pending Alarm", () => {
+    let state = run(truppInAnmarsch(), tickAt(9, 54));
+    expectAlarmFor(state, 1);
+
+    state = reduce(state, tickAt(19, 48));
+    expectAlarmFor(state, 1);
+
+    state = reduce(state, press("OK"));
+    expectNoAlarm(state);
+  });
+
+  // a slow device or a long frame passes both Alarmgrenzen in one tick
+  it("merge when one tick passes both Alarmgrenzen", () => {
+    const state = run(truppInAnmarsch(), tickAt(9), tickAt(20));
+    expectAlarmFor(state, 1);
+    expectNoAlarm(reduce(state, press("OK")));
+  });
+});
+
+// verification-scenarios V21; timing-and-alarm-rules §8.1, 8.2; decided in "Decide how alarms are
+// presented", points 4–6
+describe("V21: Alarms of several Trupps", () => {
+  const B1 = { tallyId: "b1", name: "HLF WT-F" };
+  const B2 = { tallyId: "b2", name: "HLF WT-M" };
+
+  it("queue first in, first out, and return to the interrupted screen after the last OK", () => {
+    let state = run(
+      truppInAnmarsch(),
+      tickAt(0, 30),
+      hold(B1),
+      press("OK"),
+      hold(B2),
+      press("OK"),
+      press("OK"),
+    );
+    expect(state.trupps.map((trupp) => trupp.truppnummer)).toEqual([1, 2]);
+
+    // Trupp 01 → Druck ändern, the Trupp-Menü's fifth item, opens at 200; Down to 180, no OK
+    state = run(
+      state,
+      tickAt(9, 50),
+      press("Up"),
+      press("OK"),
+      press("OK"),
+      ...Array.from({ length: 4 }, () => press("Down")),
+      press("OK"),
+    );
+    expect(state.screen).toBe("truppFlaschendruckAendern");
+    expect(state.truppMenue?.draftFlaschendruckBar).toBe(200);
+    state = run(state, ...Array.from({ length: 4 }, () => press("Down")));
+    const editing = state;
+    expect(editing.truppMenue?.draftFlaschendruckBar).toBe(180);
+
+    state = reduce(state, tickAt(9, 54));
+    expectAlarmFor(state, 1);
+
+    state = reduce(state, tickAt(10));
+    const alarm = state;
+    state = run(state, press("Up"), press("Down"), press("X"), hold(B1));
+    expect(state).toBe(alarm);
+
+    state = reduce(state, tickAt(10, 24));
+    expect(state.screen).toBe("alarm");
+    expect(state.pendingAlarms).toEqual([1, 2]);
+
+    state = run(state, tickAt(10, 30), press("OK"));
+    expectAlarmFor(state, 2);
+
+    state = run(state, tickAt(10, 31), press("OK"));
+    expectNoAlarm(state);
+    expect(state.screen).toBe("truppFlaschendruckAendern");
+    expect(state.truppMenue).toEqual(editing.truppMenue);
+    expect(state.selectedTruppnummer).toBe(1);
+  });
+});
