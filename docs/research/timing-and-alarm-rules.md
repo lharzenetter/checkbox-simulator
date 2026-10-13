@@ -133,7 +133,7 @@ The manual does not say when either one starts. Decided (A8, device behaviour):
 
 ## 9. Factory defaults
 
-Section 9.1 of the manual lists numbers and units only, **no defaults**. Defaults below come from text elsewhere or are assumptions.
+Section 9.1 of the manual lists numbers and units only, **no defaults**. Defaults below come from text elsewhere or were decided in *Fix the factory defaults the manual leaves open* (A9).
 
 | Param | Meaning | Default | Source |
 | --- | --- | --- | --- |
@@ -148,24 +148,38 @@ Section 9.1 of the manual lists numbers and units only, **no defaults**. Default
 | [72] | Anzahl der maximalen Trupps | 6 | [Manual] p. 21 |
 | [77] / [78] | Max. über / min. unter Soll | 10 % / 10 % | [Manual] p. 72–73 |
 | [79] | Druckanzeige Einheit | 0 = Bar | [Manual] p. 11, 73 |
-| [41] [69] [70] [71] | Rückzugsalarmmodus per EZ | **unknown** — figures show a 30-min Trupp in ANMARSCH, so [41] = on in the figures' setup | [Assumption] A9 |
-| [42] | Reservedruck (mode on) | **unknown** — 50 bar proposed | [Assumption] A9 |
-| [82] | Reservedruck (mode off) | 50 bar ("50 bar Standard") | [Manual] p. 73 — but see conflicts |
-| [14] [53] [54] (+ EZ#2) | Atemschutzflaschentyp per EZ | **unknown** — figures show a 300 bar selection | [Assumption] A9 |
-| [80] / [81] | Flaschentyp 1 / 2 | **unknown** — 200 / 300 bar proposed | [Assumption] A9 |
-| [74] / [75] | Anfangs- / Enddruckerfassung | **unknown** — figures show Anfangsdruck entry, so ≥ 1 | [Assumption] A9 |
-| [76] | Druck-Sprunggröße | **unknown** — figures (250, 295) suggest 5 bar | [Assumption] A9 |
-| [73] | Druck vergrößerbar | **unknown** | [Assumption] A9 |
-| [11] | Einsatzzeit ändern | **unknown** | [Assumption] A9 |
-| [45] / [46] / [47] / [48] | Prozentmodus EZ#4 | **unknown** | [Assumption] A7, A9 |
-| [12] / [13] | Automatisches Anmelden / Trupp Detailansicht | **unknown** (seconds) | [Assumption] A9 |
-| [37] | Cursorposition Trupp erstellen | **unknown** | [Assumption] A9 |
+| [41] [69] [70] [71] | Rückzugsalarmmodus per EZ | On for Einsatzzeit #1 (30 min) and #3 (20 min); #2 and #4 are not simulated | **Decided** (A9), matches the figures |
+| [42] | Reservedruck (mode on) | 50 bar (30 min, 300 bar → `t_res` = 5 min) | **Decided** (A9) |
+| [82] | Reservedruck (mode off) | 50 bar ("50 bar Standard"); inert (5.12) | [Manual] p. 73; **Decided** (A5) |
+| [14] [53] [54] (+ EZ#2) | Atemschutzflaschentyp per EZ | 300 bar, so `P_N` = 300; DRUCK-AUSWAHL is skipped | **Decided** (A9), from *Define the key-by-screen navigation model* |
+| [80] / [81] | Flaschentyp 1 / 2 | 200 / 300 bar; only 300 is ever used | **Decided** (A9) |
+| [74] / [75] | Anfangs- / Enddruckerfassung | On / off: the Anfangsdruck is asked at login, no Enddruck at logoff | **Decided** (A9), from the navigation model |
+| [76] | Druck-Sprunggröße | 5 bar | **Decided** (A9), fits the figures (250, 295) |
+| [73] | Druck vergrößerbar | 5 bar: Druck ändern may raise the pressure, in 5-bar steps (1.5) | **Decided** (A9) |
+| [11] | Einsatzzeit ändern | 0 (off): no menu offers it | **Decided** (A9), from the navigation model |
+| [45] / [46] / [47] / [48] | Prozentmodus EZ#4 | Not simulated (Einsatzzeit #4 is out of scope) | Out of scope |
+| [12] | Automatisches Anmelden | Unused: the Anmeldefenster always waits for C (7.5) | **Decided** (A9) |
+| [13] | Trupp Detailansicht timeout | 15 s idle on Trupp-Ansicht or Trupp-Menü → Einsatzliste | **Decided** (A9) |
+| [37] | Cursorposition Trupp erstellen | First item, like every choice screen | **Decided** (A9), from the navigation model |
+
+Display timings the manual does not give (catalogue gap G14):
+
+| Timing | Value | Source |
+| --- | --- | --- |
+| Abschaltzeit of the Startdisplay | 25 s countdown, then Aus | **Decided** (A9), the figure's "25" |
+| SICHER alternation | 1 s `SICHER`, 1 s status glyph | **Decided** (A9) |
+| Display backlight | Always lit; no backlight timeout | **Decided** (A9) |
+
+| # | Rule | Source |
+| --- | --- | --- |
+| 9.1 | The display timings ([13], Abschaltzeit, SICHER alternation) run on **real** time, like the D+E hold. The speed control (2×–10×) scales only Einsatz timing: Restzeit, alarms and the Einsatzprotokoll times. Pause freezes both. | **Decided** (A9) |
 
 ## 10. Manual conflicts
 
 - **[48] vs [49]:** 6.12.1 calls the EZ#4 follow-up alarm [48]; 9.1 calls it [49]. 6.12.1 also lists [49] as the Atemschutzflaschentyp for one Einsatzzeit ([14, 49, 53, 54]), and 9.1 has no Flaschentyp entry for Einsatzzeit #2.
 - **[82] has two meanings:** in Register DRUCK it is the "Standard-Reservedruck … ohne Rückzugsalarm" (10–9999); further down the same page it is the "Flaschendruck bei Rückzugalarm (50 bar Standard)", which is [42]'s job.
 - **[42] range** is "zwischen 0 und 2500 bar", implausible for 200/300 bar bottles.
+- **Resolution:** neither conflict changes behaviour. The [48]/[49] numbering only touches Einsatzzeit #2 and #4, which are out of scope. [82] is inert (5.12) and defaults to 50 bar. The simulator uses the 9.1 numbering wherever a number is shown.
 - **Figures disagree with each other:** p. 22 shows 295 bar → 00:28:00; p. 29 shows 40 bar, 00:02:00 and a 120 bar Rückzugsdruck. Treat figure numbers as layout references, not test vectors.
 
 ## 11. FwDV 7 cross-check
@@ -216,7 +230,7 @@ Logoff (every member's Transponder at E → ABMELDEN → OK) from every Einsatzs
 
 ## Open decisions
 
-A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions*; A8 in *Decide when a Daueralarm starts and ends* (rows marked **Decided** above).
+A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions*; A8 in *Decide when a Daueralarm starts and ends*; A9 in *Fix the factory defaults the manual leaves open* (rows marked **Decided** above).
 
 These feed the follow-up grilling ticket.
 
@@ -228,4 +242,4 @@ These feed the follow-up grilling ticket.
 - **A6 — Anmarsch → Rückzug.** Is this transition allowed without passing Einsatzziel erreicht?
 - **A7 — Prozentmodus semantics.** Adopt reading 6.1/6.2, or leave Prozentmodus off (it only affects the 240-min Einsatzzeit #4)?
 - **A8 — Daueralarm start and cancel.** When does each Daueralarm start, and can D cancel the logoff Daueralarm?
-- **A9 — Unknown defaults.** Fix values for every **unknown** row in section 9, including whether the Rückzugsalarmmodus is on for each Einsatzzeit.
+- **A9 — Unknown defaults.** Fix values for every **unknown** row in section 9, including whether the Rückzugsalarmmodus is on for each Einsatzzeit. *Decided:* see section 9.

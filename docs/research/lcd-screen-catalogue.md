@@ -95,7 +95,7 @@ Notes:
 - A Sicherungstrupp is registered with "Sicherheitstrupp OK" in the Anmeldefenster ([S04](#s04-anmeldefenster-des-trupps)) (p. 21 §5.3.1 steps 2–3).
 - In the Einsatzliste "erscheinen abwechselnd das Wort Sicher und der Status des Trupps" (p. 21 step 4).
   The figure on p. 10 (item ⑧, "Status und Schrift wechseln") shows the phase `06  SICHER  10:10:00`.
-- The manual does not give the alternation period or duty cycle.
+- The manual does not give the alternation period or duty cycle. Decided: 1 s each (see [G14](#gaps-and-ambiguities)).
 - V04 only: "Ein Sicherungstrupp kann erst ab V04 zum Einsatztrupp werden" (p. 19, p. 21).
   Parameter 89 "Sicherheitstrupp Revidierung" asks whether the Sicherungstrupp becomes a normal Trupp again after changing into the Einsatz (p. 73, p. 89). No screen for that question is shown.
 
@@ -913,6 +913,7 @@ G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
   The general rule, "Funktion oder Eingabe abbrechen / in den Ausgangsmodus zurückkehren" (p. 9), has to be turned into concrete targets.
 - **G14 – Timing values.**
   The manual does not give the SICHER alternation period or the default values of the Startdisplay Abschaltzeit (only "25" in the figure), the display-backlight timeout, parameter 12 or parameter 13.
+  *Decided* in *Fix the factory defaults the manual leaves open*: see [section 9 of the timing and alarm rules](timing-and-alarm-rules.md#9-factory-defaults).
 - **G15 – Meaning of the `*` before names** in Trupp screens (absent in the Einsatzprotokoll, p. 32).
 - **G16 – Tick mark `1` and the left bar** on the cylinder graphic (pp. 11, 20, 22, 24, 29). The `1` may be the number of cylinders or a pressure mark.
 - **G17 – Time-split bar segments** (p. 11 items ③–⑤): their pixel proportions and how they relate to the Einsatzzeit are not specified.
