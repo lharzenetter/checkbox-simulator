@@ -67,7 +67,7 @@ Every rule is tagged:
 | 4.4 | The Bereitschaft interval is anchored to simulated time since the Trupp entered Bereitschaft (+5, +10, … min) and restarts on each entry. Acknowledging never shifts it. | **Decided** (A3) |
 | 4.7 | While a Trupp is in Bereitschaft only the Bereitschaft alarm sounds. Alarmgrenzen, the Rückzugsalarm and the overdue repeats pause with `t_run` and Restzeit, even for a Trupp that was already overdue. | **Decided** (A3) |
 | 4.5 | Because Alarmgrenzen and Anmarschzeit are measured in `t_run` (or Restzeit), Bereitschaft shifts all pending alarm points by its duration. | Follows from 4.1 |
-| 4.6 | "Trupp -> Einsatz" returns the Trupp to the Einsatzstatus it had before Bereitschaft, or to Anmarsch when it came straight from login (Einsatzziel erreicht when the Rückzugsalarmmodus is off). | [Assumption] A4 |
+| 4.6 | Bereitschaft means the Trupp is in a safe area, so "Trupp -> Einsatz" never restores the earlier Einsatzstatus. The Rückzugsalarmmodus decides: on → Anmarsch (a new Anmarsch leg, 5.15), off → Einsatzziel erreicht. See [section 12](#12-einsatzstatus-transitions). | **Decided** (A4, device behaviour) |
 
 ## 5. Rückzugsalarm
 
@@ -83,10 +83,11 @@ Every rule is tagged:
 | 5.11 | The Rückzugsalarm stays **time-based** (5.5), as on the device, even though FwDV 7 sizes the Rückweg in Atemluftmenge (see [FwDV 7 cross-check](#11-fwdv-7-cross-check)). Deliberate: the simulator replicates the device, not the regulation. | **Decided** (A5) |
 | 5.12 | [82] Reservedruck ohne Rückzugsalarm is stored but has no effect: with the mode off no Rückzugsalarm fires and Restzeit stays `T × P / P_N`. | **Decided** (A5) |
 | 5.8 | The detail screen's bar splits the Einsatzzeit into Anmarsch, Einsatzziel erreicht and Rückmarsch (2 × Anmarsch + reserve). | [Manual] p. 11 |
-| 5.9 | The Rückzugsalarm fires at most once per Einsatz, and not at all if the Trupp is already in Rückzug when the point is reached. A pressure raise via [73] that lifts Restzeit back above the threshold does not re-arm it. Rückzug is the only Einsatzstatus that suppresses an alarm. | **Decided** (A2) |
+| 5.9 | The Rückzugsalarm fires at most once per Anmarsch leg (5.15), and not at all if the Trupp is already in Rückzug when the point is reached. A pressure raise via [73] that lifts Restzeit back above the threshold does not re-arm it. Rückzug is the only Einsatzstatus that suppresses an alarm. | **Decided** (A2) |
 | 5.13 | The Rückzugsalarm is armed only from Einsatzziel erreicht onwards (`t_A` has no value before). In Anmarsch, the first Alarmgrenze is the cue to order a retreat (p. 23). | **Decided** (A2) |
 | 5.14 | The threshold is checked against the current Restzeit ("als Restzeit unterschritten", p. 70–71). When a pressure entry or the switch to Einsatzziel erreicht leaves Restzeit already at or below `2·t_A + t_res`, the alarm fires as soon as OK confirms it. | **Decided** (A2) |
-| 5.10 | Anmarsch → Rückzug directly (skipping Einsatzziel erreicht) is allowed. The manual tells the operator to order a Trupp still in Anmarsch to retreat at the first Alarmgrenze (p. 23), but only shows the menu path from Einsatzziel erreicht. | [Assumption] A6 |
+| 5.10 | Anmarsch → Rückzug directly (skipping Einsatzziel erreicht) is allowed: the ANMARSCH menu offers `Rückzug antreten`, which asks for the Flaschendruck like the normal path. That leg has no `t_A`, so no Rückzugsalarm fires for it. The manual tells the operator to order a Trupp still in Anmarsch to retreat at the first Alarmgrenze (p. 23). | **Decided** (A6, device behaviour) |
+| 5.15 | Every entry into Anmarsch (from login or from Bereitschaft) starts a new **Anmarsch leg**: `t_A` is cleared and measured again from the start of the leg to the next Einsatzziel erreicht, and the Rückzugsalarm is disarmed and re-armed there. Alarmgrenzen and Restzeit stay on the whole Einsatz (`t_run`). | **Decided** (A4) |
 
 ## 6. Prozentmodus (Einsatzzeit #4)
 
@@ -176,9 +177,43 @@ Checked against FwDV 7 (Ausgabe 2002 mit Änderungen 2005), page numbers as prin
 | Radio reports at connecting, Einsatzziel erreicht and Antritt des Rückweges. | 7.3 p. 11 | Matches the Einsatzstatus flow (5.3). |
 | No numeric Reservedruck. | — | [42] is a device parameter only. |
 
+## 12. Einsatzstatus transitions
+
+Decided in *Decide the Einsatzstatus transitions*, from the real device's behaviour.
+
+```
+Rückzugsalarmmodus ON
+                       Trupp -> Einsatz (new Anmarsch leg)
+      ┌────────────────────────────────────────────────┐
+      ▼                                                │
+ login ─► Anmarsch ──Einsatzziel erreicht──► Einsatzziel erreicht ──Rückzug antreten──► Rückzug
+   │         │  └────────────Rückzug antreten──────────────────────────────────────────▲
+   │         │                     │                                                   │
+   │         └──── Trupp -> Bereitschaft (from any running status) ───────────────► Bereitschaft
+   └── Trupp OK Bereitschaft / Sicherheitstrupp OK ─────────────────────────────────► Bereitschaft
+
+Rückzugsalarmmodus OFF
+ login ─► Einsatzziel erreicht ◄──Trupp -> Einsatz── Bereitschaft
+                   └──────Trupp -> Bereitschaft──────►┘
+ login ─► Bereitschaft (Trupp OK Bereitschaft / Sicherheitstrupp OK)
+
+Logoff (every member's Transponder at E → ABMELDEN → OK) from every Einsatzstatus.
+```
+
+| # | Rule | Source |
+| --- | --- | --- |
+| 12.1 | At login a Trupp starts in Anmarsch (mode on) or Einsatzziel erreicht (mode off), or in Bereitschaft via `Trupp OK Bereitschaft` / `Sicherheitstrupp OK`. | [Manual] p. 19–20 |
+| 12.2 | Anmarsch → Einsatzziel erreicht and Einsatzziel erreicht → Rückzug follow the radio reports; each asks for the Flaschendruck. Anmarsch → Rückzug is allowed too (5.10). | [Manual] p. 22, 29; **Decided** (A6) |
+| 12.3 | `Trupp -> Bereitschaft` works from every running Einsatzstatus (Anmarsch, Einsatzziel erreicht, Rückzug). | **Decided** (device behaviour) |
+| 12.4 | Bereitschaft is a safe area. `Trupp -> Einsatz` leads to Anmarsch (mode on, new Anmarsch leg, 5.15) or Einsatzziel erreicht (mode off), never back to the earlier status. | **Decided** (A4) |
+| 12.5 | The Trupp-Menü always lists `Trupp -> Einsatz` and `Trupp -> Bereitschaft`, as both figures show (p. 22, 26). Choosing the status the Trupp already has does nothing and returns to the Einsatzliste. Only the items below depend on the status. | **Decided** ([Figure] p. 22, 26) |
+| 12.6 | Rückzug is final: it is left only via Bereitschaft or logoff; there is no way back to Einsatzziel erreicht. | **Decided** (device behaviour) |
+| 12.7 | Logoff is possible from every Einsatzstatus. It completes only once every member of the Trupp has held their Transponder to E; with anyone missing, the Trupp cannot be logged off (the resulting Daueralarm is the ticket *Decide when a Daueralarm starts and ends*). The Einsatzstatus at logoff is recorded in the Einsatzprotokoll. | [Manual] p. 30–31; **Decided** (device behaviour) |
+| 12.8 | Sicherungstrupp is a flag alongside the Einsatzstatus, not a status. A Sicherungstrupp starts in Bereitschaft, follows the same diagram once sent in, and keeps SICHER for the whole Einsatz. | **Decided** (device behaviour) |
+
 ## Open decisions
 
-A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire* (rows marked **Decided** above).
+A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions* (rows marked **Decided** above).
 
 These feed the follow-up grilling ticket.
 

@@ -43,7 +43,7 @@ A vehicle's radio call sign, e.g. "Florian Musterstadt 1/46-1"; the Trainee sets
 _Avoid_: call sign, Fahrzeugname
 
 **Sicherungstrupp**:
-A Trupp registered as standby rescue team; it is shown alternating with the text SICHER.
+A Trupp registered as standby rescue team; a flag alongside its Einsatzstatus, not a status of its own. It starts in Bereitschaft and is shown alternating with the text SICHER.
 _Avoid_: Sicherheitstrupp, rescue team
 
 **Einsatzliste**:
@@ -55,7 +55,7 @@ A Trupp's current phase: Bereitschaft, Anmarsch, Einsatzziel erreicht, or Rückz
 _Avoid_: state, Status
 
 **Bereitschaft**:
-The Einsatzstatus in which a Trupp's Einsatzzeit is paused.
+The Einsatzstatus of a Trupp waiting in a safe area, with its Einsatzzeit paused; leaving it starts a new Anmarsch.
 _Avoid_: standby, pause
 
 **Einsatzzeit**:
@@ -67,7 +67,7 @@ The Einsatzzeit a Trupp has left; shown counting negative once exceeded.
 _Avoid_: remaining time, countdown
 
 **Anmarschzeit**:
-The running time from a Trupp's start until it reports Einsatzziel erreicht; doubled, it sizes the Rückzugsalarm.
+The running time from the start of a Trupp's Anmarsch until it reports Einsatzziel erreicht; doubled, it sizes the Rückzugsalarm.
 _Avoid_: approach time, Hinweg
 
 **Flaschendruck**:
