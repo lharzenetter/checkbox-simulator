@@ -343,7 +343,7 @@ function confirmFlaschendruck(
     case "truppEinsatz":
     case "truppBereitschaft":
     case "attributeEintragen":
-      throw new Error(`${truppMenue.aktion} opens no pressure editor`);
+      throw new Error(`${truppMenue.aktion} opens no Flaschendruck editor`);
     default:
       return assertNever(truppMenue.aktion);
   }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createInitialState,
   estimateFlaschendruckBar,
+  isSicherShown,
   reduce,
   rueckzugsdruckBar,
   selectedTrupp,
@@ -49,7 +50,7 @@ function minutes(value: number, seconds = 0): number {
   return (value * 60 + seconds) * 1000;
 }
 
-/** Trupp 01 of A1 and A2, logged in for 30 min at 300 bar with the chosen Anmeldeaktion. */
+// Trupp 01 of A1 and A2, logged in for 30 min at 300 bar with the chosen Anmeldeaktion.
 function loggedIn(anmeldeaktionDowns: number): State {
   return run(
     createInitialState(SESSION_START),
@@ -74,7 +75,7 @@ function sicherheitstrupp(): State {
   return loggedIn(2);
 }
 
-/** Opens the Trupp-Menü from the Einsatzliste and puts the cursor on the item. */
+// Opens the Trupp-Menü from the Einsatzliste and chooses the item.
 function chooseItem(state: State, aktion: TruppMenueAktion): State {
   const menue = run(state, press("OK"), press("OK"));
   const index = truppMenueAktionen(menue).indexOf(aktion);
@@ -82,12 +83,12 @@ function chooseItem(state: State, aktion: TruppMenueAktion): State {
   return run(menue, ...presses("Down", index), press("OK"));
 }
 
-/** Chooses the item, then OK in the pressure editor it opens: "accept" in the scenarios. */
+// Chooses the item, then OK in the Flaschendruck editor it opens: "accept" in the scenarios.
 function accept(state: State, aktion: TruppMenueAktion): State {
   return reduce(chooseItem(state, aktion), press("OK"));
 }
 
-/** Chooses the item, sets the editor to the Flaschendruck with Down, then OK: "enter P". */
+// Chooses the item, sets the editor to the Flaschendruck with Down, then OK: "enter P".
 function enter(
   state: State,
   aktion: TruppMenueAktion,
@@ -113,7 +114,7 @@ function restzeitOf(state: State): number | undefined {
 describe("`Einsatzziel erreicht`", () => {
   // manual 5.4 steps 3–5; decided in "Define the key-by-screen navigation model", its pressure
   // editor table; timing-and-alarm-rules §1.7
-  it("opens the pressure editor at the snapped estimate", () => {
+  it("opens the Flaschendruck editor at the snapped estimate", () => {
     const editor = chooseItem(
       run(truppInAnmarsch(), tickAt(5, 4)),
       "einsatzzielErreicht",
@@ -339,27 +340,31 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
   });
 });
 
-// verification scenario V16; timing-and-alarm-rules §12.8
+// verification scenario V16; timing-and-alarm-rules §12.8; manual 5.3.1 step 4
 describe("a Sicherheitstrupp", () => {
-  it("keeps its flag through every Einsatzstatus", () => {
+  // The Einsatzliste was just entered, so its SICHER phase is showing.
+  function expectSicher(state: State, einsatzstatus: Einsatzstatus): void {
+    expect(state.screen).toBe("einsatzliste");
+    expect(einsatzstatusOf(state)).toBe(einsatzstatus);
+    expect(state.trupps[0]?.sicherheitstrupp).toBe(true);
+    expect(isSicherShown(state, selectedTrupp(state))).toBe(true);
+  }
+
+  it("keeps its flag and SICHER through every Einsatzstatus", () => {
     let state = sicherheitstrupp();
-    expect(einsatzstatusOf(state)).toBe("bereitschaft");
+    expectSicher(state, "bereitschaft");
 
     state = chooseItem(run(state, tickAt(6)), "truppEinsatz");
-    expect(einsatzstatusOf(state)).toBe("anmarsch");
-    expect(state.trupps[0]?.sicherheitstrupp).toBe(true);
+    expectSicher(state, "anmarsch");
 
     state = accept(run(state, tickAt(7)), "einsatzzielErreicht");
-    expect(einsatzstatusOf(state)).toBe("einsatzzielErreicht");
-    expect(state.trupps[0]?.sicherheitstrupp).toBe(true);
+    expectSicher(state, "einsatzzielErreicht");
 
     state = run(accept(state, "rueckzugAntreten"), press("X"));
-    expect(einsatzstatusOf(state)).toBe("rueckmarsch");
-    expect(state.trupps[0]?.sicherheitstrupp).toBe(true);
+    expectSicher(state, "rueckmarsch");
 
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
-    expect(einsatzstatusOf(state)).toBe("bereitschaft");
-    expect(state.trupps[0]?.sicherheitstrupp).toBe(true);
+    expectSicher(state, "bereitschaft");
   });
 });
 

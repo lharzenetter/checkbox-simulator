@@ -41,17 +41,17 @@ function truppInAnmarsch(): State {
   );
 }
 
-/** Trupp 01 at its Einsatzziel, its Restzeit accepted unchanged, on the Einsatzliste. */
+// Trupp 01 at its Einsatzziel, its Restzeit accepted unchanged, on the Einsatzliste.
 function truppAtEinsatzziel(): State {
   return chooseInTruppMenue(truppInAnmarsch(), 2);
 }
 
-/** Trupp 01 straight from Anmarsch into Rückmarsch, back on the Einsatzliste. */
+// Trupp 01 straight from Anmarsch into Rückmarsch, back on the Einsatzliste.
 function truppInRueckmarsch(): State {
   return reduce(chooseInTruppMenue(truppInAnmarsch(), 3), press("X"));
 }
 
-// Opens the Trupp-Menü, moves down to the item and accepts its pressure editor with OK.
+// Opens the Trupp-Menü, moves down to the item and accepts its Flaschendruck editor with OK.
 function chooseInTruppMenue(state: State, downs: number): State {
   return run(
     state,

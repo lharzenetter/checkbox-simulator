@@ -103,9 +103,9 @@ export type TruppMenueAktion =
 
 /** The Trupp-Menü open for the selected Trupp, and the editors it opens. */
 export interface TruppMenue {
-  /** The item under the cursor, and the one that opened the pressure editor. */
+  /** The item under the cursor, and the one that opened the Flaschendruck editor. */
   readonly aktion: TruppMenueAktion;
-  /** The value being edited in the pressure editor; `null` on the Trupp-Menü. */
+  /** The value being edited in the Flaschendruck editor; `null` on the Trupp-Menü. */
   readonly draftFlaschendruckBar: number | null;
 }
 

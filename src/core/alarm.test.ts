@@ -343,7 +343,7 @@ describe("V6: Alarms in every Einsatzstatus", () => {
     );
   }
 
-  it("sounds in Einsatzziel erreicht and in Rückmarsch, and Rückmarsch suppresses the Rückzugsalarm", () => {
+  it("sounds at the Alarmgrenzen and at 00:00:00 in Einsatzziel erreicht and in Rückmarsch", () => {
     // Einsatzziel erreicht is the Anmarsch menu's third item
     let state = accept(run(truppInAnmarsch(), tickAt(3)), 2);
     expect(state.trupps[0]?.einsatzstatus).toBe("einsatzzielErreicht");
@@ -359,7 +359,8 @@ describe("V6: Alarms in every Einsatzstatus", () => {
     expect(restzeitOf(state)).toBe(18 * 60_000);
     state = reduce(state, press("X"));
 
-    // R = 11:00 = 2·t_A + t_res
+    // R = 11:00 = 2·t_A + t_res: Rückmarsch will suppress the Rückzugsalarm here (§5.9); until
+    // issue #34 ("Fire the Rückzugsalarm") brings it, this only checks no other Alarm fires
     state = reduce(state, tickAt(19));
     expectNoAlarm(state);
     expect(restzeitOf(state)).toBe(11 * 60_000);

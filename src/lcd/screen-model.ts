@@ -310,7 +310,7 @@ function truppFlaschendruckAendernModel(
   truppMenue: TruppMenue,
 ): ScreenModel {
   if (truppMenue.draftFlaschendruckBar === null) {
-    throw new Error("The pressure editor has no Flaschendruck to edit");
+    throw new Error("The Flaschendruck editor has no Flaschendruck to edit");
   }
   return {
     ...flaschendruckEditorModel(
@@ -334,7 +334,7 @@ function truppFlaschendruckEditorTitle(aktion: TruppMenueAktion): string {
     case "truppEinsatz":
     case "truppBereitschaft":
     case "attributeEintragen":
-      throw new Error(`${aktion} opens no pressure editor`);
+      throw new Error(`${aktion} opens no Flaschendruck editor`);
     default:
       return assertNever(aktion);
   }
