@@ -1,0 +1,158 @@
+.housing {
+  --housing-red: #c4161c;
+  --housing-shadow: #8f0f13;
+  --faceplate: #e6e6e3;
+  --key-gray: #9a9a9a;
+  --key-red: #d21f26;
+  --key-green: #1f8a3c;
+
+  width: min(100%, 620px);
+  padding: 28px 40px;
+  border-radius: 28px;
+  background: linear-gradient(
+    160deg,
+    var(--housing-red),
+    var(--housing-shadow)
+  );
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+}
+
+.faceplate {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  grid-template-areas:
+    "band band"
+    "lcd keypad";
+  gap: 18px 24px;
+  padding: 18px;
+  border-radius: 12px;
+  background: var(--faceplate);
+}
+
+.band {
+  grid-area: band;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 14px;
+  background: var(--housing-red);
+  color: #fff;
+}
+
+.led {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #c98a8a, #6e1c1c);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 25%);
+}
+
+.brand {
+  font:
+    700 1.6rem/1 system-ui,
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.lcdWindow {
+  grid-area: lcd;
+  padding: 8px;
+  border: 2px solid #555;
+  border-radius: 10px;
+  background: #444;
+}
+
+.keypad {
+  grid-area: keypad;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(4, auto);
+  grid-template-areas:
+    "up up"
+    "x ok"
+    "down down"
+    ". check";
+  place-items: center;
+  gap: 10px;
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  font:
+    800 1.1rem/1 system-ui,
+    sans-serif;
+  box-shadow: 0 3px 0 rgb(0 0 0 / 30%);
+}
+
+.key:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 30%);
+}
+
+.key:focus-visible {
+  outline: 3px solid #1a5fb4;
+  outline-offset: 3px;
+}
+
+.up,
+.down {
+  width: 72px;
+  height: 44px;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--key-gray);
+}
+
+.up {
+  grid-area: up;
+}
+
+.down {
+  grid-area: down;
+}
+
+.chevron {
+  width: 64px;
+  height: 38px;
+}
+
+.x,
+.ok,
+.check {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #f4f4f4;
+}
+
+.x {
+  grid-area: x;
+  border: 12px solid var(--key-red);
+  color: var(--key-red);
+}
+
+.cross {
+  font-size: 0.9em;
+}
+
+.ok {
+  grid-area: ok;
+  border: 12px solid var(--key-green);
+  color: var(--key-green);
+}
+
+.check {
+  grid-area: check;
+  width: 76px;
+  height: 76px;
+  border: 14px solid var(--key-red);
+  color: var(--key-red);
+  font-size: 0.7rem;
+}

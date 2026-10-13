@@ -1,0 +1,9 @@
+.app {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  background: #2b2f33;
+}
