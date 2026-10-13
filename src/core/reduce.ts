@@ -784,15 +784,22 @@ function logIn(state: State, login: Login): State {
 }
 
 // timing-and-alarm-rules §7.5: below [07] OK starts the login Daueralarm and the Anmeldefenster
-// stays; OK while it sounds neither silences nor restarts it (§7.6)
+// stays
 function confirmTrupp(state: State): State {
   const login = requireLogin(state);
-  if (hasEnoughAtemschutztraeger(login)) {
-    return enterScreen(state, "anfangsdruckEditor");
-  }
-  return login.daueralarmSinceRealMs === null
-    ? withLogin(state, { ...login, daueralarmSinceRealMs: state.realNow })
-    : state;
+  return hasEnoughAtemschutztraeger(login)
+    ? enterScreen(state, "anfangsdruckEditor")
+    : withLogin(state, soundDaueralarm(state, login));
+}
+
+// decided in "Decide when a Daueralarm starts and ends": OK never silences a Daueralarm.
+// ASSUMPTION: nor does it restart one that is sounding, so its wail runs on unbroken; the ADR
+// restarts it only once it has stopped (taken in "Sound the login and logoff Daueralarme",
+// issue #36).
+function soundDaueralarm<T extends Login | Logoff>(state: State, cause: T): T {
+  return cause.daueralarmSinceRealMs === null
+    ? { ...cause, daueralarmSinceRealMs: state.realNow }
+    : cause;
 }
 
 function hasEnoughAtemschutztraeger(login: Login): boolean {
@@ -894,9 +901,10 @@ function handleAbmeldenKey(state: State, key: Key): State {
     case "X":
       return enterScreen({ ...state, logoff: null }, "einsatzliste");
     case "OK":
+      // timing-and-alarm-rules §7.3: with anyone unmarked OK starts the logoff Daueralarm instead
       return isEveryoneMarked(state)
         ? logOff(state)
-        : startLogoffDaueralarm(state);
+        : { ...state, logoff: soundDaueralarm(state, requireLogoff(state)) };
     case "Up":
     case "Down":
     case "Check":
@@ -906,21 +914,12 @@ function handleAbmeldenKey(state: State, key: Key): State {
   }
 }
 
-// timing-and-alarm-rules §7.3; OK while it sounds neither silences nor restarts it (§7.4)
-function startLogoffDaueralarm(state: State): State {
-  const logoff = requireLogoff(state);
-  if (logoff.daueralarmSinceRealMs !== null) {
-    return state;
-  }
-  return {
-    ...state,
-    logoff: { ...logoff, daueralarmSinceRealMs: state.realNow },
-  };
+function isEveryoneMarked(state: State): boolean {
+  return isEveryoneIn(truppLoggingOff(state), requireLogoff(state));
 }
 
-function isEveryoneMarked(state: State): boolean {
-  const logoff = requireLogoff(state);
-  return truppLoggingOff(state).atemschutztraeger.every((atemschutztraeger) =>
+function isEveryoneIn(trupp: Trupp, logoff: Logoff): boolean {
+  return trupp.atemschutztraeger.every((atemschutztraeger) =>
     logoff.markedTallyIds.includes(atemschutztraeger.tallyId),
   );
 }
@@ -984,20 +983,17 @@ function markAtemschutztraeger(state: State, tallyId: string): State {
   ) {
     return state;
   }
-  const marked: State = {
-    ...state,
-    logoff: {
-      ...logoff,
-      markedTallyIds: [...logoff.markedTallyIds, tallyId],
-    },
+  const marked: Logoff = {
+    ...logoff,
+    markedTallyIds: [...logoff.markedTallyIds, tallyId],
   };
   // timing-and-alarm-rules §7.4: the last mark stops the Daueralarm, and ABMELDEN waits for OK
-  return isEveryoneMarked(marked)
-    ? {
-        ...marked,
-        logoff: { ...requireLogoff(marked), daueralarmSinceRealMs: null },
-      }
-    : marked;
+  return {
+    ...state,
+    logoff: isEveryoneIn(truppLoggingOff(state), marked)
+      ? { ...marked, daueralarmSinceRealMs: null }
+      : marked,
+  };
 }
 
 function requireLogoff(state: State): Logoff {

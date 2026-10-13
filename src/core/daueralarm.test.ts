@@ -184,6 +184,18 @@ describe("V19: the login Daueralarm", () => {
     expect(loggedIn.trupps[0]?.einsatzstatus).toBe("anmarsch");
   });
 
+  // decided in "Decide when a Daueralarm starts and ends": only [07] members or X end it, and no
+  // Tally joins on the Flaschendruck editor ("Define the key-by-screen navigation model")
+  it("keeps sounding while `Druck ändern` is open and after it returns", () => {
+    const editor = run(anmeldefenster(), press("OK"), press("Up"), press("OK"));
+    expect(editor.screen).toBe("flaschendruckAendern");
+    expect(isAlarmSounding(editor)).toBe(true);
+
+    const back = reduce(editor, press("OK"));
+    expect(back.screen).toBe("anmeldefenster");
+    expect(isAlarmSounding(back)).toBe(true);
+  });
+
   it("stops on X, which throws the login away and frees the Truppnummer", () => {
     const state = run(anmeldefenster(), press("OK"), press("X"));
     expect(isAlarmSounding(state)).toBe(false);
@@ -242,6 +254,22 @@ describe("V22: an Alarm during a Daueralarm", () => {
     );
     expect(state.screen).toBe("abmelden");
     expect(isAlarmSounding(state)).toBe(true);
+  });
+
+  // decided in "Decide how alarms are presented", point 4: the signal runs while anything is
+  // pending or a Daueralarm is active, so S12 taking over must not restart the siren's wail
+  it("keeps the siren and the LED in the Daueralarm's rhythm while S12 is in front", () => {
+    const daueralarm = run(
+      logoffDaueralarm(),
+      press("X"),
+      hold(A1),
+      tickAfter(logoffDaueralarm(), 100),
+      press("OK"),
+    );
+    const interrupted = reduce(daueralarm, tickAt(10, 24));
+    expect(interrupted.screen).toBe("alarm");
+    expect(alarmCycleMs(interrupted)).toBe(400);
+    expect(alarmCycleMs(reduce(interrupted, press("OK")))).toBe(400);
   });
 });
 

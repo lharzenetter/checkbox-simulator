@@ -11,7 +11,6 @@ export function isAlarmSounding(state: State): boolean {
   );
 }
 
-// Real time at which the active Daueralarm started; `null` while none is.
 function daueralarmSinceRealMs(state: State): number | null {
   return (
     state.login?.daueralarmSinceRealMs ??
@@ -22,15 +21,16 @@ function daueralarmSinceRealMs(state: State): number | null {
 
 /**
  * Real milliseconds into the current wail cycle of the siren and the LED: the LED is lit for the
- * first {@link ALARM_BLINK_PHASE_MS}, dark for the second. Cycles run from the moment S12 is
- * entered, or, while a Daueralarm's own screen is in front, from the moment it started.
+ * first {@link ALARM_BLINK_PHASE_MS}, dark for the second. Cycles run from the moment a Daueralarm
+ * started while one is active, otherwise from the moment S12 is entered.
  */
-// decided in "Decide how alarms are presented", points 2 and 8
+// decided in "Decide how alarms are presented", points 2, 4 and 8: one signal that runs on while
+// anything sounds, so S12 taking over from a Daueralarm must not restart its wail.
+// ASSUMPTION: a Daueralarm's wail starts with the Daueralarm, as an Alarm's starts with S12; the
+// ADR fixes no phase (taken in "Sound the login and logoff Daueralarme", issue #36).
 export function alarmCycleMs(state: State): number {
   const startedRealMs =
-    state.screen === "alarm"
-      ? state.screenEnteredRealMs
-      : (daueralarmSinceRealMs(state) ?? state.screenEnteredRealMs);
+    daueralarmSinceRealMs(state) ?? state.screenEnteredRealMs;
   return (state.realNow - startedRealMs) % (2 * ALARM_BLINK_PHASE_MS);
 }
 
