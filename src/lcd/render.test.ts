@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, reduce } from "../core/index";
-import type { Event, Key } from "../core/index";
+import type { Einsatzstatus, Event, Key } from "../core/index";
 import type { Framebuffer } from "./framebuffer";
 import { LCD_HEIGHT, LCD_WIDTH, renderScreen } from "./render";
 import { screenModel } from "./screen-model";
+import type { ScreenModel } from "./screen-model";
 
 // 12.04.17 11:11:00, the Uhrzeit in the Startdisplay figure (manual 5.2).
 const FIGURE_UHRZEIT = Date.UTC(2017, 3, 12, 11, 11, 0);
@@ -191,6 +192,24 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
+  // manual 3.2.3; issue #40: the widest Statussymbol, three in Bereitschaft, clears the names
+  it("draws the Trupp-Ansicht of a Trupp of three in Bereitschaft", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          HLF_AT_F,
+          press("OK"),
+          HLF_AT_M,
+          { type: "tallyHeld", tallyId: "3", name: "HLF WT-F" },
+          press("Down"),
+          press("OK"),
+          press("OK"),
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
   // manual 5.4, Trupp-Menü figure (ANMARSCH)
   it("draws the Trupp-Menü of a Trupp in Anmarsch", () => {
     expect(
@@ -365,6 +384,48 @@ describe("the LCD framebuffer", () => {
           press("OK"),
         ),
       ),
+    ).toMatchSnapshot();
+  });
+});
+
+// The core logs in Trupps of two or more, so the rows are set on the screen model to reach every
+// layout.
+function einsatzlisteWith(
+  einsatzstatus: Einsatzstatus,
+  counts: readonly number[],
+): ScreenModel {
+  const model = screenModel(
+    [...LOGIN, press("OK")].reduce(
+      reduce,
+      createInitialState({ now: FIGURE_UHRZEIT, realNow: 0 }),
+    ),
+  );
+  if (model.layout !== "einsatzliste") {
+    throw new Error(`expected the Einsatzliste, got ${model.layout}`);
+  }
+  return {
+    ...model,
+    rows: counts.map((count, index) => ({
+      truppnummer: `0${String(index + 1)}`,
+      selected: false,
+      sicher: false,
+      statussymbol: { einsatzstatus, count },
+      restzeit: "00:30:00",
+    })),
+  };
+}
+
+// manual 3.2.2, F–M, at one, two and three Atemschutzträger and the form for more than three
+describe("every Statussymbol layout", () => {
+  it.each([
+    ["Bereitschaft", "bereitschaft"],
+    ["Anmarsch", "anmarsch"],
+    // issue #40: the house holds at most two Atemschutzträger
+    ["Einsatzziel erreicht", "einsatzzielErreicht"],
+    ["Rückmarsch", "rueckmarsch"],
+  ] as const)("draws %s", (_, einsatzstatus) => {
+    expect(
+      toAscii(renderScreen(einsatzlisteWith(einsatzstatus, [1, 2, 3, 4]))),
     ).toMatchSnapshot();
   });
 });
