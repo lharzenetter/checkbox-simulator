@@ -300,6 +300,8 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
     expect(restzeitOf(state)).toBe(minutes(16));
     expect(state.trupps[0]?.anmarschzeitMs).toBe(minutes(4));
 
+    // the Rückzugsalarm at 7:00 (timing-and-alarm-rules §5.5)
+    state = run(state, tickAt(7), press("OK"));
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
     expect(restzeitOf(state)).toBe(minutes(12));
 
@@ -453,6 +455,8 @@ describe("the Rückzugsdruck", () => {
       160,
     );
     expect(rueckzugsdruckOf(state)).toBe(130);
+    // the Rückzugsalarm at 7:00 (timing-and-alarm-rules §5.5)
+    state = run(state, tickAt(7), press("OK"));
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
     // the Bereitschaft Alarm at 13:00 (timing-and-alarm-rules §4.3)
     state = run(state, tickAt(13), press("OK"));

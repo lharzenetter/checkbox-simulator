@@ -379,6 +379,7 @@ describe("the Anfangsdruck editor", () => {
         timeInBereitschaftMs: 0,
         anmarschBeganAtRunningTimeMs: 0,
         anmarschzeitMs: null,
+        rueckzugsalarmArmed: false,
         loggedInAtMs: SESSION_START.now,
       },
     ]);

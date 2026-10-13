@@ -53,6 +53,8 @@ export interface Trupp {
   readonly timeInBereitschaftMs: number;
   /** `t_A` of the current Anmarsch, once it reported Einsatzziel erreicht; `null` before. */
   readonly anmarschzeitMs: number | null;
+  /** Whether the Rückzugsalarm of the current Anmarsch leg is still to fire. */
+  readonly rueckzugsalarmArmed: boolean;
   readonly loggedInAtMs: number;
 }
 

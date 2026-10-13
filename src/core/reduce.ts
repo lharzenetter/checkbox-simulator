@@ -1,5 +1,5 @@
 import { abschaltzeitRestMs } from "./abschaltzeit";
-import { hasAlarmFired } from "./alarm";
+import { fireAlarms } from "./alarm";
 import { assertNever } from "./assert-never";
 import type { Event, Key } from "./event";
 import {
@@ -390,6 +390,7 @@ function changeEinsatzstatus(
         timeInBereitschaftMs: 0,
         anmarschBeganAtRunningTimeMs: trupp.runningTimeMs,
         anmarschzeitMs: null,
+        rueckzugsalarmArmed: false,
       })
     : state;
 }
@@ -476,19 +477,21 @@ function confirmFlaschendruck(
   }
 }
 
-// timing-and-alarm-rules §3.4: an entry that takes the Restzeit past an Alarm point fires it on OK
+// timing-and-alarm-rules §3.4, 5.14: an entry that takes the Restzeit past an Alarm point fires it
+// on OK
 function leaveTruppMenue(
   state: State,
   trupp: Trupp,
   updated: Trupp,
   screen: Screen,
 ): State {
+  const { trupp: fired, hasFired } = fireAlarms(trupp, updated);
   return raiseAlarms(
     enterScreen(
-      withTruppMenue(replaceTrupp(state, trupp, updated), null),
+      withTruppMenue(replaceTrupp(state, trupp, fired), null),
       screen,
     ),
-    hasAlarmFired(trupp, updated) ? [updated.truppnummer] : [],
+    hasFired ? [fired.truppnummer] : [],
   );
 }
 
@@ -500,12 +503,14 @@ function enterFlaschendruck(trupp: Trupp, flaschendruckBar: number): Trupp {
   };
 }
 
-// timing-and-alarm-rules §5.4, 5.15: `t_A` is measured from the start of the current Anmarsch
+// timing-and-alarm-rules §5.4, 5.13, 5.15: `t_A` is measured from the start of the current
+// Anmarsch, and only from here is the Rückzugsalarm armed
 function reachEinsatzziel(trupp: Trupp): Trupp {
   return {
     ...trupp,
     einsatzstatus: "einsatzzielErreicht",
     anmarschzeitMs: trupp.runningTimeMs - trupp.anmarschBeganAtRunningTimeMs,
+    rueckzugsalarmArmed: true,
   };
 }
 
@@ -762,6 +767,7 @@ function logIn(state: State, login: Login): State {
     timeInBereitschaftMs: 0,
     anmarschBeganAtRunningTimeMs: 0,
     anmarschzeitMs: null,
+    rueckzugsalarmArmed: false,
     loggedInAtMs: state.now,
   };
   return enterScreen(
@@ -1026,13 +1032,13 @@ function requireLogin(state: State): Login {
 }
 
 function handleTick(state: State, elapsedMs: number): State {
-  const trupps = state.trupps.map((trupp) => runDown(trupp, elapsedMs));
-  const fired = trupps
-    .filter((trupp, index) => {
-      const before = state.trupps[index];
-      return before !== undefined && hasAlarmFired(before, trupp);
-    })
-    .map((trupp) => trupp.truppnummer);
+  const checks = state.trupps.map((trupp) =>
+    fireAlarms(trupp, runDown(trupp, elapsedMs)),
+  );
+  const trupps = checks.map(({ trupp }) => trupp);
+  const fired = checks
+    .filter(({ hasFired }) => hasFired)
+    .map(({ trupp }) => trupp.truppnummer);
   return raiseAlarms(runDisplayTimings({ ...state, trupps }), fired);
 }
 

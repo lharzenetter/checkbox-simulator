@@ -420,10 +420,9 @@ describe("a Trupp logged in to Bereitschaft", () => {
   });
 });
 
-// verification-scenarios V13 without its Rückzugsalarm rows (7:00, 17:00), which issue #34
-// ("Fire the Rückzugsalarm") adds; timing-and-alarm-rules §4.1, 4.4, 4.5, 4.6, 4.7
+// verification-scenarios V13; timing-and-alarm-rules §4.1, 4.4, 4.5, 4.6, 4.7, 5.9, 5.15
 describe("a Trupp sent to Bereitschaft mid-Einsatz", () => {
-  it("pauses its Alarms there and shifts them by the time it spent in Bereitschaft", () => {
+  it("pauses its Alarms there, shifts them by the time it spent in Bereitschaft and re-arms the Rückzugsalarm for the new Anmarsch leg", () => {
     let state = enter(
       run(truppInAnmarsch(), tickAt(4)),
       "einsatzzielErreicht",
@@ -431,6 +430,14 @@ describe("a Trupp sent to Bereitschaft mid-Einsatz", () => {
     );
     expectNoAlarm(state);
     expect(restzeitOf(state)).toBe(16 * 60_000);
+
+    // the Rückzugsalarm at 2·4:00 + 5:00
+    state = reduce(state, tickAt(6, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(7));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(13 * 60_000);
+    state = reduce(state, press("OK"));
 
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
     expect(restzeitOf(state)).toBe(12 * 60_000);
@@ -453,6 +460,14 @@ describe("a Trupp sent to Bereitschaft mid-Einsatz", () => {
     state = chooseItem(run(state, tickAt(16)), "einsatzzielErreicht");
     state = reduce(state, press("OK"));
     expect(restzeitOf(state)).toBe(10 * 60_000);
+
+    // the new leg's Rückzugsalarm at 2·2:00 + 5:00
+    state = reduce(state, tickAt(16, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(17));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(9 * 60_000);
+    state = reduce(state, press("OK"));
 
     state = reduce(state, tickAt(25, 47));
     expectNoAlarm(state);
@@ -671,8 +686,7 @@ describe("V6: Alarms in every Einsatzstatus", () => {
     expect(restzeitOf(state)).toBe(18 * 60_000);
     state = reduce(state, press("X"));
 
-    // R = 11:00 = 2·t_A + t_res: Rückmarsch will suppress the Rückzugsalarm here (§5.9); until
-    // issue #34 ("Fire the Rückzugsalarm") brings it, this only checks no other Alarm fires
+    // R = 11:00 = 2·t_A + t_res: Rückmarsch suppresses the Rückzugsalarm (§5.9)
     state = reduce(state, tickAt(19));
     expectNoAlarm(state);
     expect(restzeitOf(state)).toBe(11 * 60_000);
@@ -792,5 +806,159 @@ describe("V21: Alarms of several Trupps", () => {
     expect(state.screen).toBe("truppFlaschendruckAendern");
     expect(state.truppMenue).toEqual(editing.truppMenue);
     expect(state.selectedTruppnummer).toBe(1);
+  });
+});
+
+// verification-scenarios V7; timing-and-alarm-rules §5.4, 5.5, 5.6, 5.7, 5.13
+describe("V7: the Rückzugsalarm on the normal path", () => {
+  it("fires once when the Restzeit falls to twice the Anmarschzeit plus the Reservedruck", () => {
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(5)),
+      "einsatzzielErreicht",
+      250,
+    );
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(25 * 60_000);
+
+    state = run(state, tickAt(9, 54), press("OK"));
+    state = reduce(state, tickAt(14, 59));
+    expectNoAlarm(state);
+    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(150);
+
+    state = reduce(state, tickAt(15));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(15 * 60_000);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(15, 1));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(19, 47));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(19, 48));
+    expectAlarmFor(state, 1);
+    state = run(state, press("OK"), tickAt(29, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(30));
+    expectAlarmFor(state, 1);
+  });
+
+  // the rounding variant: Rückzugsdruck 151 bar, threshold 15:08
+  it("fires at 14:26 after Einsatzziel erreicht at 5:04", () => {
+    let state = chooseItem(
+      run(truppInAnmarsch(), tickAt(5, 4)),
+      "einsatzzielErreicht",
+    );
+    expect(state.truppMenue?.draftFlaschendruckBar).toBe(245);
+    state = reduce(state, press("OK"));
+    expect(restzeitOf(state)).toBe((24 * 60 + 30) * 1000);
+
+    state = run(state, tickAt(9, 54), press("OK"), tickAt(14, 25));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(14, 26));
+    expectAlarmFor(state, 1);
+    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(151);
+  });
+});
+
+// verification-scenarios V8; timing-and-alarm-rules §5.6 (`t_res` scales with the Einsatzzeit)
+describe("V8: the Rückzugsalarm of a 20-min Trupp", () => {
+  it("fires at a Reservedruck of 3:20", () => {
+    let state = run(
+      createInitialState(SESSION_START),
+      hold(A1),
+      press("Down"),
+      press("OK"),
+      press("OK"),
+      hold(A2),
+      press("OK"),
+      press("OK"),
+    );
+    expect(restzeitOf(state)).toBe(20 * 60_000);
+    state = enter(run(state, tickAt(2)), "einsatzzielErreicht", 270);
+    expect(restzeitOf(state)).toBe(18 * 60_000);
+
+    state = run(state, tickAt(6, 36), press("OK"), tickAt(12, 39));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(12, 40));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe((7 * 60 + 20) * 1000);
+    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(110);
+  });
+});
+
+// verification-scenarios V9; timing-and-alarm-rules §5.14
+describe("V9: a Restzeit already below the Rückzugsalarm's threshold at Einsatzziel erreicht", () => {
+  it("fires the Rückzugsalarm as OK confirms the entry, and only then", () => {
+    let state = run(
+      chooseItem(run(truppInAnmarsch(), tickAt(8)), "einsatzzielErreicht"),
+      press("X"),
+    );
+    expectNoAlarm(state);
+    expect(state.trupps[0]?.einsatzstatus).toBe("anmarsch");
+
+    state = enter(
+      run(state, press("X"), press("X")),
+      "einsatzzielErreicht",
+      100,
+    );
+    expectAlarmFor(state, 1);
+    expect(state.trupps[0]?.einsatzstatus).toBe("einsatzzielErreicht");
+    expect(restzeitOf(state)).toBe(10 * 60_000);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(9, 53));
+    expectNoAlarm(state);
+    state = run(state, tickAt(9, 54), press("OK"), tickAt(17, 59));
+    expectNoAlarm(state);
+  });
+});
+
+// verification-scenarios V10; timing-and-alarm-rules §1.8, 5.9, 5.14
+describe("V10: a pressure entry across the Rückzugsalarm's threshold", () => {
+  it("fires the Rückzugsalarm on OK, and a raise back above does not re-arm it", () => {
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(5)),
+      "einsatzzielErreicht",
+      250,
+    );
+    state = enter(run(state, tickAt(7)), "flaschendruckAendern", 145);
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe((14 * 60 + 30) * 1000);
+    state = reduce(state, press("OK"));
+
+    state = enter(run(state, tickAt(7, 30)), "flaschendruckAendern", 155);
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe((15 * 60 + 30) * 1000);
+
+    // V10 lists this row at 8:31, but R = 15:30 at 7:30 gives 14:59 at 8:01
+    state = reduce(state, tickAt(8, 1));
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe((14 * 60 + 59) * 1000);
+    state = reduce(state, tickAt(9, 53));
+    expectNoAlarm(state);
+  });
+});
+
+// verification-scenarios V11; timing-and-alarm-rules §5.9, 5.10
+describe("V11: Anmarsch straight to Rückmarsch", () => {
+  it("never fires the Rückzugsalarm", () => {
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(6)),
+      "rueckzugAntreten",
+      240,
+    );
+    expectNoAlarm(state);
+    expect(state.trupps[0]?.einsatzstatus).toBe("rueckmarsch");
+    expect(restzeitOf(state)).toBe(24 * 60_000);
+    state = reduce(state, press("X"));
+
+    state = run(state, tickAt(9, 54), press("OK"));
+    // R falls to every Rückzugsalarm threshold a 6-min Anmarsch could have given
+    state = reduce(state, tickAt(19, 47));
+    expectNoAlarm(state);
+    state = run(state, tickAt(19, 48), press("OK"), tickAt(29, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(30));
+    expectAlarmFor(state, 1);
   });
 });
