@@ -108,6 +108,7 @@ Notes:
 - According to the text, the Einsatzliste shows "die verbleibende Restzeit" (p. 14 §5.1.3, p. 26 §5.6).
   Example: "die Restzeit auf der Liste der Einsätze beträgt 20 Minuten" after one third of a 30-minute Einsatzzeit (p. 23 §5.5.1).
   The list figures, however, show values that look like **clock times** (see [S07](#s07-einsatzliste) and gap G1).
+  **Decided** (G1): the column shows the Restzeit; a negative Restzeit drops the leading hour digit to fit 8 characters, `-0:00:10`.
 
 ### Inverse, highlighting and blinking
 
@@ -387,6 +388,7 @@ B1-{BAT}+ {UHR} 10:20:00
 - There are six fixed rows separated by rules; empty rows stay as blank ruled rows (p. 20).
   The maximum number of Trupps is 6, set by parameter 72 (1–6) (p. 21 step 16, p. 72).
 - **Right column:** according to the text, the **Restzeit** (p. 14, p. 23, p. 26). The figures conflict with this (gap G1).
+  **Decided:** it is the Restzeit; the figure values are illustrative only. Negative values are shown as `-0:00:10`.
 - **Keys:**
   - **A/B** select a Trupp ("Markieren Sie mit den Navigationstasten (A/B) den Trupp in der Einsatzliste", p. 22, p. 26, p. 27, p. 28, p. 29).
   - **C** → [S09](#s09-trupp-menü-detailansicht) for the selected Trupp (p. 26 §5.6.2 step 2).
@@ -865,12 +867,15 @@ Keys: **A** up, **B** down, **C** OK, **D** Abbruch, **E** = Transponder-/Check-
 
 ## Gaps and ambiguities
 
-These are points the manual does not settle. The navigation-model work must decide them.
+These are points the manual does not settle.
+G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5#issuecomment-6142167472); that resolution holds the decisions, so they are not restated here.
+G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
 
 - **G1 – Right column of the Einsatzliste.**
   The text says it shows the **Restzeit** (p. 14 §5.1.3, p. 23 §5.5.1, p. 26 §5.6).
   Both list figures show values that look like **clock times**, all at or before the current clock: `09:52:00 … 10:10:00` with the clock at `10:20:00` (p. 10), and `09:57:00` with the clock at `10:03:00` for a newly logged-in 30-min Trupp (p. 20).
   It is unclear whether it is a Restzeit, a login time or something else, and how a negative Restzeit (9 characters, `-00:00:10`) fits the 8-character column.
+  **Decided:** Restzeit, negative as `-0:00:10`. The `B1-{BAT}+ {UHR} 10:03:00` line above the rows is the current time, not part of the column.
 - **G2 – Status words and menu contents per Einsatzstatus.**
   The menu figures show only `ANMARSCH` (with `Einsatzziel erreicht`) and `EINSATZ` (with `Attribute eintragen`, no `Einsatzziel erreicht`).
   The header word and menu items for Bereitschaft, Einsatzziel erreicht (which must contain `Rückzug antreten`, p. 29), Rückzug and Sicherungstrupp are not shown.
