@@ -33,14 +33,15 @@ It is a research catalogue, not a specification: where the manual is silent or c
 |---|---|---|
 | ① | LED-Alarmanzeige (red) | shows Alarms |
 | ② | LCD-Display | shows Einsätze, service and settings functions |
-| ③ | **D** (Abbruchtaste, drawn as "C×") | "Funktion oder Eingabe abbrechen / in den Ausgangsmodus zurückkehren" |
-| ④ | **A** (up) | "im Menü oder in Funktionen navigieren / Optionen wählen / Eingabemarke bewegen" |
-| ⑤ | **C** (OK-Taste) | "Menü oder Funktionen aufrufen / Eingaben oder Auswahl bestätigen" |
-| ⑥ | **B** (down) | same as A, downwards |
-| ⑦ | **E** (Transponder-/Check-Taste, labelled "CHECK") | "Einschalten des Gerätes / Anmelden und Abmelden von Atemschutzträgern / Programmieren von Transpondern" |
+| ③ | **X** (drawn as "C×") | "Funktion oder Eingabe abbrechen / in den Ausgangsmodus zurückkehren" |
+| ④ | **Up** | "im Menü oder in Funktionen navigieren / Optionen wählen / Eingabemarke bewegen" |
+| ⑤ | **OK** | "Menü oder Funktionen aufrufen / Eingaben oder Auswahl bestätigen" |
+| ⑥ | **Down** | same as Up, downwards |
+| ⑦ | **Check** (labelled "CHECK") | "Einschalten des Gerätes / Anmelden und Abmelden von Atemschutzträgern / Programmieren von Transpondern" |
 
-The display texts call the Abbruchtaste **"X"** ("X = nicht abmelden", p. 30; "sonst die X Taste drücken", p. 32; "Abbruch: 'X'-Taste", p. 41).
-They call the Transponder **"TALLY"** ("oder TALLY auflegen", p. 17; "TALLY Service:", p. 33).
+The manual's figures letter these keys A–E (Up = A, Down = B, OK = C, X = D, Check = E); this file uses the key names.
+The display texts call the cancel key **"X"** ("X = nicht abmelden", p. 30; "sonst die X Taste drücken", p. 32; "Abbruch: 'X'-Taste", p. 41); the manual's prose calls it "Abbruchtaste".
+They call the tag **"TALLY"** ("oder TALLY auflegen", p. 17; "TALLY Service:", p. 33), which this file calls a Tally; the manual's prose says "Transponder".
 
 ### Display type
 
@@ -79,8 +80,8 @@ Each status has a **pair**: the first glyph is used for Trupps of up to three me
 | Bereitschaft | **G**: two figures standing *outside*, left of an empty house | **K**: `4×` + one figure + empty house | nobody has moved yet | p. 11, p. 26, p. 27 |
 | Anmarsch ("Im Anmarsch") | **F**: one figure outside + one figure *entering* the house | **J**: `4×` + figure + arrow `→` into the house | entering | p. 11, p. 20, p. 26 |
 | Einsatzziel erreicht | **H**: two figures *inside* the house | **L**: `4×` + one figure inside the house | inside | p. 11, p. 22, p. 23, p. 26 |
-| Rückzug ("Rückzug" / "Rückmarsch") | **I**: one figure inside + one figure *leaving* on the right | **M**: `4×` + arrow `→` out of the house + figure outside right | leaving | p. 11, p. 26, p. 30 |
-| Sicherungstrupp | the text **`SICHER`** alternates with the Trupp's status glyph | same | — | p. 11, p. 21 §5.3.1 step 4, p. 26 |
+| Rückmarsch ("Rückzug" / "Rückmarsch") | **I**: one figure inside + one figure *leaving* on the right | **M**: `4×` + arrow `→` out of the house + figure outside right | leaving | p. 11, p. 26, p. 30 |
+| Sicherheitstrupp | the text **`SICHER`** alternates with the Trupp's status glyph | same | — | p. 11, p. 21 §5.3.1 step 4, p. 26 |
 
 Notes:
 
@@ -88,16 +89,16 @@ Notes:
   With V04 a Trupp has up to six members (p. 18 step 6), so `5×` and `6×` must also occur. The manual does not show them.
 - The manual never draws a glyph for a **three-member** Trupp, although "up to three" members are drawn as figures. See [gaps](#gaps-and-ambiguities).
 - If the **Rückzugsalarmmodus** is off, only Einsatzziel erreicht (H/L) is available.
-  A new Trupp then starts in H/L instead of F/J, and Anmarsch and Rückzug times are not calculated (p. 11, p. 20, p. 22, p. 26, p. 29, p. 71).
+  A new Trupp then starts in H/L instead of F/J, and Anmarsch and Rückmarsch times are not calculated (p. 11, p. 20, p. 22, p. 26, p. 29, p. 71).
 
 ### SICHER alternation
 
-- A Sicherungstrupp is registered with "Sicherheitstrupp OK" in the Anmeldefenster ([S04](#s04-anmeldefenster-des-trupps)) (p. 21 §5.3.1 steps 2–3).
+- A Sicherheitstrupp is registered with "Sicherheitstrupp OK" in the Anmeldefenster ([S04](#s04-anmeldefenster-des-trupps)) (p. 21 §5.3.1 steps 2–3).
 - In the Einsatzliste "erscheinen abwechselnd das Wort Sicher und der Status des Trupps" (p. 21 step 4).
   The figure on p. 10 (item ⑧, "Status und Schrift wechseln") shows the phase `06  SICHER  10:10:00`.
 - The manual does not give the alternation period or duty cycle. Decided: 1 s each (see [G14](#gaps-and-ambiguities)).
 - V04 only: "Ein Sicherungstrupp kann erst ab V04 zum Einsatztrupp werden" (p. 19, p. 21).
-  Parameter 89 "Sicherheitstrupp Revidierung" asks whether the Sicherungstrupp becomes a normal Trupp again after changing into the Einsatz (p. 73, p. 89). No screen for that question is shown.
+  Parameter 89 "Sicherheitstrupp Revidierung" asks whether the Sicherheitstrupp becomes a normal Trupp again after changing into the Einsatz (p. 73, p. 89). No screen for that question is shown.
 
 ### Restzeit and the negative Restzeit format
 
@@ -117,7 +118,7 @@ The figures show these uses of inverse video:
 - the **selection bar** in menus: [S02](#s02-service-menü-later), [S03](#s03-neuen-trupp-anmelden--einsatzzeit-wählen) and [S04](#s04-anmeldefenster-des-trupps)
 - the **selected Trupp number** in the Einsatzliste (`▓01▓`, p. 10 item ③ "markiert"; p. 20)
 - **logged-off members** in [S13](#s13-trupp-abmelden) ("Die Namen der Truppmitglieder, die sich abgemeldet haben, erscheinen markiert", p. 30 step 3)
-- the **`Ansicht`** label in [S11](#s11-trupp-ansicht-grafische-detailansicht) (pp. 11, 29)
+- the **`Ansicht`** label in [S11](#s11-trupp-ansicht) (pp. 11, 29)
 - the **`A C H T U N G !`** banner in [S14](#s14-notausschaltung--auswahl) (p. 31)
 - the **`Testprogramm`** title in [S21](#s21-testprogramm-later) (p. 85)
 
@@ -144,8 +145,8 @@ Screen ids are stable handles for the navigation-model work.
 - **Source:** p. 17 §5.2, p. 34 §5.12, p. 14 §5.1.2.
 - **Display:** blank. "Im ausgeschaltet Zustand verbraucht das Gerät keinen Strom" (p. 34).
 - **Keys:**
-  - **E** pressed → [S01](#s01-startdisplay) (p. 17).
-  - **Transponder held on E** → switches on and goes straight to [S03](#s03-neuen-trupp-anmelden--einsatzzeit-wählen): "Die Checkbox 5+1 muss nicht eingeschaltet sein, um einen Einsatz zu starten" (p. 14 §5.1.2, p. 18).
+  - **Check** pressed → [S01](#s01-startdisplay) (p. 17).
+  - **Tally held on Check** → switches on and goes straight to [S03](#s03-neuen-trupp-anmelden--einsatzzeit-wählen): "Die Checkbox 5+1 muss nicht eingeschaltet sein, um einen Einsatz zu starten" (p. 14 §5.1.2, p. 18).
 - **Automatic transitions into S00:**
   - from S01 after the Abschaltzeit (p. 17)
   - after the last Trupp logs off and the Abschaltzeit runs out (p. 34 §5.12)
@@ -181,12 +182,12 @@ sonst Ende in  >  25
   - `OK für SERVICE / oder TALLY auflegen`: prompt.
   - `sonst Ende in > 25`: countdown to automatic power-off. The unit is not stated; seconds is likely.
 - **Keys:**
-  - **C** → [S02](#s02-service-menü-later) SERVICE menu (p. 17, "Drücken Sie die OK-Taste (C), um das Service- und Einstellungsmenü aufzurufen").
-  - **Transponder on E** → [S03](#s03-neuen-trupp-anmelden--einsatzzeit-wählen) (p. 17).
-  - A, B, D: not documented.
+  - **OK** → [S02](#s02-service-menü-later) SERVICE menu (p. 17, "Drücken Sie die OK-Taste (C), um das Service- und Einstellungsmenü aufzurufen").
+  - **Tally on Check** → [S03](#s03-neuen-trupp-anmelden--einsatzzeit-wählen) (p. 17).
+  - Up, Down, X: not documented.
 - **Automatic transitions:**
   - Countdown reaches 0 → [S00](#s00-aus-display-off): "Ohne Eingabe schaltet sich die Checkbox nach einer einstellbaren Abschaltzeit aus" (p. 17).
-  - At power-on an Alarm sounds if a battery compartment is empty, acknowledged with C (p. 14, p. 17). Its screen is not shown.
+  - At power-on an Alarm sounds if a battery compartment is empty, acknowledged with OK (p. 14, p. 17). Its screen is not shown.
 
 ### S02 SERVICE-Menü [later]
 
@@ -215,9 +216,9 @@ Testprogramm
 - The figure shows only four of the six items. Either the list scrolls, or some items are hidden, e.g. by parameter 44 "Service Menue" or the "Checkbox sperren" options (pp. 66–67, p. 69, p. 88). See gap G8.
 - "Im Service- und Einstellungsmenü können Sie keinen Einsatz starten" (p. 17).
 - **Keys:**
-  - **A/B** move the selection bar.
-  - **C** opens the selected function: `Einsatzprotokoll` → [S16](#s16-einsatzprotokoll-later); `NAME lesen/schreiben` → [S17](#s17-tally-service-later); `Feuerwehrname ändern` → [S18](#s18-namens-editor-buchstabenfeld-later); `Kontrast` → [S19](#s19-kontrast-later); `Zeit/Datum einstellen` → [S20](#s20-zeitdatum-einstellen-later); `Testprogramm` → [S21](#s21-testprogramm-later).
-  - **D** → [S01](#s01-startdisplay) ("Drücken Sie die Abbruchtaste (D), um zum Startdisplay zurückzukehren", p. 17).
+  - **Up/Down** move the selection bar.
+  - **OK** opens the selected function: `Einsatzprotokoll` → [S16](#s16-einsatzprotokoll-later); `NAME lesen/schreiben` → [S17](#s17-tally-service-later); `Feuerwehrname ändern` → [S18](#s18-namens-editor-buchstabenfeld-later); `Kontrast` → [S19](#s19-kontrast-later); `Zeit/Datum einstellen` → [S20](#s20-zeitdatum-einstellen-later); `Testprogramm` → [S21](#s21-testprogramm-later).
+  - **X** → [S01](#s01-startdisplay) ("Drücken Sie die Abbruchtaste (D), um zum Startdisplay zurückzukehren", p. 17).
 - **Timeout:** not documented.
 
 ### S03 Neuen Trupp anmelden – Einsatzzeit wählen
@@ -245,15 +246,15 @@ Einsatzzeit  20 min?
 
 - **Fields:**
   - `Trupp Nr.: 01`: automatically assigned Trupp number ("Die Truppnummer wird automatisch vergeben", p. 18 step 2).
-  - `*MUSTERMANN M`: name stored on the first Transponder (p. 18 step 2).
+  - `*MUSTERMANN M`: name stored on the first Tally (p. 18 step 2).
   - The three `Einsatzzeit … min?` lines are Einsatzzeit #1–#3 (defaults 30 / 60 / 20 min).
     Einsatzzeit #4 (default 240 min, p. 70) is not visible, so the list presumably scrolls (gap G9).
 - **Keys:**
-  - **A/B** choose the Einsatzzeit (step 3).
-  - **C** confirms (step 4) → [S04](#s04-anmeldefenster-des-trupps).
-  - **Langzeiteinsatz:** "Bestätigen Sie alle Einsatzzeiten – außer Einsatzzeit 30 min – zusätzlich mit der OK-Taste (C)" (step 5). So any Einsatzzeit other than 30 min needs a **second C**; the screen for that is not shown.
-  - **Further Transponders on E** add members. The manual places this at step 6, after the Einsatzzeit is chosen.
-  - D: not documented for this screen.
+  - **Up/Down** choose the Einsatzzeit (step 3).
+  - **OK** confirms (step 4) → [S04](#s04-anmeldefenster-des-trupps).
+  - **Langzeiteinsatz:** "Bestätigen Sie alle Einsatzzeiten – außer Einsatzzeit 30 min – zusätzlich mit der OK-Taste (C)" (step 5). So any Einsatzzeit other than 30 min needs a **second OK**; the screen for that is not shown.
+  - **Further Tallys on Check** add members. The manual places this at step 6, after the Einsatzzeit is chosen.
+  - X: not documented for this screen.
 - **Automatic transitions:**
   - Parameter 12 "Automatisches Anmelden": "Nach dieser Zeit erfolgt die automatische Anmeldung eines Truppmitgliedes beim Auflegen eines Transponders ohne Drücken der OK-Taste (C)" (1–650 s, p. 69).
   - Parameter 7: a Daueralarm sounds until the minimum number of members has logged in (p. 71–72).
@@ -286,14 +287,14 @@ Druck ändern
   - member list: up to 6 members on V04, up to 3 on the other variants ("mindestens zwei und max. drei oder sechs (V04) Truppmitglieder", p. 18 step 6)
   - action menu
 - **Keys:**
-  - **Transponder on E** adds a member (p. 18 step 6).
-  - **A/B** choose the action (p. 19 step 7). The default cursor position comes from parameter 37: 0 = Einsatz, 1 = Bereitschaft (p. 69).
-  - **C** on `Trupp OK Einsatz` → step 8, Attribute selection (not shown) → C (step 9) → [S05](#s05-druck-auswahl) or, if the cylinder type is fixed, [S06](#s06-anfangsdruckerfassung) or [S07](#s07-einsatzliste) (gap G4).
-  - **C** on `Trupp OK Bereitschaft` → same chain. The Trupp enters the Einsatzliste in Bereitschaft (G/K). This is inferred; the manual does not show it explicitly.
-  - **C** on `Sicherheitstrupp OK` → the Trupp becomes a Sicherungstrupp, SICHER alternates in the list (p. 21 §5.3.1 steps 2–4). Whether the pressure screens follow is not stated.
-  - **C** on `Druck ändern` → [S08](#s08-druck-ändern-esz-zeit-ändern) (p. 21 §5.3.2 steps 2–4).
-  - D: not documented.
-- **Text vs. figure:** the display text says "Sicherheitstrupp OK", while the glossary and manual prose say "Sicherungstrupp" (p. 21).
+  - **Tally on Check** adds a member (p. 18 step 6).
+  - **Up/Down** choose the action (p. 19 step 7). The default cursor position comes from parameter 37: 0 = Einsatz, 1 = Bereitschaft (p. 69).
+  - **OK** on `Trupp OK Einsatz` → step 8, Attribute selection (not shown) → OK (step 9) → [S05](#s05-druck-auswahl) or, if the cylinder type is fixed, [S06](#s06-anfangsdruckerfassung) or [S07](#s07-einsatzliste) (gap G4).
+  - **OK** on `Trupp OK Bereitschaft` → same chain. The Trupp enters the Einsatzliste in Bereitschaft (G/K). This is inferred; the manual does not show it explicitly.
+  - **OK** on `Sicherheitstrupp OK` → the Trupp becomes a Sicherheitstrupp, SICHER alternates in the list (p. 21 §5.3.1 steps 2–4). Whether the pressure screens follow is not stated.
+  - **OK** on `Druck ändern` → [S08](#s08-druck-ändern-esz-zeit-ändern) (p. 21 §5.3.2 steps 2–4).
+  - X: not documented.
+- **Text vs. figure:** the display text says "Sicherheitstrupp OK", while the manual prose says "Sicherungstrupp" (p. 21); this file follows the display.
 
 ### S05 DRUCK-AUSWAHL
 
@@ -313,8 +314,8 @@ Druck ändern
 - **Fields:** cylinder types 1 and 2 (parameters 80 and 81, p. 73).
   No selection bar is drawn in the figure (gap G10).
 - **Keys:**
-  - **A/B** choose the cylinder type (step 10).
-  - **C** → [S06](#s06-anfangsdruckerfassung) (steps 11–12).
+  - **Up/Down** choose the cylinder type (step 10).
+  - **OK** → [S06](#s06-anfangsdruckerfassung) (steps 11–12).
 - **Skipped** when parameter 14 / 53 / 54 ("Atemschutzflaschentyp", 0 = choose, 1 = 200 bar fixed, 2 = 300 bar fixed) fixes the type (p. 19 Hinweis, p. 70).
 
 ### S06 Anfangsdruckerfassung
@@ -342,10 +343,10 @@ Druck ändern
   - `Druck`: current pressure, editable.
   - `Restzeit`: the resulting Restzeit.
   - The cylinder graphic fills in proportion to the pressure; tick `1` marks the cylinder (count?).
-  - The empty bar on the left is the time-split bar (see [S11](#s11-trupp-ansicht-grafische-detailansicht)).
+  - The empty bar on the left is the time-split bar (see [S11](#s11-trupp-ansicht)).
 - **Keys:**
-  - **A/B** change the pressure (step 12). The step size is parameter 76 "Druck-Sprunggröße"; the limits are parameters 77 and 78 (±10 % of nominal by default) (pp. 72–73).
-  - **C** → [S07](#s07-einsatzliste) (steps 13–14).
+  - **Up/Down** change the pressure (step 12). The step size is parameter 76 "Druck-Sprunggröße"; the limits are parameters 77 and 78 (±10 % of nominal by default) (pp. 72–73).
+  - **OK** → [S07](#s07-einsatzliste) (steps 13–14).
 - **Skipped** when parameter 74 Anfangsdruckerfassung = 0.
   With value 2 the pressure is asked for **each member** (p. 72), so the screen can appear several times.
 
@@ -381,22 +382,22 @@ B1-{BAT}+ {UHR} 10:20:00
   2. Battery capacity and current time.
   3. Trupp 1, selected (`▓01▓`), Im Anmarsch (F).
   4. Trupp 2, Einsatzziel erreicht (H).
-  5. Trupp 3, Im Rückzug (I).
+  5. Trupp 3, Im Rückmarsch (I).
   6. Trupp 4, In Bereitschaft (G).
   7. Trupp 5, Vierertrupp, Einsatzziel erreicht (`4×` + L).
-  8. Trupp 6, Sicherungstrupp, with "Status und Schrift wechseln".
+  8. Trupp 6, Sicherheitstrupp, with "Status und Schrift wechseln".
 - There are six fixed rows separated by rules; empty rows stay as blank ruled rows (p. 20).
   The maximum number of Trupps is 6, set by parameter 72 (1–6) (p. 21 step 16, p. 72).
 - **Right column:** according to the text, the **Restzeit** (p. 14, p. 23, p. 26). The figures conflict with this (gap G1).
   **Decided:** it is the Restzeit; the figure values are illustrative only. Negative values are shown as `-0:00:10`.
 - **Keys:**
-  - **A/B** select a Trupp ("Markieren Sie mit den Navigationstasten (A/B) den Trupp in der Einsatzliste", p. 22, p. 26, p. 27, p. 28, p. 29).
-  - **C** → [S09](#s09-trupp-menü-detailansicht) for the selected Trupp (p. 26 §5.6.2 step 2).
-  - **Transponder on E**:
+  - **Up/Down** select a Trupp ("Markieren Sie mit den Navigationstasten (A/B) den Trupp in der Einsatzliste", p. 22, p. 26, p. 27, p. 28, p. 29).
+  - **OK** → [S09](#s09-trupp-menü) for the selected Trupp (p. 26 §5.6.2 step 2).
+  - **Tally on Check**:
     - of an Atemschutzträger not yet in a Trupp → [S03](#s03-neuen-trupp-anmelden--einsatzzeit-wählen) for a new Trupp. This is inferred from p. 21 step 16, "Auf diese Weise können sich bis zu sechs Trupps … anmelden".
     - of a member of a running Trupp → [S13](#s13-trupp-abmelden) (p. 30 §5.8 step 1).
-  - **D + E held ≈ 4 s** → [S14](#s14-notausschaltung--auswahl) (p. 31 §5.9 step 2).
-  - **D** alone: not documented.
+  - **X + Check held ≈ 4 s** → [S14](#s14-notausschaltung--auswahl) (p. 31 §5.9 step 2).
+  - **X** alone: not documented.
 - **Automatic transitions:**
   - At each Alarmgrenze, at the Rückzugsalarm, when the Einsatzzeit runs out, and every 5 min in Bereitschaft or overrun, an Alarm sounds (pp. 23–25, p. 28). The screen switches to [S12](#s12-trupp-alarm) (gap G5, decided).
   - Display backlight switch-off (p. 17 Hinweis, p. 90).
@@ -422,11 +423,11 @@ B1-{BAT}+ {UHR} 10:20:00
 - **Fields:** like [S06](#s06-anfangsdruckerfassung), but titled `Esz-Zeit ändern` (Einsatzzeit ändern) instead of `Trupp Nr.:`.
   The title does not match the action "Druck ändern" (gap G11).
 - **Keys:**
-  - **A/B** change the pressure (p. 22 step 4; p. 29 step 5).
-  - **C** confirms (p. 29 step 6) → back to S04 (during login) or to [S07](#s07-einsatzliste) (during an Einsatz). The return target is not stated.
+  - **Up/Down** change the pressure (p. 22 step 4; p. 29 step 5).
+  - **OK** confirms (p. 29 step 6) → back to S04 (during login) or to [S07](#s07-einsatzliste) (during an Einsatz). The return target is not stated.
 - **Raising the pressure** during an Einsatz is allowed only if parameter 73 "Druck vergrößerbar" > 0 (p. 21, p. 28, p. 72).
 
-### S09 Trupp-Menü (Detailansicht)
+### S09 Trupp-Menü
 
 ![Trupp menu, ANMARSCH](lcd-screens/5-4-trupp-menue-anmarsch.png)
 ![Trupp menu, EINSATZ](lcd-screens/5-6-2-trupp-menue-einsatz.png)
@@ -480,13 +481,13 @@ Attribute eintragen
   - `Trupp -> Einsatz`: resumes from Bereitschaft. "Die Überwachung der Einsatzzeit wird fortgesetzt, wenn der Trupp den Status EINSATZ erhält" (p. 27). The resulting status (Anmarsch?) is not stated.
   - `Trupp -> Bereitschaft`: the Trupp goes to Bereitschaft (G/K) and its Einsatzzeit stops (p. 27 §5.6.3 steps 3–5).
   - `Einsatzziel erreicht`: → [S10](#s10-esz-ziel-erreicht-druckeingabe) (p. 22 §5.4 steps 3–5).
-  - `Rückzug antreten`: named in the text (p. 29 §5.7 step 3) but **not visible** in either figure → [S11](#s11-trupp-ansicht-grafische-detailansicht) (RÜCKMARSCH) / pressure entry (p. 29 step 5, p. 30 steps 6–7).
+  - `Rückzug antreten`: named in the text (p. 29 §5.7 step 3) but **not visible** in either figure → [S11](#s11-trupp-ansicht) (RÜCKMARSCH) / pressure entry (p. 29 step 5, p. 30 steps 6–7).
   - `Druck ändern`: → [S08](#s08-druck-ändern-esz-zeit-ändern) (p. 28 §5.6.4 steps 3–4).
   - `Attribute eintragen`: not documented further (Attribute: §6.12.2, p. 74).
 - **Keys:**
-  - **A/B** choose an item.
-  - **C** executes it.
-  - **D** back to S07. Inferred from the general D meaning, "in den Ausgangsmodus zurückkehren" (p. 9).
+  - **Up/Down** choose an item.
+  - **OK** executes it.
+  - **X** back to S07. Inferred from the general X meaning, "in den Ausgangsmodus zurückkehren" (p. 9).
 - **Timeout:** parameter 13 "Trupp Detailansicht": "Nach dieser Zeit wird die Detailansicht eines Trupps im Einsatz ausgeblendet und die Truppübersicht erscheint" (1–650 s, p. 69) → [S07](#s07-einsatzliste).
 
 ### S10 Esz-Ziel erreicht (Druckeingabe)
@@ -510,10 +511,10 @@ Attribute eintragen
 - **Meaning:** "Die neuen Druck- und Zeitinformationen werden berechnet. Der Bediener der Checkbox kann die Werte an den Trupp melden" (p. 22 step 5).
   The Restzeit is recalculated from the pressure (295 bar → 00:28:00 in the example).
 - **Keys:**
-  - **A/B** change the pressure (p. 23 step 6).
-  - **C** → [S07](#s07-einsatzliste); the Trupp is now in Einsatzziel erreicht (H/L) (p. 23 steps 7–8).
+  - **Up/Down** change the pressure (p. 23 step 6).
+  - **OK** → [S07](#s07-einsatzliste); the Trupp is now in Einsatzziel erreicht (H/L) (p. 23 steps 7–8).
 
-### S11 Trupp-Ansicht (grafische Detailansicht)
+### S11 Trupp-Ansicht
 
 ![Trupp-Ansicht with callouts](lcd-screens/3-2-3-trupp-ansicht.png)
 ![RÜCKMARSCH](lcd-screens/5-7-rueckmarsch-ansicht.png)
@@ -549,10 +550,10 @@ Trupp 01 EINSATZ
 - `Ansicht` (inverse, bottom right) is an unexplained label. It may mark a view-only screen (gap G6).
 - The pressure unit is bar by default and can be switched to PSI with parameter 79 (p. 11 Hinweis, p. 73).
 - **RÜCKMARSCH example** (p. 29): `40 bar`, `00:02:00`, `120 bar`; bar segments filled for the Rückmarsch.
-- **How it is reached** is not stated explicitly. The figure on p. 29 follows "Rückzug antreten" + C ("Die neuen Druck- und Zeitinformationen werden berechnet").
-  After it, p. 30 steps 6–7 say "Ändern Sie – wenn nötig – … den aktuellen Flaschendruck … Bestätigen Sie mit der OK-Taste (C)", and the Trupp then gets Rückzug (I/M) (p. 30 step 8).
+- **How it is reached** is not stated explicitly. The figure on p. 29 follows `Rückzug antreten` + OK ("Die neuen Druck- und Zeitinformationen werden berechnet").
+  After it, p. 30 steps 6–7 say "Ändern Sie – wenn nötig – … den aktuellen Flaschendruck … Bestätigen Sie mit der OK-Taste (C)", and the Trupp then gets Rückmarsch (I/M) (p. 30 step 8).
   §3.2.3's title also links this screen to changing the pressure.
-- **Keys** (inferred from p. 30): **A/B** change the pressure; **C** → [S07](#s07-einsatzliste).
+- **Keys** (inferred from p. 30): **Up/Down** change the pressure; **OK** → [S07](#s07-einsatzliste).
 - **Timeout:** probably parameter 13 (p. 69).
 
 ### S12 Trupp ALARM
@@ -578,13 +579,13 @@ Trupp 01 ALARM
                │  mit OK
 ```
 
-- **Fields:** the layout of [S11](#s11-trupp-ansicht-grafische-detailansicht) with:
+- **Fields:** the layout of [S11](#s11-trupp-ansicht) with:
   - header status word `ALARM`
   - empty cylinder
   - **negative Restzeit `-00:00:10`**
-  - empty Rückzug-pressure box
+  - empty Rückzugsdruck box
   - `Alarmende mit OK` instead of `Ansicht`
-- **Keys:** **C** acknowledges ("Bestätigen Sie den Alarm mit der OK-Taste (C)", pp. 24, 25, 28) → the next pending S12, else the screen it interrupted, else [S07](#s07-einsatzliste) with the Trupp selected. A, B, D and Transponders are ignored (decided in [Decide how alarms are presented](https://github.com/lharzenetter/checkbox-simulator/issues/8)).
+- **Keys:** **OK** acknowledges ("Bestätigen Sie den Alarm mit der OK-Taste (C)", pp. 24, 25, 28) → the next pending S12, else the screen it interrupted, else [S07](#s07-einsatzliste) with the Trupp selected. Up, Down, X and Tallys are ignored (decided in [Decide how alarms are presented](https://github.com/lharzenetter/checkbox-simulator/issues/8)).
 - **Triggers** (screen shown only for the overrun case):
   - Alarmgrenze 1 and 2 (33 % / 66 %; up to 4 Alarmgrenzen) (pp. 23–24)
   - Einsatzzeit used up, 00:00:00 (p. 24)
@@ -617,10 +618,10 @@ OK  =  abmelden
 
 - **Fields:** members who have already logged off are shown inverse (p. 30 step 3).
 - **Keys:**
-  - **Transponder on E** of further members marks them (p. 30 step 2).
-  - **C** completes the logoff: "Der Einsatz wird aus der Liste der laufenden Einsätze gelöscht. Alle Einsatzdaten werden gespeichert" (p. 31 step 4) → [S07](#s07-einsatzliste), or the Abschaltzeit then [S00](#s00-aus-display-off) if it was the last Trupp (p. 34).
-  - **D** ("X") → [S07](#s07-einsatzliste); the Trupp is not logged off (p. 31 step 4).
-- **Alarm:** if a member does not log off, a Daueralarm sounds (p. 15, p. 31 §5.9 step 1). Whether C is blocked until all members are marked is not stated (gap G7).
+  - **Tally on Check** of further members marks them (p. 30 step 2).
+  - **OK** completes the logoff: "Der Einsatz wird aus der Liste der laufenden Einsätze gelöscht. Alle Einsatzdaten werden gespeichert" (p. 31 step 4) → [S07](#s07-einsatzliste), or the Abschaltzeit then [S00](#s00-aus-display-off) if it was the last Trupp (p. 34).
+  - **X** → [S07](#s07-einsatzliste); the Trupp is not logged off (p. 31 step 4).
+- **Alarm:** if a member does not log off, a Daueralarm sounds (p. 15, p. 31 §5.9 step 1). Whether OK is blocked until all members are marked is not stated (gap G7).
 - **Possible extra step:** parameter 75 "Enddruckerfassung" may add an end-pressure prompt at logoff (p. 72). It is not shown.
 
 ### S14 Notausschaltung – Auswahl
@@ -642,10 +643,10 @@ fuer . . .
 ```
 
 - **Keys:**
-  - Reached with **D + E held together for about 4 s** (p. 31 step 2).
-  - **A/B** choose an option (p. 31 step 3). No selection bar is drawn (gap G10).
-  - **C** on a Trupp option → [S15](#s15-notausschaltung--bestätigung) (p. 32 step 4).
-  - **C** on `-> zurueck` cancels → S07. Inferred: "Wählen Sie zurueck, wenn Sie die Notausschaltung abbrechen möchten" (p. 31).
+  - Reached with **X + Check held together for about 4 s** (p. 31 step 2).
+  - **Up/Down** choose an option (p. 31 step 3). No selection bar is drawn (gap G10).
+  - **OK** on a Trupp option → [S15](#s15-notausschaltung--bestätigung) (p. 32 step 4).
+  - **OK** on `-> zurueck` cancels → S07. Inferred: "Wählen Sie zurueck, wenn Sie die Notausschaltung abbrechen möchten" (p. 31).
 - "markierten Trupp" is the Trupp selected in the Einsatzliste.
 
 ### S15 Notausschaltung – Bestätigung
@@ -669,7 +670,7 @@ drücken
 ```
 
 - **Keys:**
-  - **C** carries out the Notausschaltung; it is recorded in the Einsatzprotokoll (p. 31) → [S07](#s07-einsatzliste).
+  - **OK** carries out the Notausschaltung; it is recorded in the Einsatzprotokoll (p. 31) → [S07](#s07-einsatzliste).
   - **Any other key** cancels: "Drücken Sie eine andere Taste, um die Notausschaltung abzubrechen" (p. 32 step 5). The screen text names only X.
 - The text mixes ASCII transliteration (`druecken`, `LOESCHEN`) with an umlaut (`drücken`), verbatim from the figure.
 
@@ -706,8 +707,8 @@ Protokoll Ende
   - start and end time; "davon aktiv" is presumably the time not spent in Bereitschaft
 - Up to 100 Einsatzprotokolle are stored; after that the oldest are overwritten (p. 15, p. 32).
 - **Keys:**
-  - **A/B** page through the Einsatzprotokolle (p. 32 step 5).
-  - **D twice** → [S01](#s01-startdisplay) (p. 32 step 6). The first D presumably returns to S02.
+  - **Up/Down** page through the Einsatzprotokolle (p. 32 step 5).
+  - **X twice** → [S01](#s01-startdisplay) (p. 32 step 6). The first X presumably returns to S02.
 
 ### S17 TALLY Service [later]
 
@@ -728,29 +729,29 @@ Name:  MUSTERMANN M
 ```
 
 - **Keys:**
-  - Before a Transponder is read, the screen waits for one on **E** (step 5). That waiting state is not shown.
-  - **C** → [S18](#s18-namens-editor-buchstabenfeld-later) (step 7).
-  - **D** → S02 (presumably).
+  - Before a Tally is read, the screen waits for one on **Check** (step 5). That waiting state is not shown.
+  - **OK** → [S18](#s18-namens-editor-buchstabenfeld-later) (step 7).
+  - **X** → S02 (presumably).
   - "Drücken Sie zweimal die Abbruchtaste (D), um zum Startdisplay zurückzukehren" (p. 34 step 13).
 
 ### S18 Namens-Editor (Buchstabenfeld) [later]
 
 - **No figure.**
-- **Source:** p. 33 steps 8–10, p. 34 steps 11–12 (Transponder name); p. 34 §5.13.1 steps 5–8 and p. 35 (`Feuerwehrname ändern`).
+- **Source:** p. 33 steps 8–10, p. 34 steps 11–12 (Tally name); p. 34 §5.13.1 steps 5–8 and p. 35 (`Feuerwehrname ändern`).
 - **Described content:** a character field ("Buchstabenfeld") with letters, digits and special characters, plus the entries `> weiter`, `< zurück`, `* übernehmen`, `x abbrechen`.
 - **Keys** (verbatim): "Wählen Sie mit der Abbruchtaste (D) und den Navigationstasten (A/B) die gewünschten Buchstaben".
-  - **C** confirms a letter.
+  - **OK** confirms a letter.
   - `> weiter` / `< zurück` move to the next / previous letter.
   - `* übernehmen` accepts the input.
   - `x abbrechen` cancels.
-  - For a Transponder, the new name is written by holding the Transponder on **E** (p. 34 step 12).
-- The role of D in this editor is unclear (gap G12).
+  - For a Tally, the new name is written by holding the Tally on **Check** (p. 34 step 12).
+- The role of X in this editor is unclear (gap G12).
 
 ### S19 Kontrast [later]
 
 - **No figure.**
 - **Source:** p. 35 §5.13.2.
-- **Keys:** **A/B** choose the contrast; **C** confirms.
+- **Keys:** **Up/Down** choose the contrast; **OK** confirms.
 - The range is 223–245 (parameter 51, p. 69).
 
 ### S20 Zeit/Datum einstellen [later]
@@ -759,9 +760,9 @@ Name:  MUSTERMANN M
 - **Source:** pp. 35–36 §5.13.3.
 - **Described content:** a sub-selection of Uhrzeit, Datum, or Sommer-/Winterzeit (p. 35 step 5), then a value editor.
 - **Keys:**
-  - **A/B** select the entry; **C** opens it.
-  - In the editor, **A/B** change the value; each **C** moves the input mark to the next value; **C** after the last value accepts (p. 36 steps 7–9).
-  - **D twice** → S01 (p. 36 step 10).
+  - **Up/Down** select the entry; **OK** opens it.
+  - In the editor, **Up/Down** change the value; each **OK** moves the input mark to the next value; **OK** after the last value accepts (p. 36 steps 7–9).
+  - **X twice** → S01 (p. 36 step 10).
 - Time and date are synchronised from the PC (p. 35). DST rule: parameter 90 (p. 90).
 
 ### S21 Testprogramm [later]
@@ -790,9 +791,9 @@ Name:  MUSTERMANN M
 ```
 
 - **Keys:**
-  - **C** toggles the siren test (p. 85 steps 5–6).
-  - **D twice** → S01 (step 7).
-  - Placing a Transponder evidently fills the "TALLY - Test" box (inferred from the figure).
+  - **OK** toggles the siren test (p. 85 steps 5–6).
+  - **X twice** → S01 (step 7).
+  - Placing a Tally evidently fills the "TALLY - Test" box (inferred from the figure).
 
 ### S22 REMOTE [later]
 
@@ -810,7 +811,7 @@ Abbruch: 'X'-Taste
 ```
 
 - **Meaning:** shown while the Workbench PC software is connected (p. 41, p. 42).
-- **Keys:** **D** ends the connection (p. 41/42 Hinweis).
+- **Keys:** **X** ends the connection (p. 41/42 Hinweis).
 - Not needed for the simulator unless PC connection is simulated.
 
 ### Screens described but not depicted
@@ -819,13 +820,13 @@ These screens follow from the text but have no figure. The navigation model must
 
 | Id | Situation | Source |
 |---|---|---|
-| X1 | Battery-empty Alarm at power-on (acknowledge with C) | p. 14, p. 17 |
+| X1 | Battery-empty Alarm at power-on (acknowledge with OK) | p. 14, p. 17 |
 | X2 | Second confirmation for non-30-min Einsatzzeit ("Langzeiteinsatz") | p. 18 step 5 |
 | X3 | Attribute selection ("Zusatzinformationen … Einsatzart, Einsatzort, Funkrufname") | p. 19 step 8, p. 21 step 17 |
 | X4 | Pressure entry after "Rückzug antreten", if it differs from S11 | p. 30 steps 6–7 |
-| X5 | Sicherungstrupp Revidierung question (parameter 89) | p. 73 |
+| X5 | "Sicherheitstrupp Revidierung" question (parameter 89) | p. 73 |
 | X6 | Enddruckerfassung at logoff (parameter 75) | p. 72 |
-| X7 | TALLY Service waiting for a Transponder | p. 33 step 5 |
+| X7 | TALLY Service waiting for a Tally | p. 33 step 5 |
 | X8 | Login refused (G26 expired / not an Atemschutzträger) | p. 86 §8.5, p. 69 parameter 55 |
 | X9 | Low-battery Alarm when the second compartment is nearly empty | p. 84 |
 
@@ -833,34 +834,34 @@ These screens follow from the text but have no figure. The navigation model must
 
 ## Transition table
 
-Keys: **A** up, **B** down, **C** OK, **D** Abbruch, **E** = Transponder-/Check-Taste.
-"T@E" = a Transponder held on E.
+Keys: **Up**, **Down**, **OK**, **X** (cancel), **Check** (power-on, and where Tallys are held).
+"T@Check" = a Tally held on Check.
 **Bold** cells are stated in the manual; *italic* cells are inferred; "—" = not documented.
 
-| Screen | A / B | C | D | E / T@E | Other / automatic |
+| Screen | Up / Down | OK | X | Check / T@Check | Other / automatic |
 |---|---|---|---|---|---|
-| S00 Aus | — | — | — | **E → S01**; **T@E → S03** (p. 14, 17) | — |
-| S01 Startdisplay | — | **→ S02** (p. 17) | — | **T@E → S03** (p. 17) | **countdown → S00** (p. 17); battery Alarm X1 (p. 17) |
+| S00 Aus | — | — | — | **Check → S01**; **T@Check → S03** (p. 14, 17) | — |
+| S01 Startdisplay | — | **→ S02** (p. 17) | — | **T@Check → S03** (p. 17) | **countdown → S00** (p. 17); battery Alarm X1 (p. 17) |
 | S02 SERVICE | **move bar** | **→ S16/S17/S18/S19/S20/S21** (pp. 32–35, 85) | **→ S01** (p. 17) | — | — |
-| S03 Einsatzzeit | **choose Einsatzzeit** (p. 18) | **→ S04**; *non-30 min: extra C via X2* (p. 18) | — | *T@E adds member* (p. 18 step 6) | param 12 auto-login (p. 69) |
-| S04 Anmeldefenster | **choose action** (p. 19) | **Einsatz/Bereitschaft → X3 → S05 / S06 / S07**; **Sicherheitstrupp OK** → *same chain*, SICHER; **Druck ändern → S08** (pp. 19–21) | — | **T@E adds member** (p. 18) | param 12 (p. 69); Daueralarm below min. members (p. 71) |
+| S03 Einsatzzeit | **choose Einsatzzeit** (p. 18) | **→ S04**; *non-30 min: extra OK via X2* (p. 18) | — | *T@Check adds member* (p. 18 step 6) | param 12 auto-login (p. 69) |
+| S04 Anmeldefenster | **choose action** (p. 19) | **Einsatz/Bereitschaft → X3 → S05 / S06 / S07**; **Sicherheitstrupp OK** → *same chain*, SICHER; **Druck ändern → S08** (pp. 19–21) | — | **T@Check adds member** (p. 18) | param 12 (p. 69); Daueralarm below min. members (p. 71) |
 | S05 DRUCK-AUSWAHL | **choose 200/300 bar** | **→ S06** (p. 19–20) | — | — | skipped if param 14/53/54 ≠ 0 (p. 70) |
 | S06 Anfangsdruck | **± pressure** | **→ S07** (p. 20) | — | — | skipped if param 74 = 0 (p. 72) |
-| S07 Einsatzliste | **select Trupp** (p. 22, 26) | **→ S09** (p. 26) | — | **T@E (member) → S13** (p. 30); *T@E (new) → S03* (p. 21) | **D+E ≈4 s → S14** (p. 31); *Alarm → S12* |
+| S07 Einsatzliste | **select Trupp** (p. 22, 26) | **→ S09** (p. 26) | — | **T@Check (member) → S13** (p. 30); *T@Check (new) → S03* (p. 21) | **X+Check ≈4 s → S14** (p. 31); *Alarm → S12* |
 | S08 Druck ändern | **± pressure** (p. 22, 29) | *→ S04 or S07* (p. 29) | — | — | — |
 | S09 Trupp-Menü | **choose item** | **Einsatzziel erreicht → S10** (p. 22); **Rückzug antreten → S11/X4** (p. 29); **Bereitschaft → S07** (p. 27); **Druck ändern → S08** (p. 28); *Trupp -> Einsatz → S07* | *→ S07* (p. 9) | — | **param 13 timeout → S07** (p. 69) |
 | S10 Esz-Ziel erreicht | **± pressure** (p. 23) | **→ S07**, status H/L (p. 23) | — | — | — |
 | S11 Trupp-Ansicht | *± pressure* (p. 30) | *→ S07*, status I/M (p. 30) | — | — | *param 13 timeout* |
 | S12 ALARM | *ignored* | **acknowledge** (p. 24–25) → *next pending S12, else the interrupted screen, else S07* | *ignored* | *ignored, not buffered* | repeats every 5 min (p. 25, 28); *interrupts any screen* |
-| S13 ABMELDEN | — | **logoff → S07** (p. 31) | **→ S07, no logoff** (p. 31) | **T@E marks member** (p. 30) | Daueralarm if member missing (p. 31) |
+| S13 ABMELDEN | — | **logoff → S07** (p. 31) | **→ S07, no logoff** (p. 31) | **T@Check marks member** (p. 30) | Daueralarm if member missing (p. 31) |
 | S14 Notaus Auswahl | **choose** (p. 31) | **Trupp/alle → S15**; **zurueck → *S07*** (p. 31–32) | — | — | — |
 | S15 Notaus Bestätigung | **cancel** | **delete Trupp(s) → *S07*** (p. 32) | **cancel** (p. 32) | **cancel** (p. 32) | — |
 | S16 Einsatzprotokoll | **page** (p. 32) | — | **×2 → S01** (p. 32) | — | — |
-| S17 TALLY Service | — | **→ S18** (p. 33) | **×2 → S01** (p. 34) | **T@E reads Transponder** (p. 33) | — |
-| S18 Namens-Editor | **choose character** | **confirm letter** (p. 33) | *selection?* (p. 33) | **T@E writes name** (p. 34) | — |
+| S17 TALLY Service | — | **→ S18** (p. 33) | **×2 → S01** (p. 34) | **T@Check reads Tally** (p. 33) | — |
+| S18 Namens-Editor | **choose character** | **confirm letter** (p. 33) | *selection?* (p. 33) | **T@Check writes name** (p. 34) | — |
 | S19 Kontrast | **contrast** | **confirm** (p. 35) | — | — | — |
 | S20 Zeit/Datum | **select / value** | **next field / accept** (p. 36) | **×2 → S01** (p. 36) | — | — |
-| S21 Testprogramm | — | **siren on/off** (p. 85) | **×2 → S01** (p. 85) | *T@E shows Transponder* | — |
+| S21 Testprogramm | — | **siren on/off** (p. 85) | **×2 → S01** (p. 85) | *T@Check shows Tally* | — |
 | S22 REMOTE | — | — | **disconnect** (p. 41) | — | — |
 
 ---
@@ -868,7 +869,7 @@ Keys: **A** up, **B** down, **C** OK, **D** Abbruch, **E** = Transponder-/Check-
 ## Gaps and ambiguities
 
 These are points the manual does not settle.
-G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5#issuecomment-6142167472); that resolution holds the decisions, so they are not restated here. [Decide when a Daueralarm starts and ends](https://github.com/lharzenetter/checkbox-simulator/issues/14) amends G7: C on ABMELDEN with members unmarked, and C on the Anmeldefenster below [07], start a Daueralarm instead of doing nothing ([rules 7.3–7.6](timing-and-alarm-rules.md#7-daueralarm)).
+G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5#issuecomment-6142167472); that resolution holds the decisions, so they are not restated here. [Decide when a Daueralarm starts and ends](https://github.com/lharzenetter/checkbox-simulator/issues/14) amends G7: OK on ABMELDEN with members unmarked, and OK on the Anmeldefenster below [07], start a Daueralarm instead of doing nothing ([rules 7.3–7.6](timing-and-alarm-rules.md#7-daueralarm)).
 G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
 
 - **G1 – Right column of the Einsatzliste.**
@@ -878,23 +879,23 @@ G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
   **Decided:** Restzeit, negative as `-0:00:10`. The `B1-{BAT}+ {UHR} 10:03:00` line above the rows is the current time, not part of the column.
 - **G2 – Status words and menu contents per Einsatzstatus.**
   The menu figures show only `ANMARSCH` (with `Einsatzziel erreicht`) and `EINSATZ` (with `Attribute eintragen`, no `Einsatzziel erreicht`).
-  The header word and menu items for Bereitschaft, Einsatzziel erreicht (which must contain `Rückzug antreten`, p. 29), Rückzug and Sicherungstrupp are not shown.
+  The header word and menu items for Bereitschaft, Einsatzziel erreicht (which must contain `Rückzug antreten`, p. 29), Rückmarsch and Sicherheitstrupp are not shown.
   "EINSATZ" may be the status word when the Rückzugsalarmmodus is off, but the manual does not say so.
 - **G3 – Glyph for a 3-member Trupp, and the `5×`/`6×` glyphs.**
   "Bis zu drei Truppmitglieder werden als Symbole angezeigt" (p. 11), but every glyph shows two figures or `4×`.
 - **G4 – Login chain order and skips.**
-  It is unclear when exactly further members log in (before or after choosing the Einsatzzeit), and whether S05, S06 and the Attribute step X3 also run for Bereitschaft and Sicherungstrupp.
+  It is unclear when exactly further members log in (before or after choosing the Einsatzzeit), and whether S05, S06 and the Attribute step X3 also run for Bereitschaft and Sicherheitstrupp.
   The text says the first new Trupp gets Anmarsch (p. 20 step 15), but the figure after it shows H (Einsatzziel erreicht) (p. 20 right figure).
   That fits the Rückzugsalarmmodus being off, whose factory default the parameter table does not give (p. 87–89).
 - **G5 – Alarm presentation.**
   Only one ALARM screen is shown, for the overrun case (p. 24).
-  It is unclear whether the 1/3, 2/3, Rückzugsalarm, Bereitschaft, Daueralarm and battery Alarms use the same screen, what happens when several Trupps alarm at once, and where C leads afterwards.
-  **Decided** in [Decide how alarms are presented](https://github.com/lharzenetter/checkbox-simulator/issues/8): every non-Daueralarm uses S12 with no cause text; one pending Alarm per Trupp, FIFO across Trupps; S12 interrupts any screen and C returns to it. The resolution holds the detail.
+  It is unclear whether the 1/3, 2/3, Rückzugsalarm, Bereitschaft, Daueralarm and battery Alarms use the same screen, what happens when several Trupps alarm at once, and where OK leads afterwards.
+  **Decided** in [Decide how alarms are presented](https://github.com/lharzenetter/checkbox-simulator/issues/8): every non-Daueralarm uses S12 with no cause text; one pending Alarm per Trupp, FIFO across Trupps; S12 interrupts any screen and OK returns to it. The resolution holds the detail.
 - **G6 – The two detail layouts and the `Ansicht` label.**
   It is unclear how the graphic Trupp-Ansicht (S11) is reached, compared with the menu (S09), and what `Ansicht` means.
   §3.2.3 calls it "Druck der Atemschutzflaschen ändern" (p. 11), but its layout differs from the pressure-entry screens S06, S08 and S10.
 - **G7 – Logoff with missing members.**
-  It is unclear whether C in S13 is allowed before all members are marked, or whether only the Daueralarm and the Notausschaltung are possible (p. 31).
+  It is unclear whether OK in S13 is allowed before all members are marked, or whether only the Daueralarm and the Notausschaltung are possible (p. 31).
 - **G8 – SERVICE menu.**
   The figure shows four items; the text names six (p. 17 vs pp. 32–35).
   Order, scrolling and locking (parameter 44, "Checkbox sperren", p. 67) are open.
@@ -906,10 +907,10 @@ G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
   It is unclear whether those screens have a cursor and what it looks like.
 - **G11 – Title `Esz-Zeit ändern` on the "Druck ändern" screen** (p. 22, p. 28).
   It may be a firmware label or related to parameter 11 "Einsatzzeit ändern" (p. 69).
-- **G12 – D in the character editor.**
-  "Wählen Sie mit der Abbruchtaste (D) und den Navigationstasten (A/B) die gewünschten Buchstaben" (p. 33, p. 34) gives D a navigation role; its exact meaning is unclear.
+- **G12 – X in the character editor.**
+  "Wählen Sie mit der Abbruchtaste (D) und den Navigationstasten (A/B) die gewünschten Buchstaben" (p. 33, p. 34) gives X a navigation role; its exact meaning is unclear.
 - **G13 – Undocumented keys.**
-  The manual does not document D on S01, S03, S04, S07 and S09, or A/B on S01.
+  The manual does not document X on S01, S03, S04, S07 and S09, or Up/Down on S01.
   The general rule, "Funktion oder Eingabe abbrechen / in den Ausgangsmodus zurückkehren" (p. 9), has to be turned into concrete targets.
 - **G14 – Timing values.**
   The manual does not give the SICHER alternation period or the default values of the Startdisplay Abschaltzeit (only "25" in the figure), the display-backlight timeout, parameter 12 or parameter 13.
@@ -920,17 +921,17 @@ G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
 
 ## Glossary candidates
 
-Device terms found in the manual that are not in `GLOSSARY.md` and may deserve an entry.
-`GLOSSARY.md` was not edited.
+Device terms found in the manual that were not in `GLOSSARY.md` when this catalogue was written.
+They were settled in [Reconcile the glossary with the LCD's on-screen wording](https://github.com/lharzenetter/checkbox-simulator/issues/17); `GLOSSARY.md` now holds the outcome.
 
 | Term | Meaning | Source |
 |---|---|---|
 | **Startdisplay** | The screen after power-on (S01) | p. 17 §5.2 |
 | **Anmeldedisplay / Anmeldefenster** | Login screens for a new Trupp (S03/S04) | p. 14, p. 18, p. 21 |
-| **Detailansicht** (eines Trupps) | Per-Trupp screen reached by C from the Einsatzliste | p. 26 §5.6.2, param 13 p. 69 |
-| **Service- und Einstellungsmenü** (display: `SERVICE`) | Menu reached by C on the Startdisplay | p. 17 |
+| **Detailansicht** (eines Trupps) | Per-Trupp screen reached by OK from the Einsatzliste; split into Trupp-Menü (S09) and Trupp-Ansicht (S11) | p. 26 §5.6.2, param 13 p. 69 |
+| **Service- und Einstellungsmenü** (display: `SERVICE`) | Menu reached by OK on the Startdisplay | p. 17 |
 | **Statussymbol** | The F–M glyphs showing Einsatzstatus and member count | p. 11, p. 20 |
-| **Anmarsch / Rückzug (Rückmarsch)** | The Einsatzstatus values themselves; the display uses `ANMARSCH`, `RÜCKMARSCH`, and the menu uses `Rückzug antreten` | pp. 22, 29 |
+| **Anmarsch / Rückmarsch** | The Einsatzstatus values themselves; the display uses `ANMARSCH`, `RÜCKMARSCH`, and the menu uses `Rückzug antreten` | pp. 22, 29 |
 | **Einsatzziel erreicht** (display `Esz-Ziel erreicht`) | Einsatzstatus; the glossary lists it but `Esz` is a device abbreviation | p. 22 |
 | **Rückzugsalarmmodus** | Per-Einsatzzeit switch; when off, only Einsatzziel erreicht exists | p. 11, params 41/69–71 |
 | **Anfangsdruckerfassung / Enddruckerfassung** | Pressure prompt at login / logoff | p. 20, params 74/75 |
@@ -942,11 +943,11 @@ Device terms found in the manual that are not in `GLOSSARY.md` and may deserve a
 | **Attribute** | Free-configurable extra info (Einsatzart, Einsatzort, Funkrufname); menu `Attribute eintragen` | p. 19, p. 26, §6.12.2 |
 | **Truppnummer** (display `Trupp Nr.`) | Auto-assigned 2-digit number 01–06 | p. 18 |
 | **Truppmitglied** | Member of a Trupp; the manual's word for an Atemschutzträger within a Trupp | passim |
-| **Sicherheitstrupp** | The display's (and parameter 89's) spelling of Sicherungstrupp; the glossary lists it under *Avoid*, but it is the literal LCD text `Sicherheitstrupp OK` | p. 19, p. 21, p. 73 |
-| **TALLY** | The display's word for Transponder (`TALLY auflegen`, `TALLY Service`); the glossary lists "Tally" under *Avoid*, but the simulator must show it verbatim | p. 17, p. 33 |
-| **X-Taste** | The display's name for the Abbruchtaste D | p. 30, p. 32, p. 41 |
+| **Sicherheitstrupp** | The display's (and parameter 89's) spelling; the manual's prose says "Sicherungstrupp" | p. 19, p. 21, p. 73 |
+| **TALLY** | The display's word for the tag (`TALLY auflegen`, `TALLY Service`); the manual's prose says "Transponder" | p. 17, p. 33 |
+| **X-Taste** | The display's name for the key the manual letters D and calls "Abbruchtaste" | p. 30, p. 32, p. 41 |
 | **Batteriefach (B1/B2)** | The two redundant battery compartments shown on the LCD | p. 10, p. 84 |
 | **Abschaltzeit** | Idle time until automatic power-off | p. 17, p. 34 |
 | **Feuerwehrname / Name der Checkbox** | Organisation name in the top line | p. 10, p. 34 |
 | **Einsatzkräfte** | Heading for the members in the Einsatzprotokoll screen | p. 32 |
-| **Testprogramm** | Service function showing batteries, Transponder, clock and siren test | p. 85 |
+| **Testprogramm** | Service function showing batteries, Tally, clock and siren test | p. 85 |
