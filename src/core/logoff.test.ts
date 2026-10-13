@@ -173,8 +173,8 @@ describe.each([
   ({ einsatzstatus, truppInStatus }) => {
     function loggedOff(): State {
       const running = truppInStatus();
-      // before the first Alarmgrenze, so no Alarm takes over from ABMELDEN
-      const later = run(running, tickAfter(running, 9 * 60_000));
+      // before the first Alarmgrenze and Bereitschaft Alarm, so no Alarm takes over from ABMELDEN
+      const later = run(running, tickAfter(running, 4 * 60_000));
       return run(later, hold(A1), hold(A2), press("OK"));
     }
 
@@ -202,7 +202,7 @@ describe.each([
           einsatzstatus,
           sicherheitstrupp: false,
           loggedInAtMs: SESSION_START.now,
-          loggedOffAtMs: SESSION_START.now + 9 * 60_000,
+          loggedOffAtMs: SESSION_START.now + 4 * 60_000,
         },
       ]);
     });

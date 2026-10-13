@@ -49,6 +49,8 @@ export interface Trupp {
   readonly runningTimeMs: number;
   /** The running time at which the current Anmarsch began. */
   readonly anmarschBeganAtRunningTimeMs: number;
+  /** Simulated time since the Trupp entered its current Bereitschaft; 0 outside Bereitschaft. */
+  readonly timeInBereitschaftMs: number;
   /** `t_A` of the current Anmarsch, once it reported Einsatzziel erreicht; `null` before. */
   readonly anmarschzeitMs: number | null;
   readonly loggedInAtMs: number;

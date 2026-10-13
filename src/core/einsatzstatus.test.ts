@@ -255,11 +255,13 @@ describe("choosing the current Einsatzstatus", () => {
     state = chooseItem(run(state, tickAt(6)), "truppBereitschaft");
     expect(einsatzstatusOf(state)).toBe("bereitschaft");
 
-    // unchanged Trupp: the Bereitschaft interval that starts at 6:00 is not restarted (§4.4)
+    // the Bereitschaft interval that starts at 6:00 is not restarted (§4.4)
     const bereitschaft = run(state, tickAt(9));
     state = chooseItem(bereitschaft, "truppBereitschaft");
     expect(state.screen).toBe("einsatzliste");
     expect(state.trupps).toEqual(bereitschaft.trupps);
+    expect(run(state, tickAt(10, 59)).pendingAlarms).toEqual([]);
+    expect(run(state, tickAt(11)).pendingAlarms).toEqual([1]);
   });
 });
 
@@ -301,6 +303,8 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
     expect(restzeitOf(state)).toBe(minutes(12));
 
+    // the Bereitschaft Alarm at 13:00 (timing-and-alarm-rules §4.3)
+    state = run(state, tickAt(13), press("OK"));
     state = chooseItem(run(state, tickAt(14)), "truppEinsatz");
     expect(state.screen).toBe("einsatzliste");
     expect(einsatzstatusOf(state)).toBe("anmarsch");
@@ -330,8 +334,9 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
 
   // verification scenario V12, its transition; timing-and-alarm-rules §12.1, 12.4
   it("sends a Trupp logged in to Bereitschaft into Anmarsch", () => {
+    // OK the Bereitschaft Alarm (timing-and-alarm-rules §4.3) first
     const state = chooseItem(
-      run(truppInBereitschaft(), tickAt(12)),
+      run(truppInBereitschaft(), tickAt(12), press("OK")),
       "truppEinsatz",
     );
     expect(einsatzstatusOf(state)).toBe("anmarsch");
@@ -354,7 +359,7 @@ describe("a Sicherheitstrupp", () => {
     let state = sicherheitstrupp();
     expectSicher(state, "bereitschaft");
 
-    state = chooseItem(run(state, tickAt(6)), "truppEinsatz");
+    state = chooseItem(run(state, tickAt(4)), "truppEinsatz");
     expectSicher(state, "anmarsch");
 
     state = accept(run(state, tickAt(7)), "einsatzzielErreicht");
@@ -449,6 +454,8 @@ describe("the Rückzugsdruck", () => {
     );
     expect(rueckzugsdruckOf(state)).toBe(130);
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
+    // the Bereitschaft Alarm at 13:00 (timing-and-alarm-rules §4.3)
+    state = run(state, tickAt(13), press("OK"));
     state = chooseItem(run(state, tickAt(14)), "truppEinsatz");
     expect(rueckzugsdruckOf(state)).toBeNull();
     state = run(state, tickAt(15, 54), press("OK"));

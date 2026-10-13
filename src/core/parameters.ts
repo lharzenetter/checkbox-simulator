@@ -23,6 +23,9 @@ export const P01_EINSATZZEIT_1_MS = 30 * 60_000;
 export const P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 2;
 export const P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 6;
 export const P10_EINSATZZEIT_3_MS = 20 * 60_000;
+export const P05_ALARMINTERVALL_BEREITSCHAFT_MS = 5 * 60_000;
+// The manual calls [06] "Alarmintervall Regelzeit"; Regelzeit is the glossary's Einsatzzeit.
+export const P06_ALARMINTERVALL_EINSATZZEIT_MS = 5 * 60_000;
 
 // Alarmgrenzen #1 and #2 of Einsatzzeit #1 ([03], [04]) and #3 ([61], [62]); #3 and #4 of each
 // default to 0 (off), timing-and-alarm-rules §9.

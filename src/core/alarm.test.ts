@@ -7,8 +7,9 @@ import {
   isAlarmSounding,
   reduce,
   selectedTrupp,
+  truppMenueAktionen,
 } from "./index";
-import type { Event, Key, State } from "./index";
+import type { Event, Key, State, TruppMenueAktion } from "./index";
 
 const SESSION_START = { now: 1_000_000, realNow: 500 };
 
@@ -44,6 +45,35 @@ function truppInAnmarsch(): State {
     press("OK"),
     hold(A2),
     press("OK"),
+    press("OK"),
+  );
+}
+
+function presses(key: Key, count: number): readonly Event[] {
+  return Array.from({ length: count }, () => press(key));
+}
+
+// Opens the Trupp-Menü from the Einsatzliste and chooses the item.
+function chooseItem(state: State, aktion: TruppMenueAktion): State {
+  const menue = run(state, press("OK"), press("OK"));
+  const index = truppMenueAktionen(menue).indexOf(aktion);
+  expect(index).toBeGreaterThanOrEqual(0);
+  return run(menue, ...presses("Down", index), press("OK"));
+}
+
+// Chooses the item, moves the Flaschendruck editor to the value in [76] = [73] = 5 bar steps,
+// then OK: "enter P" in the scenarios.
+function enter(
+  state: State,
+  aktion: TruppMenueAktion,
+  flaschendruckBar: number,
+): State {
+  const editor = chooseItem(state, aktion);
+  const opened = editor.truppMenue?.draftFlaschendruckBar ?? 0;
+  const steps = (flaschendruckBar - opened) / 5;
+  return run(
+    editor,
+    ...presses(steps > 0 ? "Up" : "Down", Math.abs(steps)),
     press("OK"),
   );
 }
@@ -140,6 +170,112 @@ describe("an untouched Trupp running out", () => {
   });
 });
 
+// verification-scenarios V1 after 00:00:00; timing-and-alarm-rules §3.2, 3.3
+describe("an overdue Trupp", () => {
+  it("sounds every 5 min of Restzeit past 00:00:00, not 5 min after a late OK", () => {
+    let state = run(
+      truppInAnmarsch(),
+      tickAt(9, 54),
+      press("OK"),
+      tickAt(19, 48),
+      press("OK"),
+      tickAt(30),
+      tickAt(33),
+      press("OK"),
+    );
+    expectNoAlarm(state);
+
+    state = reduce(state, tickAt(34, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(35));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(39, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(40));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-10 * 60_000);
+  });
+
+  // timing-and-alarm-rules §3.3: missed steps are not replayed
+  it("sounds once for a tick that passes several steps", () => {
+    const state = run(
+      truppInAnmarsch(),
+      tickAt(30),
+      press("OK"),
+      tickAt(41),
+      press("OK"),
+      tickAt(44, 59),
+    );
+    expectNoAlarm(state);
+    expectAlarmFor(reduce(state, tickAt(45)), 1);
+  });
+});
+
+// verification-scenarios V5; timing-and-alarm-rules §3.3, 3.4
+describe("a pressure entry of 0 bar", () => {
+  it("sounds Einsatzzeit erreicht on OK and the overdue repeats from there", () => {
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(8)),
+      "flaschendruckAendern",
+      0,
+    );
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(0);
+    state = reduce(state, press("OK"));
+    expect(state.screen).toBe("einsatzliste");
+
+    state = reduce(state, tickAt(9, 54));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(12, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(13));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
+  });
+});
+
+// verification-scenarios V24; timing-and-alarm-rules §1.7, 3.6
+describe("a pressure entry on an overdue Trupp", () => {
+  it("re-arms Einsatzzeit erreicht and the overdue repeats", () => {
+    let state = run(
+      truppInAnmarsch(),
+      tickAt(9, 54),
+      press("OK"),
+      tickAt(19, 48),
+      press("OK"),
+      tickAt(30),
+      press("OK"),
+      tickAt(35),
+    );
+    expectAlarmFor(state, 1);
+    state = run(state, press("OK"), tickAt(37));
+
+    const editor = chooseItem(state, "flaschendruckAendern");
+    expect(editor.truppMenue?.draftFlaschendruckBar).toBe(0);
+    state = enter(state, "flaschendruckAendern", 30);
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(3 * 60_000);
+
+    state = reduce(state, tickAt(39, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(40));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(0);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(44, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(45));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
+  });
+});
+
 // verification-scenarios V2, its Alarmgrenzen half; timing-and-alarm-rules §1.3, 2.2
 describe("a Trupp logged in at 270 bar", () => {
   function truppAt270Bar(): State {
@@ -202,10 +338,10 @@ describe("a 20-min Trupp", () => {
   });
 });
 
-// timing-and-alarm-rules §4.1, 4.5, 4.7: Bereitschaft holds the running time and the Restzeit
-describe("a Trupp in Bereitschaft", () => {
-  it("does not reach its Alarmgrenzen", () => {
-    const state = run(
+// verification-scenarios V12; timing-and-alarm-rules §4.1, 4.3, 4.4, 4.5, 4.6, 12.1, 12.4
+describe("a Trupp logged in to Bereitschaft", () => {
+  function truppInBereitschaft(): State {
+    return run(
       createInitialState(SESSION_START),
       hold(A1),
       press("OK"),
@@ -213,9 +349,163 @@ describe("a Trupp in Bereitschaft", () => {
       press("Down"),
       press("OK"),
       press("OK"),
-      tickAt(31),
+    );
+  }
+
+  it("sounds every 5 min since its entry, not since a late OK, and never at its Alarmgrenzen", () => {
+    let state = run(truppInBereitschaft(), tickAt(4, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(5));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(30 * 60_000);
+
+    state = run(state, tickAt(7), press("OK"));
+    state = reduce(state, tickAt(9, 54));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(9, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(10));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    state = chooseItem(run(state, tickAt(12)), "truppEinsatz");
+    expect(state.trupps[0]?.einsatzstatus).toBe("anmarsch");
+    expect(restzeitOf(state)).toBe(30 * 60_000);
+
+    state = reduce(state, tickAt(15));
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(27 * 60_000);
+
+    state = reduce(state, tickAt(21, 53));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(21, 54));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe((20 * 60 + 6) * 1000);
+  });
+
+  // timing-and-alarm-rules §4.7: only the Bereitschaft Alarm sounds, so §3.4 waits
+  it("sounds no Einsatzzeit erreicht for a pressure entry of 0 bar", () => {
+    let state = enter(
+      run(truppInBereitschaft(), tickAt(2)),
+      "flaschendruckAendern",
+      0,
     );
     expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(0);
+    state = reduce(state, tickAt(5));
+    expectAlarmFor(state, 1);
+  });
+});
+
+// verification-scenarios V13 without its Rückzugsalarm rows (7:00, 17:00), which issue #34
+// ("Fire the Rückzugsalarm") adds; timing-and-alarm-rules §4.1, 4.4, 4.5, 4.6, 4.7
+describe("a Trupp sent to Bereitschaft mid-Einsatz", () => {
+  it("pauses its Alarms there and shifts them by the time it spent in Bereitschaft", () => {
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(4)),
+      "einsatzzielErreicht",
+      160,
+    );
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(16 * 60_000);
+
+    state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
+    expect(restzeitOf(state)).toBe(12 * 60_000);
+    state = reduce(state, tickAt(12, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(13));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(12 * 60_000);
+    state = reduce(state, press("OK"));
+
+    state = chooseItem(run(state, tickAt(14)), "truppEinsatz");
+    expect(state.trupps[0]?.einsatzstatus).toBe("anmarsch");
+    state = reduce(state, tickAt(15, 53));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(15, 54));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    // accept the 100 bar the editor opens at
+    state = chooseItem(run(state, tickAt(16)), "einsatzzielErreicht");
+    state = reduce(state, press("OK"));
+    expect(restzeitOf(state)).toBe(10 * 60_000);
+
+    state = reduce(state, tickAt(25, 47));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(25, 48));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(26));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(0);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(30, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(31));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
+  });
+});
+
+// verification-scenarios V14; timing-and-alarm-rules §3.3, 3.5, 4.4, 4.7
+describe("an overdue 20-min Trupp in Bereitschaft", () => {
+  it("pauses the overdue repeats and restarts the Bereitschaft interval on each entry", () => {
+    let state = run(
+      createInitialState(SESSION_START),
+      hold(A1),
+      press("Down"),
+      press("OK"),
+      press("OK"),
+      hold(A2),
+      press("OK"),
+      press("OK"),
+      tickAt(6, 36),
+      press("OK"),
+      tickAt(13, 12),
+      press("OK"),
+      tickAt(20),
+    );
+    expectAlarmFor(state, 1);
+    state = run(state, press("OK"), tickAt(22));
+
+    state = chooseItem(state, "truppBereitschaft");
+    expect(restzeitOf(state)).toBe(-2 * 60_000);
+
+    state = reduce(state, tickAt(25));
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(-2 * 60_000);
+    state = reduce(state, tickAt(26, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(27));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    state = chooseItem(run(state, tickAt(28)), "truppEinsatz");
+    expect(state.trupps[0]?.einsatzstatus).toBe("anmarsch");
+    state = reduce(state, tickAt(30, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(31));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
+    state = reduce(state, press("OK"));
+
+    state = chooseItem(run(state, tickAt(32)), "truppBereitschaft");
+    expect(restzeitOf(state)).toBe(-6 * 60_000);
+    state = reduce(state, tickAt(36, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(37));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    state = chooseItem(run(state, tickAt(38)), "truppEinsatz");
+    state = reduce(state, tickAt(41, 59));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(42));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-10 * 60_000);
   });
 });
 
@@ -328,8 +618,7 @@ describe("the red LED", () => {
   });
 });
 
-// verification-scenarios V6 up to 30:00; timing-and-alarm-rules §2.3, 3.5, 5.9, 12.2. The overdue
-// repeat at 35:00 comes with issue #33 ("Repeat overdue and Bereitschaft Alarms").
+// verification-scenarios V6; timing-and-alarm-rules §2.3, 3.5, 5.9, 12.2
 describe("V6: Alarms in every Einsatzstatus", () => {
   // Opens the Trupp-Menü, chooses the item and accepts the editor's value with OK.
   function accept(state: State, downs: number): State {
@@ -372,6 +661,11 @@ describe("V6: Alarms in every Einsatzstatus", () => {
     state = reduce(state, tickAt(30));
     expectAlarmFor(state, 1);
     expect(state.trupps[0]?.einsatzstatus).toBe("rueckmarsch");
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(35));
+    expectAlarmFor(state, 1);
+    expect(restzeitOf(state)).toBe(-5 * 60_000);
   });
 });
 

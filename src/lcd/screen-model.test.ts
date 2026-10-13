@@ -365,7 +365,7 @@ describe("S07 Einsatzliste", () => {
     });
   });
 
-  // timing-and-alarm-rules §4.1
+  // timing-and-alarm-rules §4.1; 4 min stays short of the Bereitschaft Alarm (§4.3)
   it("shows a frozen Restzeit for a Trupp logged in to Bereitschaft", () => {
     const bereitschaft = stateAfter(
       HLF_AT_F,
@@ -376,7 +376,7 @@ describe("S07 Einsatzliste", () => {
       press("Down"),
       press("OK"),
     );
-    expect(screenModel(tickBy(bereitschaft, 5 * 60_000))).toMatchObject({
+    expect(screenModel(tickBy(bereitschaft, 4 * 60_000))).toMatchObject({
       rows: [
         {
           statussymbol: { einsatzstatus: "bereitschaft", count: 2 },
@@ -392,9 +392,9 @@ describe("S07 Einsatzliste", () => {
     });
   });
 
-  // timing-and-alarm-rules §4.1, 12.8
+  // timing-and-alarm-rules §4.1, 12.8; short of the Bereitschaft Alarm (§4.3)
   it("shows a frozen Restzeit for a Sicherheitstrupp", () => {
-    expect(firstRestzeit(tickBy(sicherheitstrupp(), 5 * 60_000))).toBe(
+    expect(firstRestzeit(tickBy(sicherheitstrupp(), 4 * 60_000))).toBe(
       "00:30:00",
     );
   });

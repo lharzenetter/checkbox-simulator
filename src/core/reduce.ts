@@ -377,12 +377,17 @@ function changeEinsatzstatus(
   if (aktion === "truppBereitschaft") {
     return isBereitschaft
       ? state
-      : replaceTrupp(state, trupp, { ...trupp, einsatzstatus: "bereitschaft" });
+      : replaceTrupp(state, trupp, {
+          ...trupp,
+          einsatzstatus: "bereitschaft",
+          timeInBereitschaftMs: 0,
+        });
   }
   return isBereitschaft
     ? replaceTrupp(state, trupp, {
         ...trupp,
         einsatzstatus: "anmarsch",
+        timeInBereitschaftMs: 0,
         anmarschBeganAtRunningTimeMs: trupp.runningTimeMs,
         anmarschzeitMs: null,
       })
@@ -471,15 +476,19 @@ function confirmFlaschendruck(
   }
 }
 
+// timing-and-alarm-rules §3.4: an entry that takes the Restzeit past an Alarm point fires it on OK
 function leaveTruppMenue(
   state: State,
   trupp: Trupp,
   updated: Trupp,
   screen: Screen,
 ): State {
-  return enterScreen(
-    withTruppMenue(replaceTrupp(state, trupp, updated), null),
-    screen,
+  return raiseAlarms(
+    enterScreen(
+      withTruppMenue(replaceTrupp(state, trupp, updated), null),
+      screen,
+    ),
+    hasAlarmFired(trupp, updated) ? [updated.truppnummer] : [],
   );
 }
 
@@ -750,6 +759,7 @@ function logIn(state: State, login: Login): State {
     sicherheitstrupp: login.anmeldeaktion === "sicherheitstruppOk",
     restzeitMs: computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
     runningTimeMs: 0,
+    timeInBereitschaftMs: 0,
     anmarschBeganAtRunningTimeMs: 0,
     anmarschzeitMs: null,
     loggedInAtMs: state.now,
@@ -1054,10 +1064,13 @@ function resetIdle(state: State): State {
   return { ...state, idleSinceRealMs: state.realNow };
 }
 
-// timing-and-alarm-rules §1.1, 1.2, 4.1
+// timing-and-alarm-rules §1.1, 1.2, 4.1, 4.4
 function runDown(trupp: Trupp, elapsedMs: number): Trupp {
   if (trupp.einsatzstatus === "bereitschaft") {
-    return trupp;
+    return {
+      ...trupp,
+      timeInBereitschaftMs: trupp.timeInBereitschaftMs + elapsedMs,
+    };
   }
   return {
     ...trupp,

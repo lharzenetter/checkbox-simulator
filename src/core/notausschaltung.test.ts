@@ -219,7 +219,8 @@ describe("S14 Notausschaltung – Auswahl", () => {
   // returns to the interrupted screen
   it("returns to the same choice for the same Trupp after an Alarm interrupts it", () => {
     const auswahl = reduce(notausschaltungAuswahl(zweiTrupps()), press("Down"));
-    const alarm = reduce(auswahl, tickAfter(auswahl, ALARMGRENZE_1_MS));
+    // Trupp 02's first Bereitschaft Alarm (timing-and-alarm-rules §4.3)
+    const alarm = reduce(auswahl, tickAfter(auswahl, 5 * 60_000));
     expect(alarm.screen).toBe("alarm");
     const back = reduce(alarm, press("OK"));
     expect(back.screen).toBe("notausschaltungAuswahl");
