@@ -375,6 +375,7 @@ describe("the Anfangsdruck editor", () => {
         einsatzstatus: "anmarsch",
         sicherheitstrupp: false,
         restzeitMs: 30 * 60_000,
+        runningTimeMs: 0,
         loggedInAtMs: SESSION_START.now,
       },
     ]);

@@ -28,6 +28,12 @@ function tickBy(state: State, elapsedMs: number): State {
   });
 }
 
+// OK on S12 acknowledges the Alarm the tick fired and returns to the Einsatzliste.
+function acknowledged(state: State): State {
+  expect(state.screen).toBe("alarm");
+  return reduce(state, press("OK"));
+}
+
 describe("S00 Aus", () => {
   // manual 5.12
   it("shows a blank display", () => {
@@ -294,15 +300,13 @@ describe("S07 Einsatzliste", () => {
 
   // manual 5.5.3; decided in "Define the key-by-screen navigation model": `-0:00:10`
   it("drops the hour's leading digit from a negative Restzeit", () => {
-    expect(firstRestzeit(tickBy(einsatzliste(), 30 * 60_000 + 10_000))).toBe(
-      "-0:00:10",
-    );
+    const overdue = tickBy(einsatzliste(), 30 * 60_000 + 10_000);
+    expect(firstRestzeit(acknowledged(overdue))).toBe("-0:00:10");
   });
 
   it("shows 00:00:00, not a negative zero, within the first overdue second", () => {
-    expect(firstRestzeit(tickBy(einsatzliste(), 30 * 60_000 + 500))).toBe(
-      "00:00:00",
-    );
+    const overdue = tickBy(einsatzliste(), 30 * 60_000 + 500);
+    expect(firstRestzeit(acknowledged(overdue))).toBe("00:00:00");
   });
 
   it("lists a second Trupp in its own row and selects it", () => {
@@ -446,7 +450,10 @@ describe("S11 Trupp-Ansicht", () => {
   // manual 3.2.3, Trupp-Ansicht figure; decided in "Define the key-by-screen navigation model"
   it("reads as in the figure, labelled `Ansicht`", () => {
     const model = screenModel(
-      reduce(tickBy(stateAfter(...TRUPP_01), 15 * 60_000), press("OK")),
+      reduce(
+        acknowledged(tickBy(stateAfter(...TRUPP_01), 15 * 60_000)),
+        press("OK"),
+      ),
     );
     expect(screenText(model)).toEqual([
       "Trupp 01 ANMARSCH",
@@ -479,7 +486,10 @@ describe("S11 Trupp-Ansicht", () => {
   // timing-and-alarm-rules §1.7: clamped at 0 once the Restzeit is negative
   it("shows 0 bar and the negative Restzeit once the Einsatzzeit is exceeded", () => {
     const model = screenModel(
-      reduce(tickBy(stateAfter(...TRUPP_01), 31 * 60_000), press("OK")),
+      reduce(
+        acknowledged(tickBy(stateAfter(...TRUPP_01), 31 * 60_000)),
+        press("OK"),
+      ),
     );
     expect(screenText(model)).toContain("Druck 0 bar");
     expect(screenText(model)).toContain("Restzeit -0:01:00");
@@ -613,5 +623,48 @@ describe("S08 `Esz-Zeit ändern` from the Trupp-Menü", () => {
       layout: "flaschendruckEditor",
       truppnummer: null,
     });
+  });
+});
+
+describe("S12 Trupp ALARM", () => {
+  const TRUPP_01 = [
+    HLF_AT_F,
+    press("OK"),
+    HLF_AT_M,
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // manual 5.5.3, ALARM figure; decided in "Decide how alarms are presented", point 1: no cause
+  // text and no SICHER
+  it("reads as in the figure at the first Alarmgrenze", () => {
+    const model = screenModel(tickBy(stateAfter(...TRUPP_01), 594_000));
+    expect(screenText(model)).toEqual([
+      "Trupp 01 ALARM",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Druck 201 bar",
+      "Restzeit 00:20:06",
+      "Alarmende",
+      "mit OK",
+    ]);
+    expect(model).toMatchObject({ layout: "alarm", fillLevel: 0.67 });
+  });
+
+  // manual 5.5.3, ALARM figure; timing-and-alarm-rules §1.2, 1.7
+  it("shows the negative Restzeit and 0 bar while the Alarm stays unacknowledged", () => {
+    const model = screenModel(
+      tickBy(tickBy(stateAfter(...TRUPP_01), 30 * 60_000), 10_000),
+    );
+    expect(screenText(model)).toEqual([
+      "Trupp 01 ALARM",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Druck 0 bar",
+      "Restzeit -0:00:10",
+      "Alarmende",
+      "mit OK",
+    ]);
+    expect(model).toMatchObject({ fillLevel: 0 });
   });
 });

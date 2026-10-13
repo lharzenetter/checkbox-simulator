@@ -1,4 +1,5 @@
 import { abschaltzeitRestMs } from "./abschaltzeit";
+import { hasAlarmFired } from "./alarm";
 import { assertNever } from "./assert-never";
 import type { Event, Key } from "./event";
 import {
@@ -84,9 +85,70 @@ function handleKeyPress(state: State, key: Key): State {
       return handleTruppFlaschendruckAendernKey(state, key);
     case "abmelden":
       return handleAbmeldenKey(state, key);
+    case "alarm":
+      return handleAlarmKey(state, key);
     default:
       return assertNever(state.screen);
   }
+}
+
+// decided in "Decide how alarms are presented", points 5 and 6: only OK works, and nothing else
+// is buffered
+function handleAlarmKey(state: State, key: Key): State {
+  switch (key) {
+    case "OK":
+      return acknowledgeAlarm(state);
+    case "Up":
+    case "Down":
+    case "X":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+// timing-and-alarm-rules §8.1; decided in "Decide how alarms are presented", point 5
+function acknowledgeAlarm(state: State): State {
+  const [acknowledged, ...pendingAlarms] = state.pendingAlarms;
+  if (acknowledged === undefined) {
+    throw new Error("The ALARM screen has no pending Alarm");
+  }
+  if (pendingAlarms.length > 0) {
+    return enterScreen({ ...state, pendingAlarms }, "alarm");
+  }
+  return state.interruptedScreen === null
+    ? enterScreen(
+        { ...state, pendingAlarms, selectedTruppnummer: acknowledged },
+        "einsatzliste",
+      )
+    : enterScreen(
+        { ...state, pendingAlarms, interruptedScreen: null },
+        state.interruptedScreen,
+      );
+}
+
+// decided in "Decide how alarms are presented", points 4 and 5: one pending Alarm per Trupp, in
+// firing order, and S12 takes over from any screen but the Einsatzliste, which it leaves for good
+function raiseAlarms(state: State, truppnummern: readonly number[]): State {
+  const fired = truppnummern.filter(
+    (truppnummer) => !state.pendingAlarms.includes(truppnummer),
+  );
+  if (fired.length === 0) {
+    return state;
+  }
+  const pendingAlarms = [...state.pendingAlarms, ...fired];
+  if (state.screen === "alarm") {
+    return { ...state, pendingAlarms };
+  }
+  return enterScreen(
+    {
+      ...state,
+      pendingAlarms,
+      interruptedScreen: state.screen === "einsatzliste" ? null : state.screen,
+    },
+    "alarm",
+  );
 }
 
 // decided in "Define the key-by-screen navigation model"
@@ -476,6 +538,7 @@ function logIn(state: State, login: Login): State {
       login.anmeldeaktion === "truppOkEinsatz" ? "anmarsch" : "bereitschaft",
     sicherheitstrupp: login.anmeldeaktion === "sicherheitstruppOk",
     restzeitMs: computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
+    runningTimeMs: 0,
     loggedInAtMs: state.now,
   };
   return enterScreen(
@@ -525,6 +588,7 @@ function handleTallyHeld(
     case "anfangsdruckEditor":
     case "flaschendruckAendern":
     case "truppFlaschendruckAendern":
+    case "alarm":
       return state;
     default:
       return assertNever(state.screen);
@@ -734,14 +798,21 @@ function requireLogin(state: State): Login {
 }
 
 function handleTick(state: State, elapsedMs: number): State {
-  const ticked = {
-    ...state,
-    trupps: state.trupps.map((trupp) => runDown(trupp, elapsedMs)),
-  };
-  if (hasP13TimeoutRunOut(ticked)) {
-    return enterScreen(withTruppMenue(ticked, null), "einsatzliste");
+  const trupps = state.trupps.map((trupp) => runDown(trupp, elapsedMs));
+  const fired = trupps
+    .filter((trupp, index) => {
+      const before = state.trupps[index];
+      return before !== undefined && hasAlarmFired(before, trupp);
+    })
+    .map((trupp) => trupp.truppnummer);
+  return raiseAlarms(runDisplayTimings({ ...state, trupps }), fired);
+}
+
+function runDisplayTimings(state: State): State {
+  if (hasP13TimeoutRunOut(state)) {
+    return enterScreen(withTruppMenue(state, null), "einsatzliste");
   }
-  return abschaltzeitRestMs(ticked) === 0 ? enterScreen(ticked, "aus") : ticked;
+  return abschaltzeitRestMs(state) === 0 ? enterScreen(state, "aus") : state;
 }
 
 // timing-and-alarm-rules §9 [13], 9.1
@@ -764,7 +835,11 @@ function runDown(trupp: Trupp, elapsedMs: number): Trupp {
   if (trupp.einsatzstatus === "bereitschaft") {
     return trupp;
   }
-  return { ...trupp, restzeitMs: trupp.restzeitMs - elapsedMs };
+  return {
+    ...trupp,
+    restzeitMs: trupp.restzeitMs - elapsedMs,
+    runningTimeMs: trupp.runningTimeMs + elapsedMs,
+  };
 }
 
 // ASSUMPTION: entering a screen restarts its display timing, so returning to the Startdisplay

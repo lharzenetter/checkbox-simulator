@@ -16,7 +16,9 @@ export type Screen =
   /** The Flaschendruck editor `Esz-Zeit ändern`, opened by `Druck ändern` on the Trupp-Menü. */
   | "truppFlaschendruckAendern"
   /** S13 Trupp ABMELDEN. */
-  | "abmelden";
+  | "abmelden"
+  /** S12 Trupp ALARM, for the Trupp whose Alarm is pending first. */
+  | "alarm";
 
 /** An Atemschutzträger as the Checkbox knows them: by their Tally and the name stored on it. */
 export interface Atemschutztraeger {
@@ -36,6 +38,8 @@ export interface Trupp {
   readonly sicherheitstrupp: boolean;
   /** Negative once the Einsatzzeit is exceeded. */
   readonly restzeitMs: number;
+  /** Simulated time the Einsatz has run, Bereitschaft excluded: `t_run`, timing-and-alarm-rules. */
+  readonly runningTimeMs: number;
   readonly loggedInAtMs: number;
 }
 
@@ -118,6 +122,10 @@ export interface State {
   readonly selectedTruppnummer: number | null;
   /** The device memory's Einsatzprotokolle, oldest first. */
   readonly einsatzprotokolle: readonly Einsatzprotokoll[];
+  /** The Truppnummern with an Alarm waiting for OK, in firing order. */
+  readonly pendingAlarms: readonly number[];
+  /** The screen S12 took over from, shown again after the last OK; `null` for the Einsatzliste. */
+  readonly interruptedScreen: Screen | null;
 }
 
 /**
@@ -146,5 +154,7 @@ export function createInitialState({ now, realNow }: Clocks): State {
     trupps: [],
     selectedTruppnummer: null,
     einsatzprotokolle: [],
+    pendingAlarms: [],
+    interruptedScreen: null,
   };
 }

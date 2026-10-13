@@ -47,6 +47,13 @@
   box-shadow: inset 0 0 0 2px rgb(0 0 0 / 25%);
 }
 
+.led[data-lit="true"] {
+  background: radial-gradient(circle at 35% 35%, #ffb3b3, #ff1a1a);
+  box-shadow:
+    inset 0 0 0 2px rgb(0 0 0 / 25%),
+    0 0 12px 4px rgb(255 40 40 / 70%);
+}
+
 .brand {
   font:
     700 1.6rem/1 system-ui,

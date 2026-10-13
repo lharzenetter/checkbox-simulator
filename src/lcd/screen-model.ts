@@ -1,5 +1,6 @@
 import {
   abschaltzeitRestMs,
+  alarmTrupp,
   ANMELDEAKTIONEN,
   assertNever,
   computeRestzeitMs,
@@ -116,6 +117,18 @@ export type ScreenModel =
       readonly label: string;
     }
   | {
+      readonly layout: "alarm";
+      readonly title: string;
+      readonly atemschutztraeger: readonly string[];
+      /** The Aktueller Flaschendruck. */
+      readonly flaschendruck: string;
+      readonly restzeit: string;
+      /** The cylinder graphic's fill, 0–1. */
+      readonly fillLevel: number;
+      /** `Alarmende mit OK`, in its two lines. */
+      readonly hinweis: readonly string[];
+    }
+  | {
       readonly layout: "truppMenue";
       readonly title: string;
       readonly atemschutztraeger: readonly string[];
@@ -227,6 +240,8 @@ export function screenModel(state: State): ScreenModel {
       );
     case "abmelden":
       return abmeldenModel(state);
+    case "alarm":
+      return alarmModel(alarmTrupp(state));
     default:
       return assertNever(state.screen);
   }
@@ -333,6 +348,21 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
     label: "Ansicht",
+  };
+}
+
+// manual 5.5.3, ALARM figure; decided in "Decide how alarms are presented", point 1: live values,
+// no cause text and no SICHER
+function alarmModel(trupp: Trupp): ScreenModel {
+  const flaschendruckBar = estimateFlaschendruckBar(trupp);
+  return {
+    layout: "alarm",
+    title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ALARM`,
+    atemschutztraeger: trupp.atemschutztraeger.map(formatName),
+    flaschendruck: formatBar(flaschendruckBar),
+    restzeit: formatRestzeit(trupp.restzeitMs),
+    fillLevel: cylinderFillLevel(flaschendruckBar),
+    hinweis: ["Alarmende", "mit OK"],
   };
 }
 
@@ -468,6 +498,14 @@ export function screenText(model: ScreenModel): readonly string[] {
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
         model.label,
+      ];
+    case "alarm":
+      return [
+        model.title,
+        ...model.atemschutztraeger,
+        `Druck ${model.flaschendruck}`,
+        `Restzeit ${model.restzeit}`,
+        ...model.hinweis,
       ];
     case "truppMenue":
       return [

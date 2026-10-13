@@ -23,6 +23,8 @@ export function useSimulator(): {
   readonly pause: () => void;
   readonly play: () => void;
   readonly setSpeed: (speed: Speed) => void;
+  readonly muted: boolean;
+  readonly toggleMute: () => void;
 } {
   const [clock, setClock] = useState(() =>
     startSimulationClock({
@@ -78,5 +80,11 @@ export function useSimulator(): {
     [updateClock],
   );
 
-  return { state, dispatch, clock, pause, play, setSpeed };
+  // ASSUMPTION: the mute setting lives only in memory until device memory is persisted (#38).
+  const [muted, setMuted] = useState(false);
+  const toggleMute = useCallback(() => {
+    setMuted((current) => !current);
+  }, []);
+
+  return { state, dispatch, clock, pause, play, setSpeed, muted, toggleMute };
 }

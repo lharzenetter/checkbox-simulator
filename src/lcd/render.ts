@@ -67,6 +67,9 @@ export function renderScreen(model: ScreenModel): Framebuffer {
     case "truppMenue":
       drawTruppMenue(framebuffer, model);
       break;
+    case "alarm":
+      drawAlarm(framebuffer, model);
+      break;
     case "abmelden":
       drawAbmelden(framebuffer, model);
       break;
@@ -187,24 +190,7 @@ function drawTruppAnsicht(
   framebuffer: Framebuffer,
   model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
 ): void {
-  drawText(framebuffer, model.title, 1, 2);
-  fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
-  // ASSUMPTION: only the two names the figure has room for are drawn; a larger Trupp's further
-  // Atemschutzträger are left off (LCD screen catalogue, S11).
-  drawLines(framebuffer, model.atemschutztraeger.slice(0, 2), 13);
-  fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
-  fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
-  drawCylinder(framebuffer, model.fillLevel);
-  // ASSUMPTION: the time-split bar is drawn empty until the Einsatzstatus times it splits are
-  // kept (LCD screen catalogue, gap G17).
-  strokeRect(framebuffer, 7, 52, 6, 68);
-  const iconX = Math.floor(
-    (ANSICHT_DIVIDER_X + VALUE_BOX_X + VALUE_BOX_WIDTH - 5) / 2,
-  );
-  drawBitmap(framebuffer, BOTTLE, iconX, 36);
-  drawValueBox(framebuffer, model.flaschendruck, 45);
-  drawBitmap(framebuffer, CLOCK, iconX - 1, 60);
-  drawValueBox(framebuffer, model.restzeit, 69);
+  drawTruppPanels(framebuffer, model);
   // ASSUMPTION: the Rückzugsdruck box is left out until the Rückzugsalarm is simulated
   // (manual 3.2.3 item 9), and the Statussymbol, which the figure does not draw, takes its place
   // as issue #30 asks.
@@ -236,6 +222,70 @@ function drawTruppAnsicht(
     ANSICHT_LABEL_Y + 2,
     { inverse: true },
   );
+}
+
+// Laid out after the ALARM figure (manual 5.5.3): the Trupp-Ansicht with an empty Rückzugsdruck
+// box under its ↓↑ mark and `Alarmende mit OK` in place of the `Ansicht` label.
+function drawAlarm(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "alarm" }>,
+): void {
+  drawTruppPanels(framebuffer, model);
+  drawBitmap(framebuffer, RUECKZUG_ARROWS, panelIconX() - 1, 85);
+  strokeRect(framebuffer, VALUE_BOX_X, 94, VALUE_BOX_WIDTH, 11);
+  model.hinweis.forEach((line, index) => {
+    drawText(
+      framebuffer,
+      line,
+      Math.floor((ANSICHT_DIVIDER_X + 1 + LCD_WIDTH - textWidth(line)) / 2),
+      107 + index * LINE_PITCH,
+    );
+  });
+}
+
+// The ALARM figure's ↓↑ over the Rückzugsdruck box.
+const RUECKZUG_ARROWS = [
+  ".#...#.",
+  ".#..###",
+  ".#...#.",
+  ".#...#.",
+  "###..#.",
+  ".#...#.",
+];
+
+// The icons over the value boxes are centred in the right panel.
+function panelIconX(): number {
+  return Math.floor(
+    (ANSICHT_DIVIDER_X + VALUE_BOX_X + VALUE_BOX_WIDTH - 5) / 2,
+  );
+}
+
+// The parts the Trupp-Ansicht and ALARM figures share (manual 3.2.3, 5.5.3).
+function drawTruppPanels(
+  framebuffer: Framebuffer,
+  model: {
+    readonly title: string;
+    readonly atemschutztraeger: readonly string[];
+    readonly flaschendruck: string;
+    readonly restzeit: string;
+    readonly fillLevel: number;
+  },
+): void {
+  drawText(framebuffer, model.title, 1, 2);
+  fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
+  // ASSUMPTION: only the two names the figure has room for are drawn; a larger Trupp's further
+  // Atemschutzträger are left off (LCD screen catalogue, S11).
+  drawLines(framebuffer, model.atemschutztraeger.slice(0, 2), 13);
+  fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
+  fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
+  drawCylinder(framebuffer, model.fillLevel);
+  // ASSUMPTION: the time-split bar is drawn empty until the Einsatzstatus times it splits are
+  // kept (LCD screen catalogue, gap G17).
+  strokeRect(framebuffer, 7, 52, 6, 68);
+  drawBitmap(framebuffer, BOTTLE, panelIconX(), 36);
+  drawValueBox(framebuffer, model.flaschendruck, 45);
+  drawBitmap(framebuffer, CLOCK, panelIconX() - 1, 60);
+  drawValueBox(framebuffer, model.restzeit, 69);
 }
 
 function drawLines(

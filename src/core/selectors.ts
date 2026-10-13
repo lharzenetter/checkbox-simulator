@@ -1,5 +1,34 @@
-import { SICHER_PHASE_MS } from "./parameters";
+import { ALARM_BLINK_PHASE_MS, SICHER_PHASE_MS } from "./parameters";
 import type { Einsatzstatus, State, Trupp, TruppMenueAktion } from "./state";
+
+/** Whether the siren sounds and the LED blinks; decided in "Decide how alarms are presented". */
+export function isAlarmSounding(state: State): boolean {
+  return state.pendingAlarms.length > 0;
+}
+
+/**
+ * Whether the red LED is lit now. It blinks in step with the siren on real time, lit first, from
+ * the moment S12 is entered.
+ */
+// decided in "Decide how alarms are presented", points 2 and 8
+export function isAlarmLedLit(state: State): boolean {
+  const phase = Math.floor(
+    (state.realNow - state.screenEnteredRealMs) / ALARM_BLINK_PHASE_MS,
+  );
+  return isAlarmSounding(state) && phase % 2 === 0;
+}
+
+/** The Trupp whose Alarm S12 shows: the first one pending; only valid while one is. */
+export function alarmTrupp(state: State): Trupp {
+  const truppnummer = state.pendingAlarms[0];
+  const trupp = state.trupps.find(
+    (candidate) => candidate.truppnummer === truppnummer,
+  );
+  if (trupp === undefined) {
+    throw new Error(`The ${state.screen} screen has no pending Alarm`);
+  }
+  return trupp;
+}
 
 /** The logged-in Trupp whose Atemschutzträger holds the Tally, if any. */
 export function truppOfTally(state: State, tallyId: string): Trupp | undefined {

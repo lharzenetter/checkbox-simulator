@@ -1,4 +1,5 @@
 import type { DragEvent, PointerEvent, MouseEvent, ReactNode } from "react";
+import { isAlarmLedLit, isAlarmSounding } from "../core/index";
 import type { Event, Key, State } from "../core/index";
 import { Lcd } from "./Lcd";
 import { TALLY_DRAG_TYPE } from "./TallyRoster";
@@ -24,8 +25,10 @@ export function FrontPanel({
           <span
             className={styles.led}
             role="status"
-            aria-label="Alarm-LED aus"
-            data-lit="false"
+            aria-label={
+              isAlarmSounding(state) ? "Alarm-LED blinkt" : "Alarm-LED aus"
+            }
+            data-lit={isAlarmLedLit(state)}
           />
           <span className={styles.brand}>CHECKBOX 5+1</span>
         </header>

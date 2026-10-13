@@ -1,16 +1,23 @@
 import { useCallback } from "react";
+import { isAlarmSounding } from "../core/index";
 import type { Key } from "../core/index";
 import { ROSTER, tallyHeld } from "../world/index";
 import type { RosterTally } from "../world/index";
 import { ClockControls } from "./ClockControls";
 import { FrontPanel } from "./FrontPanel";
+import { MuteToggle } from "./MuteToggle";
 import { TallyRoster } from "./TallyRoster";
 import { useKeyMap } from "./use-key-map";
+import { useSiren } from "./use-siren";
 import { useSimulator } from "./use-simulator";
 import styles from "./App.module.css";
 
 export function App() {
-  const { state, dispatch, clock, pause, play, setSpeed } = useSimulator();
+  const { state, dispatch, clock, pause, play, setSpeed, muted, toggleMute } =
+    useSimulator();
+  // decided in "Decide how alarms are presented", points 7 and 8: pause and mute silence only
+  // the siren
+  useSiren(isAlarmSounding(state) && !clock.paused && !muted);
   const pressKey = useCallback(
     (key: Key) => {
       dispatch({ type: "keyPressed", key });
@@ -47,6 +54,7 @@ export function App() {
         onPlay={play}
         onSpeedChosen={setSpeed}
       />
+      <MuteToggle muted={muted} onToggle={toggleMute} />
       <div className={styles.stage}>
         <FrontPanel
           state={state}

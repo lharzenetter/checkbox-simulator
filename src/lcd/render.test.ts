@@ -109,6 +109,9 @@ describe("the LCD framebuffer", () => {
             now: FIGURE_UHRZEIT + 31 * 60_000,
             realNow: 31 * 60_000,
           },
+          // one OK per Trupp acknowledges the Alarms the tick fired
+          press("OK"),
+          press("OK"),
         ),
       ),
     ).toMatchSnapshot();
@@ -180,6 +183,8 @@ describe("the LCD framebuffer", () => {
             now: FIGURE_UHRZEIT + 14 * 60_000,
             realNow: 14 * 60_000,
           },
+          // acknowledges the first Alarmgrenze's Alarm
+          press("OK"),
           press("OK"),
         ),
       ),
@@ -212,6 +217,19 @@ describe("the LCD framebuffer", () => {
           ...Array.from({ length: 4 }, () => press("Down")),
           press("OK"),
         ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.5.3, ALARM figure, at its -00:00:10
+  it("draws S12 Trupp ALARM with a negative Restzeit", () => {
+    expect(
+      toAscii(
+        framebufferAfter(...LOGIN, press("OK"), {
+          type: "tick",
+          now: FIGURE_UHRZEIT + 30 * 60_000 + 10_000,
+          realNow: 30 * 60_000 + 10_000,
+        }),
       ),
     ).toMatchSnapshot();
   });
