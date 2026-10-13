@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { createSiren } from "../audio/index";
 
 // Decided in "Decide how alarms are presented", point 7: audio unlocks on the first gesture.
-export function useSiren(sounding: boolean): void {
+export function useSiren({
+  sounding,
+  cycleMs,
+}: {
+  sounding: boolean;
+  /** How far the LED is into its blink cycle; see `alarmCycleMs`. */
+  cycleMs: number;
+}): void {
   const [siren] = useState(createSiren);
 
   useEffect(() => {
@@ -20,6 +27,6 @@ export function useSiren(sounding: boolean): void {
   }, [siren]);
 
   useEffect(() => {
-    siren.setSounding(sounding);
-  }, [siren, sounding]);
+    siren.setSounding(sounding, cycleMs);
+  }, [siren, sounding, cycleMs]);
 }

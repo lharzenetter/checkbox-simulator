@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { isAlarmSounding } from "../core/index";
+import { alarmCycleMs, isAlarmSounding } from "../core/index";
 import type { Key } from "../core/index";
 import { ROSTER, tallyHeld } from "../world/index";
 import type { RosterTally } from "../world/index";
@@ -17,7 +17,10 @@ export function App() {
     useSimulator();
   // decided in "Decide how alarms are presented", points 7 and 8: pause and mute silence only
   // the siren
-  useSiren(isAlarmSounding(state) && !clock.paused && !muted);
+  useSiren({
+    sounding: isAlarmSounding(state) && !clock.paused && !muted,
+    cycleMs: alarmCycleMs(state),
+  });
   const pressKey = useCallback(
     (key: Key) => {
       dispatch({ type: "keyPressed", key });

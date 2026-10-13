@@ -126,7 +126,7 @@ export type ScreenModel =
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
       /** `Alarmende mit OK`, in its two lines. */
-      readonly hinweis: readonly string[];
+      readonly prompt: readonly string[];
     }
   | {
       readonly layout: "truppMenue";
@@ -362,7 +362,7 @@ function alarmModel(trupp: Trupp): ScreenModel {
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
-    hinweis: ["Alarmende", "mit OK"],
+    prompt: ["Alarmende", "mit OK"],
   };
 }
 
@@ -505,7 +505,7 @@ export function screenText(model: ScreenModel): readonly string[] {
         ...model.atemschutztraeger,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
-        ...model.hinweis,
+        ...model.prompt,
       ];
     case "truppMenue":
       return [

@@ -233,7 +233,7 @@ function drawAlarm(
   drawTruppPanels(framebuffer, model);
   drawBitmap(framebuffer, RUECKZUG_ARROWS, panelIconX() - 1, 85);
   strokeRect(framebuffer, VALUE_BOX_X, 94, VALUE_BOX_WIDTH, 11);
-  model.hinweis.forEach((line, index) => {
+  model.prompt.forEach((line, index) => {
     drawText(
       framebuffer,
       line,
@@ -243,7 +243,7 @@ function drawAlarm(
   });
 }
 
-// The ALARM figure's ↓↑ over the Rückzugsdruck box.
+// manual 5.5.3, ALARM figure: the ↓↑ over the Rückzugsdruck box
 const RUECKZUG_ARROWS = [
   ".#...#.",
   ".#..###",
@@ -253,7 +253,7 @@ const RUECKZUG_ARROWS = [
   ".#...#.",
 ];
 
-// The icons over the value boxes are centred in the right panel.
+// manual 3.2.3, 5.5.3: the figures centre the icons over the value boxes
 function panelIconX(): number {
   return Math.floor(
     (ANSICHT_DIVIDER_X + VALUE_BOX_X + VALUE_BOX_WIDTH - 5) / 2,

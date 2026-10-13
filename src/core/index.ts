@@ -5,6 +5,7 @@ export { ALARM_BLINK_PHASE_MS, P81_FLASCHENTYP_2_BAR } from "./parameters";
 export { ANMELDEAKTIONEN, EINSATZZEITEN_MS, reduce } from "./reduce";
 export { computeRestzeitMs, estimateFlaschendruckBar } from "./restzeit";
 export {
+  alarmCycleMs,
   alarmTrupp,
   isAlarmLedLit,
   isAlarmSounding,

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   createInitialState,
   estimateFlaschendruckBar,
+  alarmCycleMs,
   isAlarmLedLit,
   isAlarmSounding,
   reduce,
   selectedTrupp,
 } from "./index";
-import { ALARM_BLINK_PHASE_MS } from "./index";
 import type { Event, Key, State } from "./index";
 
 const SESSION_START = { now: 1_000_000, realNow: 500 };
@@ -306,12 +306,20 @@ describe("the red LED", () => {
     expect(isAlarmLedLit(truppInAnmarsch())).toBe(false);
   });
 
-  it("is lit as the Alarm starts and blinks every ALARM_BLINK_PHASE_MS of real time", () => {
+  it("is lit as the Alarm starts and blinks every 250 ms of real time", () => {
     const alarm = run(truppInAnmarsch(), tickAt(9, 54));
     expect(isAlarmLedLit(alarm)).toBe(true);
-    const dark = atRealTime(alarm, ALARM_BLINK_PHASE_MS);
+    const dark = atRealTime(alarm, 250);
     expect(isAlarmLedLit(dark)).toBe(false);
-    expect(isAlarmLedLit(atRealTime(dark, ALARM_BLINK_PHASE_MS))).toBe(true);
+    expect(isAlarmLedLit(atRealTime(dark, 250))).toBe(true);
+  });
+
+  // the siren starts its wail this far into the cycle, so it stays in step with the LED
+  it("tells how far the Alarm is into its 500 ms wail cycle", () => {
+    const alarm = run(truppInAnmarsch(), tickAt(9, 54));
+    expect(alarmCycleMs(alarm)).toBe(0);
+    expect(alarmCycleMs(atRealTime(alarm, 300))).toBe(300);
+    expect(alarmCycleMs(atRealTime(alarm, 1_120))).toBe(120);
   });
 
   it("is dark again after OK", () => {

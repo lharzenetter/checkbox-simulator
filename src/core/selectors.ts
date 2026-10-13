@@ -7,15 +7,20 @@ export function isAlarmSounding(state: State): boolean {
 }
 
 /**
- * Whether the red LED is lit now. It blinks in step with the siren on real time, lit first, from
- * the moment S12 is entered.
+ * Real milliseconds into the current wail cycle of the siren and the LED: the LED is lit for the
+ * first {@link ALARM_BLINK_PHASE_MS}, dark for the second. Cycles run from the moment S12 is
+ * entered.
  */
 // decided in "Decide how alarms are presented", points 2 and 8
-export function isAlarmLedLit(state: State): boolean {
-  const phase = Math.floor(
-    (state.realNow - state.screenEnteredRealMs) / ALARM_BLINK_PHASE_MS,
+export function alarmCycleMs(state: State): number {
+  return (
+    (state.realNow - state.screenEnteredRealMs) % (2 * ALARM_BLINK_PHASE_MS)
   );
-  return isAlarmSounding(state) && phase % 2 === 0;
+}
+
+/** Whether the red LED is lit now; it blinks in step with the siren. */
+export function isAlarmLedLit(state: State): boolean {
+  return isAlarmSounding(state) && alarmCycleMs(state) < ALARM_BLINK_PHASE_MS;
 }
 
 /** The Trupp whose Alarm S12 shows: the first one pending; only valid while one is. */
