@@ -32,6 +32,13 @@ export interface EinsatzlisteRow {
   readonly restzeit: string;
 }
 
+/** An Atemschutzträger's line on ABMELDEN. */
+export interface AbmeldenZeile {
+  readonly name: string;
+  /** Has held their Tally to Check; drawn inverse. */
+  readonly markiert: boolean;
+}
+
 /** What the LCD shows, per screen layout, with every value already formatted for display. */
 export type ScreenModel =
   | { readonly layout: "aus" }
@@ -89,6 +96,12 @@ export type ScreenModel =
       readonly uhrzeit: string;
       /** The six rows, `null` where no Trupp has that Truppnummer. */
       readonly rows: readonly (EinsatzlisteRow | null)[];
+    }
+  | {
+      readonly layout: "abmelden";
+      readonly title: string;
+      readonly atemschutztraeger: readonly AbmeldenZeile[];
+      readonly hinweis: readonly string[];
     };
 
 // The Startdisplay figure's values (manual 5.2). The SERVICE menu that would edit the name is
@@ -155,6 +168,8 @@ export function screenModel(state: State): ScreenModel {
       return flaschendruckAendernModel(requireLogin(state));
     case "einsatzliste":
       return einsatzlisteModel(state);
+    case "abmelden":
+      return abmeldenModel(state);
     default:
       return assertNever(state.screen);
   }
@@ -257,6 +272,29 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
   };
 }
 
+// manual 5.8, ABMELDEN figure
+function abmeldenModel(state: State): ScreenModel {
+  if (state.abmeldung === null) {
+    throw new Error("ABMELDEN has no Abmeldung");
+  }
+  const { truppnummer, markierteTallyIds } = state.abmeldung;
+  const trupp = state.trupps.find(
+    (candidate) => candidate.truppnummer === truppnummer,
+  );
+  if (trupp === undefined) {
+    throw new Error(`Trupp ${String(truppnummer)} is not logged in`);
+  }
+  return {
+    layout: "abmelden",
+    title: `Trupp ${formatTruppnummer(truppnummer)} ABMELDEN`,
+    atemschutztraeger: trupp.atemschutztraeger.map((atemschutztraeger) => ({
+      name: formatName(atemschutztraeger),
+      markiert: markierteTallyIds.includes(atemschutztraeger.tallyId),
+    })),
+    hinweis: ["OK  =  abmelden", " X  =  nicht abmelden"],
+  };
+}
+
 // Only these screens have an Login, so its absence is a broken invariant.
 function requireLogin(state: State): Login {
   if (state.login === null) {
@@ -298,6 +336,14 @@ export function screenText(model: ScreenModel): readonly string[] {
         `Flasche: ${model.cylinder}`,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
+      ];
+    case "abmelden":
+      return [
+        model.title,
+        ...model.atemschutztraeger.map(
+          (zeile) => `${zeile.name}${zeile.markiert ? " markiert" : ""}`,
+        ),
+        ...model.hinweis,
       ];
     case "einsatzliste":
       return [

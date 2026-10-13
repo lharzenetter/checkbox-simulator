@@ -1,4 +1,4 @@
-/** The LCD screen the Checkbox is showing; ids S00–S07 from the LCD screen catalogue. */
+/** The LCD screen the Checkbox is showing; ids from the LCD screen catalogue. */
 export type Screen =
   | "aus"
   | "startdisplay"
@@ -8,7 +8,9 @@ export type Screen =
   | "anfangsdruckEditor"
   /** The Flaschendruck editor `Esz-Zeit ändern`, opened by `Druck ändern` on the Anmeldefenster. */
   | "flaschendruckAendern"
-  | "einsatzliste";
+  | "einsatzliste"
+  /** S13 Trupp ABMELDEN. */
+  | "abmelden";
 
 /** An Atemschutzträger as the Checkbox knows them: by their Tally and the name stored on it. */
 export interface Atemschutztraeger {
@@ -28,6 +30,21 @@ export interface Trupp {
   readonly sicherheitstrupp: boolean;
   /** Negative once the Einsatzzeit is exceeded. */
   readonly restzeitMs: number;
+  /** The Uhrzeit at login. */
+  readonly einsatzVonMs: number;
+}
+
+/** The record of one Trupp's Einsatz, written at logoff. */
+export interface Einsatzprotokoll {
+  readonly truppnummer: number;
+  readonly einsatzzeitMs: number;
+  readonly atemschutztraeger: readonly Atemschutztraeger[];
+  /** The Einsatzstatus at logoff. */
+  readonly einsatzstatus: Einsatzstatus;
+  readonly sicherheitstrupp: boolean;
+  readonly einsatzVonMs: number;
+  /** The Uhrzeit at logoff. */
+  readonly einsatzBisMs: number;
 }
 
 /** The Anmeldefenster's choices, top to bottom. */
@@ -53,6 +70,13 @@ export interface Login {
   readonly draftFlaschendruckBar: number | null;
 }
 
+/** A Trupp being logged off on ABMELDEN. */
+export interface Abmeldung {
+  readonly truppnummer: number;
+  /** The Atemschutzträger who have held their Tally to Check, in that order. */
+  readonly markierteTallyIds: readonly string[];
+}
+
 /** The whole device state: plain immutable data that serialises to storage as-is. */
 export interface State {
   readonly screen: Screen;
@@ -63,10 +87,13 @@ export interface State {
   /** Real time at which the current screen was entered; drives the display timings. */
   readonly screenEnteredRealMs: number;
   readonly login: Login | null;
+  readonly abmeldung: Abmeldung | null;
   /** The logged-in Trupps, ordered by Truppnummer. */
   readonly trupps: readonly Trupp[];
   /** The Truppnummer marked on the Einsatzliste. */
   readonly selectedTruppnummer: number | null;
+  /** The device memory's Einsatzprotokolle, oldest first. */
+  readonly einsatzprotokolle: readonly Einsatzprotokoll[];
 }
 
 /**
@@ -89,7 +116,9 @@ export function createInitialState({ now, realNow }: Clocks): State {
     realNow,
     screenEnteredRealMs: realNow,
     login: null,
+    abmeldung: null,
     trupps: [],
     selectedTruppnummer: null,
+    einsatzprotokolle: [],
   };
 }

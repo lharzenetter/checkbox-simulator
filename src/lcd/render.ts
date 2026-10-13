@@ -61,6 +61,9 @@ export function renderScreen(model: ScreenModel): Framebuffer {
     case "einsatzliste":
       drawEinsatzliste(framebuffer, model);
       break;
+    case "abmelden":
+      drawAbmelden(framebuffer, model);
+      break;
     default:
       assertNever(model);
   }
@@ -122,6 +125,24 @@ function drawMenuScreen(
     }
     drawText(framebuffer, item, 1, y, { inverse: selected });
   });
+}
+
+// Laid out after the ABMELDEN figure (manual 5.8): names under the title, marked ones on an
+// inverse bar, and the key legend below a rule at the bottom.
+function drawAbmelden(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "abmelden" }>,
+): void {
+  drawText(framebuffer, model.title, 1, 2);
+  model.atemschutztraeger.forEach((zeile, index) => {
+    const y = 13 + index * LINE_PITCH;
+    if (zeile.markiert) {
+      fillRect(framebuffer, 0, y - 1, LCD_WIDTH, LINE_PITCH);
+    }
+    drawText(framebuffer, zeile.name, 1, y, { inverse: zeile.markiert });
+  });
+  fillRect(framebuffer, 0, 99, LCD_WIDTH, 1);
+  drawLines(framebuffer, model.hinweis, 104);
 }
 
 function drawLines(

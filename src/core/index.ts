@@ -7,10 +7,12 @@ export { computeRestzeitMs } from "./restzeit";
 export { isSicherShown, truppOfTally } from "./selectors";
 export { createInitialState } from "./state";
 export type {
+  Abmeldung,
   Anmeldeaktion,
   Login,
   Atemschutztraeger,
   Clocks,
+  Einsatzprotokoll,
   Einsatzstatus,
   Screen,
   State,

@@ -395,3 +395,41 @@ describe("S07 Einsatzliste", () => {
     );
   });
 });
+
+describe("S13 ABMELDEN", () => {
+  const TRUPP_01 = [
+    HLF_AT_F,
+    press("OK"),
+    HLF_AT_M,
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // manual 5.8, ABMELDEN figure
+  it("reads as in the figure, with the member who held their Tally marked", () => {
+    const model = screenModel(stateAfter(...TRUPP_01, HLF_AT_F));
+    expect(model).toMatchObject({
+      layout: "abmelden",
+      atemschutztraeger: [
+        { name: "*HLF AT-F", markiert: true },
+        { name: "*HLF AT-M", markiert: false },
+      ],
+    });
+    expect(screenText(model)).toEqual([
+      "Trupp 01 ABMELDEN",
+      "*HLF AT-F markiert",
+      "*HLF AT-M",
+      "OK  =  abmelden",
+      " X  =  nicht abmelden",
+    ]);
+  });
+
+  // manual 5.8 step 3
+  it("marks every member who has held their Tally", () => {
+    const model = screenModel(stateAfter(...TRUPP_01, HLF_AT_M, HLF_AT_F));
+    expect(screenText(model).slice(1, 3)).toEqual([
+      "*HLF AT-F markiert",
+      "*HLF AT-M markiert",
+    ]);
+  });
+});

@@ -160,4 +160,11 @@ describe("the LCD framebuffer", () => {
       ),
     ).toMatchSnapshot();
   });
+
+  // manual 5.8, ABMELDEN figure: the member who held their Tally is drawn inverse
+  it("draws ABMELDEN with one member marked", () => {
+    expect(
+      toAscii(framebufferAfter(...LOGIN, press("OK"), HLF_AT_F)),
+    ).toMatchSnapshot();
+  });
 });

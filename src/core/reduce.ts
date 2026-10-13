@@ -2,6 +2,7 @@ import { abschaltzeitRestMs } from "./abschaltzeit";
 import { assertNever } from "./assert-never";
 import type { Event, Key } from "./event";
 import {
+  EINSATZPROTOKOLL_SPEICHERPLAETZE,
   P01_EINSATZZEIT_1_MS,
   P10_EINSATZZEIT_3_MS,
   P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER,
@@ -15,8 +16,10 @@ import {
 import { computeRestzeitMs } from "./restzeit";
 import { truppOfTally } from "./selectors";
 import type {
+  Abmeldung,
   Anmeldeaktion,
   Atemschutztraeger,
+  Einsatzprotokoll,
   Login,
   Screen,
   State,
@@ -61,6 +64,8 @@ function handleKeyPress(state: State, key: Key): State {
       return handleFlaschendruckAendernKey(state, key);
     case "einsatzliste":
       return key === "Up" || key === "Down" ? moveSelection(state, key) : state;
+    case "abmelden":
+      return handleAbmeldenKey(state, key);
     default:
       return assertNever(state.screen);
   }
@@ -287,6 +292,7 @@ function logIn(state: State, login: Login): State {
       login.anmeldeaktion === "truppOkEinsatz" ? "anmarsch" : "bereitschaft",
     sicherheitstrupp: login.anmeldeaktion === "sicherheitstruppOk",
     restzeitMs: computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
+    einsatzVonMs: state.now,
   };
   return enterScreen(
     {
@@ -322,9 +328,13 @@ function handleTallyHeld(
     case "aus":
     case "startdisplay":
     case "einsatzliste":
-      return startLogin(state, atemschutztraeger);
+      return isInTrupp(state, atemschutztraeger)
+        ? openAbmelden(state, atemschutztraeger)
+        : startLogin(state, atemschutztraeger);
     case "anmeldefenster":
       return addAtemschutztraeger(state, atemschutztraeger);
+    case "abmelden":
+      return markAtemschutztraeger(state, atemschutztraeger.tallyId);
     case "service":
     case "einsatzzeitWaehlen":
     case "anfangsdruckEditor":
@@ -335,13 +345,8 @@ function handleTallyHeld(
   }
 }
 
-// ASSUMPTION: a running Trupp's Atemschutzträger is ignored until logoff exists; the navigation model
-// routes them to ABMELDEN ("Define the key-by-screen navigation model").
 function startLogin(state: State, atemschutztraeger: Atemschutztraeger): State {
-  if (
-    state.trupps.length >= P72_ANZAHL_DER_MAXIMALEN_TRUPPS ||
-    isInTrupp(state, atemschutztraeger)
-  ) {
+  if (state.trupps.length >= P72_ANZAHL_DER_MAXIMALEN_TRUPPS) {
     return state;
   }
   return enterScreen(
@@ -359,6 +364,138 @@ function startLogin(state: State, atemschutztraeger: Atemschutztraeger): State {
     },
     "einsatzzeitWaehlen",
   );
+}
+
+// manual 5.8 step 1
+function openAbmelden(
+  state: State,
+  atemschutztraeger: Atemschutztraeger,
+): State {
+  const trupp = requireTruppOfTally(state, atemschutztraeger.tallyId);
+  return enterScreen(
+    {
+      ...state,
+      abmeldung: {
+        truppnummer: trupp.truppnummer,
+        markierteTallyIds: [atemschutztraeger.tallyId],
+      },
+    },
+    "abmelden",
+  );
+}
+
+// manual 5.8 step 4; decided in "Define the key-by-screen navigation model"
+function handleAbmeldenKey(state: State, key: Key): State {
+  switch (key) {
+    case "X":
+      return enterScreen({ ...state, abmeldung: null }, "einsatzliste");
+    case "OK":
+      return isEveryoneMarked(state) ? logOff(state) : state;
+    case "Up":
+    case "Down":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+function isEveryoneMarked(state: State): boolean {
+  const abmeldung = requireAbmeldung(state);
+  return requireTrupp(state, abmeldung.truppnummer).atemschutztraeger.every(
+    (atemschutztraeger) =>
+      abmeldung.markierteTallyIds.includes(atemschutztraeger.tallyId),
+  );
+}
+
+// manual 5.8 step 4; timing-and-alarm-rules §12.7
+function logOff(state: State): State {
+  const trupp = requireTrupp(state, requireAbmeldung(state).truppnummer);
+  const trupps = state.trupps.filter((candidate) => candidate !== trupp);
+  return enterScreen(
+    {
+      ...state,
+      abmeldung: null,
+      trupps,
+      selectedTruppnummer: selectionAfterLogoff(state, trupps),
+      einsatzprotokolle: [
+        ...state.einsatzprotokolle,
+        einsatzprotokoll(state, trupp),
+      ].slice(-EINSATZPROTOKOLL_SPEICHERPLAETZE),
+    },
+    "einsatzliste",
+  );
+}
+
+function einsatzprotokoll(state: State, trupp: Trupp): Einsatzprotokoll {
+  return {
+    truppnummer: trupp.truppnummer,
+    einsatzzeitMs: trupp.einsatzzeitMs,
+    atemschutztraeger: trupp.atemschutztraeger,
+    einsatzstatus: trupp.einsatzstatus,
+    sicherheitstrupp: trupp.sicherheitstrupp,
+    einsatzVonMs: trupp.einsatzVonMs,
+    einsatzBisMs: state.now,
+  };
+}
+
+// ASSUMPTION: the selection stays where it was, or moves to the first remaining Trupp when the
+// selected one logs off; the navigation model does not say ("Define the key-by-screen
+// navigation model").
+function selectionAfterLogoff(
+  state: State,
+  trupps: readonly Trupp[],
+): number | null {
+  const stillSelected = trupps.some(
+    (trupp) => trupp.truppnummer === state.selectedTruppnummer,
+  );
+  return stillSelected
+    ? state.selectedTruppnummer
+    : (trupps[0]?.truppnummer ?? null);
+}
+
+function requireTrupp(state: State, truppnummer: number): Trupp {
+  const trupp = state.trupps.find(
+    (candidate) => candidate.truppnummer === truppnummer,
+  );
+  if (trupp === undefined) {
+    throw new Error(`Trupp ${String(truppnummer)} is not logged in`);
+  }
+  return trupp;
+}
+
+// manual 5.8 steps 2–3; decided in "Define the key-by-screen navigation model": anyone else is
+// ignored
+function markAtemschutztraeger(state: State, tallyId: string): State {
+  const abmeldung = requireAbmeldung(state);
+  if (
+    truppOfTally(state, tallyId)?.truppnummer !== abmeldung.truppnummer ||
+    abmeldung.markierteTallyIds.includes(tallyId)
+  ) {
+    return state;
+  }
+  return {
+    ...state,
+    abmeldung: {
+      ...abmeldung,
+      markierteTallyIds: [...abmeldung.markierteTallyIds, tallyId],
+    },
+  };
+}
+
+function requireAbmeldung(state: State): Abmeldung {
+  if (state.abmeldung === null) {
+    throw new Error(`The ${state.screen} screen has no Abmeldung`);
+  }
+  return state.abmeldung;
+}
+
+function requireTruppOfTally(state: State, tallyId: string): Trupp {
+  const trupp = truppOfTally(state, tallyId);
+  if (trupp === undefined) {
+    throw new Error(`Tally ${tallyId} is in no Trupp`);
+  }
+  return trupp;
 }
 
 function addAtemschutztraeger(
