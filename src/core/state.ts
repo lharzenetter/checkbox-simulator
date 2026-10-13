@@ -6,6 +6,8 @@ export type Screen =
   | "einsatzzeitWaehlen"
   | "anmeldefenster"
   | "anfangsdruckEditor"
+  /** The Flaschendruck editor `Esz-Zeit ändern`, opened by `Druck ändern` on the Anmeldefenster. */
+  | "flaschendruckAendern"
   | "einsatzliste";
 
 /** An Atemschutzträger as the Checkbox knows them: by their Tally and the name stored on it. */
@@ -15,7 +17,7 @@ export interface Atemschutztraeger {
 }
 
 /** The Einsatzstatus values simulated so far. */
-export type Einsatzstatus = "anmarsch";
+export type Einsatzstatus = "bereitschaft" | "anmarsch";
 
 /** A logged-in Trupp. */
 export interface Trupp {
@@ -23,17 +25,32 @@ export interface Trupp {
   readonly einsatzzeitMs: number;
   readonly atemschutztraeger: readonly Atemschutztraeger[];
   readonly einsatzstatus: Einsatzstatus;
+  readonly sicherheitstrupp: boolean;
   /** Negative once the Einsatzzeit is exceeded. */
   readonly restzeitMs: number;
 }
 
+/** The Anmeldefenster's choices, top to bottom. */
+export type Anmeldeaktion =
+  | "truppOkEinsatz"
+  | "truppOkBereitschaft"
+  | "sicherheitstruppOk"
+  | "druckAendern";
+
 /** A Trupp being logged in, from Einsatzzeit wählen to the Anfangsdruck editor (S06). */
 export interface Login {
   readonly truppnummer: number;
+  /** The Einsatzzeit chosen, or under the cursor on Einsatzzeit wählen. */
   readonly einsatzzeitMs: number;
+  /** Einsatzzeit wählen asks `Langzeiteinsatz? OK` before the Anmeldefenster opens. */
+  readonly awaitingLangzeiteinsatzOk: boolean;
   readonly atemschutztraeger: readonly Atemschutztraeger[];
-  /** The Anfangsdruck editor's current value. */
+  /** The Anmeldefenster's choice under the cursor. */
+  readonly anmeldeaktion: Anmeldeaktion;
+  /** The Anfangsdruck editor's current value; `Druck ändern` sets it in advance. */
   readonly anfangsdruckBar: number;
+  /** The value being edited on `Esz-Zeit ändern`; `null` on every other screen. */
+  readonly draftFlaschendruckBar: number | null;
 }
 
 /** The whole device state: plain immutable data that serialises to storage as-is. */

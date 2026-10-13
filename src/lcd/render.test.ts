@@ -113,4 +113,51 @@ describe("the LCD framebuffer", () => {
       ),
     ).toMatchSnapshot();
   });
+
+  // manual 5.3.2, Druck ändern figure
+  it("draws Esz-Zeit ändern", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          HLF_AT_F,
+          press("OK"),
+          HLF_AT_M,
+          press("Up"),
+          press("OK"),
+          ...Array.from({ length: 10 }, () => press("Down")),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 3.2.2: Bereitschaft (G, K) and SICHER, with the Sicherheitstrupp in its SICHER phase
+  it("draws the Einsatzliste with Trupps in Bereitschaft and a Sicherheitstrupp", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          HLF_AT_F,
+          press("OK"),
+          HLF_AT_M,
+          press("Down"),
+          press("OK"),
+          press("OK"),
+          { type: "tallyHeld", tallyId: "5", name: "LF AT-F" },
+          press("OK"),
+          { type: "tallyHeld", tallyId: "6", name: "LF AT-M" },
+          { type: "tallyHeld", tallyId: "7", name: "LF WT-F" },
+          { type: "tallyHeld", tallyId: "8", name: "LF WT-M" },
+          press("Down"),
+          press("OK"),
+          press("OK"),
+          { type: "tallyHeld", tallyId: "3", name: "HLF WT-F" },
+          press("OK"),
+          { type: "tallyHeld", tallyId: "4", name: "HLF WT-M" },
+          press("Down"),
+          press("Down"),
+          press("OK"),
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
 });

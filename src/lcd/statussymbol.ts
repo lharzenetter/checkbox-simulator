@@ -75,18 +75,46 @@ function drawAnmarsch(
   drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left + 4, personY - 1);
 }
 
+// Every Atemschutzträger outside an empty house (G); more than three: the count, one figure and
+// the empty house (K), manual 3.2.2.
+// ASSUMPTION: three Atemschutzträger draw three figures, as G draws two; gap G3 of the LCD screen
+// catalogue was settled for Anmarsch only, and this extends it the same way.
+function drawBereitschaft(
+  framebuffer: Framebuffer,
+  count: number,
+  x: number,
+  y: number,
+): void {
+  const personY = y + SYMBOL_HEIGHT - ATEMSCHUTZTRAEGER.length;
+  let left = x;
+  if (count > 3) {
+    const countText = `${String(count)}×`;
+    drawText(framebuffer, countText, left, personY + 1);
+    left += textWidth(countText) + 2;
+    drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left, personY);
+    drawBitmap(framebuffer, HOUSE, left + PERSON_PITCH, y);
+    return;
+  }
+  for (let outside = 0; outside < count; outside++) {
+    drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left, personY);
+    left += PERSON_PITCH;
+  }
+  drawBitmap(framebuffer, HOUSE, left, y);
+}
+
 const DRAWERS: Readonly<
   Record<
     Einsatzstatus,
     (framebuffer: Framebuffer, count: number, x: number, y: number) => void
   >
-> = { anmarsch: drawAnmarsch };
+> = { bereitschaft: drawBereitschaft, anmarsch: drawAnmarsch };
 
 /** The width {@link drawStatussymbol} draws, for centring it in its column. */
 export function statussymbolWidth(statussymbol: Statussymbol): number {
-  const { count } = statussymbol;
+  const { count, einsatzstatus } = statussymbol;
   if (count > 3) {
     return textWidth(`${String(count)}×`) + 2 + PERSON_PITCH + HOUSE_WIDTH;
   }
-  return (count - 1) * PERSON_PITCH + HOUSE_WIDTH;
+  const outside = einsatzstatus === "bereitschaft" ? count : count - 1;
+  return outside * PERSON_PITCH + HOUSE_WIDTH;
 }

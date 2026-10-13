@@ -12,6 +12,7 @@ import {
   textWidth,
 } from "./framebuffer";
 import type { Framebuffer } from "./framebuffer";
+import { SICHER } from "./screen-model";
 import type { ScreenModel } from "./screen-model";
 import { drawStatussymbol, statussymbolWidth } from "./statussymbol";
 
@@ -146,8 +147,12 @@ function drawFlaschendruckEditor(
   model: Extract<ScreenModel, { layout: "flaschendruckEditor" }>,
 ): void {
   const right = VALUE_BOX_X + VALUE_BOX_WIDTH - 4;
-  drawText(framebuffer, model.title, 8, 6);
-  drawRightAlignedText(framebuffer, model.truppnummer, right, 6);
+  if (model.truppnummer === null) {
+    drawCenteredText(framebuffer, model.title, 6);
+  } else {
+    drawText(framebuffer, model.title, 8, 6);
+    drawRightAlignedText(framebuffer, model.truppnummer, right, 6);
+  }
   drawText(framebuffer, "Flasche:", 8, 25);
   drawValueBox(framebuffer, model.cylinder, 23);
   drawRightAlignedText(framebuffer, "Druck", right, 50);
@@ -250,15 +255,27 @@ function drawEinsatzliste(
     drawText(framebuffer, row.truppnummer, 3, textY, {
       inverse: row.selected,
     });
-    const symbolX = Math.floor(
-      (SYMBOL_COLUMN_LEFT +
-        SYMBOL_COLUMN_RIGHT -
-        statussymbolWidth(row.statussymbol)) /
-        2,
-    );
-    drawStatussymbol(framebuffer, row.statussymbol, symbolX, top + 1);
+    if (row.sicher) {
+      drawText(
+        framebuffer,
+        SICHER,
+        centredInSymbolColumn(textWidth(SICHER)),
+        textY,
+      );
+    } else {
+      drawStatussymbol(
+        framebuffer,
+        row.statussymbol,
+        centredInSymbolColumn(statussymbolWidth(row.statussymbol)),
+        top + 1,
+      );
+    }
     drawRightAlignedText(framebuffer, row.restzeit, RESTZEIT_RIGHT, textY);
   });
+}
+
+function centredInSymbolColumn(width: number): number {
+  return Math.floor((SYMBOL_COLUMN_LEFT + SYMBOL_COLUMN_RIGHT - width) / 2);
 }
 
 function drawDoubleFrame(

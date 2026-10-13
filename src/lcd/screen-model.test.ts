@@ -99,6 +99,27 @@ describe("S03 Einsatzzeit wählen", () => {
       selectedIndex: 0,
     });
   });
+
+  it("moves the cursor to 20 min on Down", () => {
+    expect(screenModel(stateAfter(HLF_AT_F, press("Down")))).toMatchObject({
+      items: ["Einsatzzeit  30 min?", "Einsatzzeit  20 min?"],
+      selectedIndex: 1,
+    });
+  });
+
+  // manual 5.3 step 5; decided in "Define the key-by-screen navigation model"
+  it("turns the bottom line into `Langzeiteinsatz? OK` on OK at 20 min", () => {
+    const model = screenModel(stateAfter(HLF_AT_F, press("Down"), press("OK")));
+    expect(screenText(model)).toEqual([
+      "Neuen Trupp anmelden:",
+      "Wähle Einsatzzeit für",
+      "Trupp Nr.: 01",
+      "*HLF AT-F",
+      "Einsatzzeit  30 min?",
+      "Langzeiteinsatz? OK",
+    ]);
+    expect(model).toMatchObject({ selectedIndex: 1 });
+  });
 });
 
 describe("S04 Anmeldefenster", () => {
@@ -115,6 +136,50 @@ describe("S04 Anmeldefenster", () => {
       "Druck ändern",
     ]);
     expect(model).toMatchObject({ layout: "anmeldefenster", selectedIndex: 0 });
+  });
+
+  it("heads a Langzeiteinsatz with its 20 min", () => {
+    const model = screenModel(
+      stateAfter(HLF_AT_F, press("Down"), press("OK"), press("OK")),
+    );
+    expect(screenText(model)[0]).toBe("Trupp 01   20 min");
+  });
+
+  it("moves the cursor with Up and Down, wrapping", () => {
+    const anmeldefenster = [HLF_AT_F, press("OK"), HLF_AT_M] as const;
+    expect(
+      screenModel(stateAfter(...anmeldefenster, press("Down"), press("Down"))),
+    ).toMatchObject({ selectedIndex: 2 });
+    expect(
+      screenModel(stateAfter(...anmeldefenster, press("Up"))),
+    ).toMatchObject({ selectedIndex: 3 });
+  });
+});
+
+describe("S08 Esz-Zeit ändern", () => {
+  // manual 5.3.2, Druck ändern figure; decided in "Define the key-by-screen navigation model"
+  it("reads as the Druck ändern figure, titled `Esz-Zeit ändern`", () => {
+    const model = screenModel(
+      stateAfter(
+        HLF_AT_F,
+        press("OK"),
+        HLF_AT_M,
+        press("Up"),
+        press("OK"),
+        press("Down"),
+      ),
+    );
+    expect(screenText(model)).toEqual([
+      "Esz-Zeit ändern",
+      "Flasche: 300 bar",
+      "Druck 295 bar",
+      "Restzeit 00:29:30",
+    ]);
+    expect(model).toMatchObject({
+      layout: "flaschendruckEditor",
+      truppnummer: null,
+      fillLevel: 295 / 300,
+    });
   });
 });
 
@@ -265,5 +330,63 @@ describe("S07 Einsatzliste", () => {
         null,
       ],
     });
+  });
+
+  function sicherheitstrupp(): State {
+    return stateAfter(
+      HLF_AT_F,
+      press("OK"),
+      HLF_AT_M,
+      press("Down"),
+      press("Down"),
+      press("OK"),
+      press("OK"),
+    );
+  }
+
+  // manual 5.3.1 step 4, Einsatzliste figure item 8; timing-and-alarm-rules §9
+  it("alternates SICHER with the Statussymbol of a Sicherheitstrupp every second", () => {
+    expect(screenText(screenModel(sicherheitstrupp()))[2]).toBe(
+      "01 markiert  SICHER  00:30:00",
+    );
+    expect(screenText(screenModel(tickBy(sicherheitstrupp(), 1_000)))[2]).toBe(
+      "01 markiert  2× Bereitschaft  00:30:00",
+    );
+    expect(screenModel(tickBy(sicherheitstrupp(), 2_000))).toMatchObject({
+      rows: [{ sicher: true }, null, null, null, null, null],
+    });
+  });
+
+  // timing-and-alarm-rules §4.1
+  it("shows a frozen Restzeit for a Trupp logged in to Bereitschaft", () => {
+    const bereitschaft = stateAfter(
+      HLF_AT_F,
+      press("OK"),
+      HLF_AT_M,
+      press("Down"),
+      press("OK"),
+      press("Down"),
+      press("OK"),
+    );
+    expect(screenModel(tickBy(bereitschaft, 5 * 60_000))).toMatchObject({
+      rows: [
+        {
+          statussymbol: { einsatzstatus: "bereitschaft", count: 2 },
+          sicher: false,
+          restzeit: "00:29:30",
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+      ],
+    });
+  });
+
+  it("shows a frozen Restzeit for a Sicherheitstrupp", () => {
+    expect(firstRestzeit(tickBy(sicherheitstrupp(), 5 * 60_000))).toBe(
+      "00:30:00",
+    );
   });
 });

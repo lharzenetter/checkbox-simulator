@@ -2,8 +2,13 @@
 // countdown. Decided in "Fix the factory defaults the manual leaves open".
 export const ABSCHALTZEIT_MS = 25_000;
 
+// The SICHER alternation has no parameter number either: 1 s `SICHER`, 1 s Statussymbol.
+// Decided in "Fix the factory defaults the manual leaves open".
+export const SICHER_PHASE_MS = 1_000;
+
 // manual 9.1; defaults from timing-and-alarm-rules §9.
 export const P01_EINSATZZEIT_1_MS = 30 * 60_000;
+export const P10_EINSATZZEIT_3_MS = 20 * 60_000;
 export const P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 2;
 export const P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 6;
 

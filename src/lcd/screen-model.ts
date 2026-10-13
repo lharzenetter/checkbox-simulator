@@ -1,10 +1,14 @@
 import {
   abschaltzeitRestMs,
+  ANMELDEAKTIONEN,
   assertNever,
   computeRestzeitMs,
+  EINSATZZEITEN_MS,
+  isSicherShown,
   P81_FLASCHENTYP_2_BAR,
 } from "../core/index";
 import type {
+  Anmeldeaktion,
   Login,
   Atemschutztraeger,
   Einsatzstatus,
@@ -22,6 +26,8 @@ export interface Statussymbol {
 export interface EinsatzlisteRow {
   readonly truppnummer: string;
   readonly selected: boolean;
+  /** The Sicherheitstrupp's `SICHER` phase, shown instead of the Statussymbol. */
+  readonly sicher: boolean;
   readonly statussymbol: Statussymbol;
   readonly restzeit: string;
 }
@@ -65,7 +71,8 @@ export type ScreenModel =
   | {
       readonly layout: "flaschendruckEditor";
       readonly title: string;
-      readonly truppnummer: string;
+      /** `null` on `Esz-Zeit ändern`, which shows no Truppnummer. */
+      readonly truppnummer: string | null;
       readonly cylinder: string;
       readonly flaschendruck: string;
       readonly restzeit: string;
@@ -101,18 +108,15 @@ const SERVICE_ITEMS = [
   "Testprogramm",
 ] as const;
 
-// Einsatzzeit #2 and #4 are not listed, decided in "Define the key-by-screen navigation model".
-const EINSATZZEIT_ITEMS = [
-  "Einsatzzeit  30 min?",
-  "Einsatzzeit  20 min?",
-] as const;
+// manual 5.3 step 5; the line's wording is decided in "Define the key-by-screen navigation model"
+const LANGZEITEINSATZ_ITEM = "Langzeiteinsatz? OK";
 
-const ANMELDEFENSTER_ITEMS = [
-  "Trupp OK Einsatz",
-  "Trupp OK Bereitschaft",
-  "Sicherheitstrupp OK",
-  "Druck ändern",
-] as const;
+const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
+  truppOkEinsatz: "Trupp OK Einsatz",
+  truppOkBereitschaft: "Trupp OK Bereitschaft",
+  sicherheitstruppOk: "Sicherheitstrupp OK",
+  druckAendern: "Druck ändern",
+};
 
 // manual 9.1 [72]
 const EINSATZLISTE_ROWS = 6;
@@ -146,7 +150,13 @@ export function screenModel(state: State): ScreenModel {
     case "anmeldefenster":
       return anmeldefensterModel(requireLogin(state));
     case "anfangsdruckEditor":
-      return anfangsdruckEditorModel(requireLogin(state));
+      return flaschendruckEditorModel(
+        requireLogin(state),
+        "Trupp Nr.:",
+        requireLogin(state).anfangsdruckBar,
+      );
+    case "flaschendruckAendern":
+      return flaschendruckAendernModel(requireLogin(state));
     case "einsatzliste":
       return einsatzlisteModel(state);
     default:
@@ -155,6 +165,11 @@ export function screenModel(state: State): ScreenModel {
 }
 
 function einsatzzeitWaehlenModel(login: Login): ScreenModel {
+  const items = EINSATZZEITEN_MS.map((einsatzzeitMs) =>
+    login.awaitingLangzeiteinsatzOk && einsatzzeitMs === login.einsatzzeitMs
+      ? LANGZEITEINSATZ_ITEM
+      : `Einsatzzeit  ${formatMinutes(einsatzzeitMs)} min?`,
+  );
   return {
     layout: "einsatzzeitWaehlen",
     title: "Neuen Trupp anmelden:",
@@ -163,33 +178,52 @@ function einsatzzeitWaehlenModel(login: Login): ScreenModel {
       `Trupp Nr.: ${formatTruppnummer(login.truppnummer)}`,
     ],
     atemschutztraeger: login.atemschutztraeger.map(formatName),
-    items: EINSATZZEIT_ITEMS,
-    selectedIndex: 0,
+    items,
+    selectedIndex: EINSATZZEITEN_MS.indexOf(login.einsatzzeitMs),
   };
 }
 
 function anmeldefensterModel(login: Login): ScreenModel {
-  const minutes = String(login.einsatzzeitMs / 60_000);
   return {
     layout: "anmeldefenster",
-    title: `Trupp ${formatTruppnummer(login.truppnummer)}   ${minutes} min`,
+    title: `Trupp ${formatTruppnummer(login.truppnummer)}   ${formatMinutes(login.einsatzzeitMs)} min`,
     atemschutztraeger: login.atemschutztraeger.map(formatName),
-    items: ANMELDEFENSTER_ITEMS,
-    selectedIndex: 0,
+    items: ANMELDEAKTIONEN.map((aktion) => ANMELDEFENSTER_ITEMS[aktion]),
+    selectedIndex: ANMELDEAKTIONEN.indexOf(login.anmeldeaktion),
   };
 }
 
-function anfangsdruckEditorModel(login: Login): ScreenModel {
+// The Druck ändern figure: the S06 layout titled `Esz-Zeit ändern`, without a Truppnummer
+// (manual 5.3.2; LCD screen catalogue, gap G11).
+function flaschendruckAendernModel(login: Login): ScreenModel {
+  if (login.draftFlaschendruckBar === null) {
+    throw new Error("Esz-Zeit ändern has no Flaschendruck to edit");
+  }
+  return {
+    ...flaschendruckEditorModel(
+      login,
+      "Esz-Zeit ändern",
+      login.draftFlaschendruckBar,
+    ),
+    truppnummer: null,
+  };
+}
+
+function flaschendruckEditorModel(
+  login: Login,
+  title: string,
+  flaschendruckBar: number,
+): Extract<ScreenModel, { layout: "flaschendruckEditor" }> {
   return {
     layout: "flaschendruckEditor",
-    title: "Trupp Nr.:",
+    title,
     truppnummer: formatTruppnummer(login.truppnummer),
     cylinder: formatBar(P81_FLASCHENTYP_2_BAR),
-    flaschendruck: formatBar(login.anfangsdruckBar),
+    flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatRestzeit(
-      computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
+      computeRestzeitMs(login.einsatzzeitMs, flaschendruckBar),
     ),
-    fillLevel: Math.min(1, login.anfangsdruckBar / P81_FLASCHENTYP_2_BAR),
+    fillLevel: Math.min(1, flaschendruckBar / P81_FLASCHENTYP_2_BAR),
   };
 }
 
@@ -214,6 +248,7 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
   return {
     truppnummer: formatTruppnummer(trupp.truppnummer),
     selected: trupp.truppnummer === state.selectedTruppnummer,
+    sicher: isSicherShown(state, trupp),
     statussymbol: {
       einsatzstatus: trupp.einsatzstatus,
       count: trupp.atemschutztraeger.length,
@@ -257,7 +292,9 @@ export function screenText(model: ScreenModel): readonly string[] {
       return [model.title, ...model.atemschutztraeger, ...model.items];
     case "flaschendruckEditor":
       return [
-        `${model.title} ${model.truppnummer}`,
+        model.truppnummer === null
+          ? model.title
+          : `${model.title} ${model.truppnummer}`,
         `Flasche: ${model.cylinder}`,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
@@ -278,10 +315,17 @@ export function screenText(model: ScreenModel): readonly string[] {
 function einsatzlisteRowText(row: EinsatzlisteRow): string {
   const markiert = row.selected ? " markiert" : "";
   const { count, einsatzstatus } = row.statussymbol;
-  return `${row.truppnummer}${markiert}  ${String(count)}× ${EINSATZSTATUS_LABELS[einsatzstatus]}  ${row.restzeit}`;
+  const status = row.sicher
+    ? SICHER
+    : `${String(count)}× ${EINSATZSTATUS_LABELS[einsatzstatus]}`;
+  return `${row.truppnummer}${markiert}  ${status}  ${row.restzeit}`;
 }
 
+// manual 3.2.2
+export const SICHER = "SICHER";
+
 const EINSATZSTATUS_LABELS: Readonly<Record<Einsatzstatus, string>> = {
+  bereitschaft: "Bereitschaft",
   anmarsch: "Anmarsch",
 };
 
@@ -292,6 +336,10 @@ function formatName(atemschutztraeger: Atemschutztraeger): string {
 
 function formatTruppnummer(truppnummer: number): string {
   return twoDigits(truppnummer);
+}
+
+function formatMinutes(durationMs: number): string {
+  return String(durationMs / 60_000);
 }
 
 function formatBar(druckBar: number): string {
