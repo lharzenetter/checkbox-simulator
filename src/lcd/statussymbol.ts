@@ -69,12 +69,12 @@ function drawAnmarsch(
   x: number,
   y: number,
 ): void {
-  let left = drawCount(framebuffer, count, x, y);
-  const outside = count > 3 ? 1 : count - 1;
-  for (let index = 0; index < outside; index++) {
-    drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left, y + OUTSIDE_Y);
-    left += ATEMSCHUTZTRAEGER_PITCH;
-  }
+  const left = drawOutside(
+    framebuffer,
+    anmarschOutside(count),
+    drawCount(framebuffer, count, x, y),
+    y,
+  );
   drawBitmap(framebuffer, HOUSE, left, y);
   if (count > 3) {
     drawBitmap(framebuffer, ARROW_IN, left + 1, y + ARROW_Y);
@@ -95,13 +95,47 @@ function drawBereitschaft(
   x: number,
   y: number,
 ): void {
-  let left = drawCount(framebuffer, count, x, y);
-  const outside = count > 3 ? 1 : count;
-  for (let index = 0; index < outside; index++) {
-    drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, left, y + OUTSIDE_Y);
-    left += ATEMSCHUTZTRAEGER_PITCH;
-  }
+  const left = drawOutside(
+    framebuffer,
+    bereitschaftOutside(count),
+    drawCount(framebuffer, count, x, y),
+    y,
+  );
   drawBitmap(framebuffer, HOUSE, left, y);
+}
+
+function anmarschOutside(count: number): number {
+  return count > 3 ? 1 : count - 1;
+}
+
+function bereitschaftOutside(count: number): number {
+  return count > 3 ? 1 : count;
+}
+
+// Draws the figures left of the house and returns where the house starts.
+function drawOutside(
+  framebuffer: Framebuffer,
+  outside: number,
+  left: number,
+  y: number,
+): number {
+  for (let index = 0; index < outside; index++) {
+    drawBitmap(
+      framebuffer,
+      ATEMSCHUTZTRAEGER,
+      left + index * ATEMSCHUTZTRAEGER_PITCH,
+      y + OUTSIDE_Y,
+    );
+  }
+  return left + outsideWidth(outside);
+}
+
+// A lone figure outside stands directly next to the house, as on the device; several keep 2 px
+// from each other and from the house.
+function outsideWidth(outside: number): number {
+  return outside === 1
+    ? ATEMSCHUTZTRAEGER_WIDTH
+    : outside * ATEMSCHUTZTRAEGER_PITCH;
 }
 
 // Every Atemschutzträger inside the house (H); more than three: the count and one figure inside
@@ -144,7 +178,7 @@ function drawRueckmarsch(
   drawBitmap(
     framebuffer,
     ATEMSCHUTZTRAEGER,
-    house + HOUSE_WIDTH + ATEMSCHUTZTRAEGER_PITCH - ATEMSCHUTZTRAEGER_WIDTH,
+    house + HOUSE_WIDTH,
     y + OUTSIDE_Y,
   );
 }
@@ -214,17 +248,15 @@ export function statussymbolWidth(statussymbol: Statussymbol): number {
   const countWidth = count > 3 ? textWidth(`${String(count)}×`) + 2 : 0;
   switch (einsatzstatus) {
     case "bereitschaft":
-      return count > 3
-        ? countWidth + ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH
-        : count * ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH;
+      return (
+        countWidth + outsideWidth(bereitschaftOutside(count)) + HOUSE_WIDTH
+      );
     case "anmarsch":
-      return count > 3
-        ? countWidth + ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH
-        : (count - 1) * ATEMSCHUTZTRAEGER_PITCH + HOUSE_WIDTH;
+      return countWidth + outsideWidth(anmarschOutside(count)) + HOUSE_WIDTH;
     case "einsatzzielErreicht":
       return countWidth + HOUSE_WIDTH;
     case "rueckmarsch":
-      return countWidth + HOUSE_WIDTH + ATEMSCHUTZTRAEGER_PITCH;
+      return countWidth + HOUSE_WIDTH + ATEMSCHUTZTRAEGER_WIDTH;
     default:
       return assertNever(einsatzstatus);
   }
