@@ -114,11 +114,14 @@ A Daueralarm cannot be silenced by OK; it stops only when its cause is removed (
 | 7.1 | A Trupp member does not log off at Einsatz beenden. | The missing member logs off with their Transponder, or a Notausschaltung (D + E ~4 s) ends the Trupp or all Trupps. | [Manual] p. 15, 30–31 |
 | 7.2 | Fewer than [07] Minimale Anzahl der Truppmitglieder (≥ 2) have logged on for a Trupp. | Enough members have logged on. | [Manual] p. 71–72 |
 
-The manual does not say **when** either one starts:
+The manual does not say when either one starts. Decided (A8, device behaviour):
 
-- 7.1: on pressing OK on the Abmelden screen while members are still unmarked? After a timeout ([12])? Or as soon as the first member logs off? [Assumption] A8
-- 7.2: on trying to confirm the Trupp with too few members? After the [12] auto-login delay? [Assumption] A8
-- Can D (nicht abmelden) on the Abmelden screen cancel a 7.1 Daueralarm and resume the Einsatz? [Assumption] A8
+| # | Rule | Source |
+| --- | --- | --- |
+| 7.3 | The logoff Daueralarm (7.1) starts when C is pressed on ABMELDEN while any member is still unmarked. ABMELDEN stays open; there is no timeout and nothing starts it before C. | **Decided** (A8) |
+| 7.4 | The logoff Daueralarm stops as soon as every member is marked; ABMELDEN then waits for C as usual (no auto-logoff). D (`X`) also stops it: marks cleared, the Trupp keeps running in its previous Einsatzstatus. A Notausschaltung of the Trupp ends it too. Pressing C again with members still missing restarts it. | **Decided** (A8) |
+| 7.5 | The login Daueralarm (7.2) starts when `Trupp OK …` is confirmed with C on the Anmeldefenster while fewer than [07] members have joined. The Anmeldefenster stays open; the [12] delay plays no part. | **Decided** (A8) |
+| 7.6 | The login Daueralarm stops as soon as [07] members have joined; the Anmeldefenster then waits for C as usual (no automatic confirmation). D also stops it and throws the whole login away, as D on the Anmeldefenster always does. | **Decided** (A8) |
 
 ## 8. Acknowledging and concurrency
 
@@ -208,12 +211,12 @@ Logoff (every member's Transponder at E → ABMELDEN → OK) from every Einsatzs
 | 12.4 | Bereitschaft is a safe area. `Trupp -> Einsatz` leads to Anmarsch (mode on, new Anmarsch leg, 5.15) or Einsatzziel erreicht (mode off), never back to the earlier status. | **Decided** (A4) |
 | 12.5 | The Trupp-Menü always lists `Trupp -> Einsatz` and `Trupp -> Bereitschaft`, as both figures show (p. 22, 26). Choosing the status the Trupp already has does nothing and returns to the Einsatzliste. Only the items below depend on the status. | **Decided** ([Figure] p. 22, 26) |
 | 12.6 | Rückzug is final: it is left only via Bereitschaft or logoff; there is no way back to Einsatzziel erreicht. | **Decided** (device behaviour) |
-| 12.7 | Logoff is possible from every Einsatzstatus. It completes only once every member of the Trupp has held their Transponder to E; with anyone missing, the Trupp cannot be logged off (the resulting Daueralarm is the ticket *Decide when a Daueralarm starts and ends*). The Einsatzstatus at logoff is recorded in the Einsatzprotokoll. | [Manual] p. 30–31; **Decided** (device behaviour) |
+| 12.7 | Logoff is possible from every Einsatzstatus. It completes only once every member of the Trupp has held their Transponder to E; with anyone missing, the Trupp cannot be logged off and C starts the logoff Daueralarm (7.3, 7.4). The Einsatzstatus at logoff is recorded in the Einsatzprotokoll. | [Manual] p. 30–31; **Decided** (device behaviour) |
 | 12.8 | Sicherungstrupp is a flag alongside the Einsatzstatus, not a status. A Sicherungstrupp starts in Bereitschaft, follows the same diagram once sent in, and keeps SICHER for the whole Einsatz. | **Decided** (device behaviour) |
 
 ## Open decisions
 
-A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions* (rows marked **Decided** above).
+A1 and A5 are decided in *Decide how Flaschendruck drives Restzeit and the Rückzugsalarm*; A2 and A3 in *Decide when one-shot and repeating alarms fire*; A4 and A6 in *Decide the Einsatzstatus transitions*; A8 in *Decide when a Daueralarm starts and ends* (rows marked **Decided** above).
 
 These feed the follow-up grilling ticket.
 
