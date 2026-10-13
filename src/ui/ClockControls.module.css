@@ -32,6 +32,11 @@
   gap: 6px;
 }
 
+.speed:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 .speed[aria-pressed="true"] {
   border-color: #e6e6e3;
   background: #e6e6e3;

@@ -9,6 +9,7 @@ test("pause and speed up the clock", async ({ page }) => {
 
   await pause.click();
   await expect(page.getByText("Simulation pausiert")).toBeVisible();
+  await expect(page.getByRole("button", { name: "10×" })).toBeDisabled();
   await page.getByRole("button", { name: "Taste Check" }).click();
   await expect(lcd).toHaveAttribute("aria-label", "Display aus");
 

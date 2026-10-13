@@ -29,6 +29,7 @@ export function ClockControls({
             type="button"
             className={styles.speed}
             aria-pressed={clock.speed === speed}
+            disabled={clock.paused}
             onClick={() => {
               onSpeedChosen(speed);
             }}
