@@ -1,0 +1,52 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #e6e6e3;
+  font:
+    600 1rem/1.2 system-ui,
+    sans-serif;
+}
+
+.playPause,
+.speed {
+  min-width: 48px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 2px solid #6b7178;
+  border-radius: 8px;
+  background: #3a3f45;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.playPause {
+  min-width: 120px;
+}
+
+.speeds {
+  display: flex;
+  gap: 6px;
+}
+
+.speed[aria-pressed="true"] {
+  border-color: #e6e6e3;
+  background: #e6e6e3;
+  color: #2b2f33;
+}
+
+.playPause:focus-visible,
+.speed:focus-visible {
+  outline: 3px solid #6ea8fe;
+  outline-offset: 2px;
+}
+
+.status {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  color: #f0c36b;
+}
