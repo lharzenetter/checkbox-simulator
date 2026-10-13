@@ -333,6 +333,26 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
+  // manual 5.5.3, ALARM figure, with the time split of a long Anmarsch (issue #42); the
+  // Rückzugsalarm fires on reaching the Einsatzziel
+  it("draws S12 Trupp ALARM with the time-split bar", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          {
+            type: "tick",
+            now: FIGURE_UHRZEIT + 25 * 60_000,
+            realNow: 25 * 60_000,
+          },
+          press("OK"),
+          ...TO_EINSATZZIEL,
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
   // manual 5.6.2, Trupp-Menü figure (EINSATZ)
   it("draws the Trupp-Menü of a Trupp at its Einsatzziel", () => {
     expect(
@@ -431,8 +451,10 @@ describe("every Statussymbol layout", () => {
 });
 
 // The core keeps a Trupp's Flaschendruck within its cylinder, so the fill level is set on the
-// screen model to reach both limits.
-function truppAnsichtWith(fillLevel: number): ScreenModel {
+// screen model to reach both limits; the time split likewise.
+function truppAnsichtWith(
+  overrides: Partial<Pick<TruppAnsicht, "fillLevel" | "timeSplit">>,
+): ScreenModel {
   const model = screenModel(
     [...LOGIN, press("OK"), press("OK")].reduce(
       reduce,
@@ -442,19 +464,67 @@ function truppAnsichtWith(fillLevel: number): ScreenModel {
   if (model.layout !== "truppAnsicht") {
     throw new Error(`expected the Trupp-Ansicht, got ${model.layout}`);
   }
-  return { ...model, fillLevel };
+  return { ...model, ...overrides };
 }
+
+type TruppAnsicht = Extract<ScreenModel, { layout: "truppAnsicht" }>;
 
 // manual 3.2.3; issue #41: the shoulder and base stay solid at both fill limits
 describe("the Trupp-Ansicht's cylinder", () => {
   // manual 5.5.3, p. 24: the body is empty
   it("draws an empty cylinder", () => {
-    expect(toAscii(renderScreen(truppAnsichtWith(0)))).toMatchSnapshot();
+    expect(
+      toAscii(renderScreen(truppAnsichtWith({ fillLevel: 0 }))),
+    ).toMatchSnapshot();
   });
 
   // manual 5.4, p. 22: the dither reaches the shoulder
   it("draws a full cylinder", () => {
-    expect(toAscii(renderScreen(truppAnsichtWith(1)))).toMatchSnapshot();
+    expect(
+      toAscii(renderScreen(truppAnsichtWith({ fillLevel: 1 }))),
+    ).toMatchSnapshot();
+  });
+});
+
+// The time-split bar's inside, top to bottom, down one of its columns.
+function timeSplitBarColumn(model: ScreenModel): string {
+  const framebuffer = renderScreen(model);
+  let column = "";
+  for (let y = 53; y < 119; y++) {
+    column += framebuffer.pixels[y * framebuffer.width + 9] === 1 ? "#" : ".";
+  }
+  return column;
+}
+
+// manual 3.2.3 items 3–5 (issue #42)
+describe("the Trupp-Ansicht's time-split bar", () => {
+  it("is empty without an Anmarschzeit", () => {
+    expect(timeSplitBarColumn(truppAnsichtWith({ timeSplit: null }))).toBe(
+      ".".repeat(66),
+    );
+  });
+
+  it("fills field ③ from the top and field ⑤ from the bottom, leaving field ④ white", () => {
+    expect(
+      timeSplitBarColumn(
+        truppAnsichtWith({
+          timeSplit: { anmarschzeitShare: 1 / 6, rueckmarschzeitShare: 1 / 2 },
+        }),
+      ),
+    ).toBe(`${"#".repeat(11)}${".".repeat(22)}${"#".repeat(33)}`);
+  });
+
+  it("fills the bar exactly when the fields meet", () => {
+    expect(
+      timeSplitBarColumn(
+        truppAnsichtWith({
+          timeSplit: {
+            anmarschzeitShare: 0.505,
+            rueckmarschzeitShare: 1 - 0.505,
+          },
+        }),
+      ),
+    ).toBe("#".repeat(66));
   });
 });
 

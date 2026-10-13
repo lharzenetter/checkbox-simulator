@@ -13,7 +13,7 @@ import {
 } from "./framebuffer";
 import type { Framebuffer } from "./framebuffer";
 import { SICHER } from "./screen-model";
-import type { ScreenModel } from "./screen-model";
+import type { ScreenModel, TimeSplit } from "./screen-model";
 import { drawStatussymbol, statussymbolWidth } from "./statussymbol";
 
 // Estimated from the manual's figures (LCD screen catalogue, "Character grid").
@@ -252,9 +252,16 @@ function drawTruppMenue(
 }
 
 // Laid out after the Trupp-Ansicht figure (manual 3.2.3): the S06 cylinder and time-split bar on
-// the left, the values on the right of a divider, and the inverse `Ansicht` label at the bottom.
+// the left, the values on the right of a divider, and the `Ansicht` button at the bottom.
 const ANSICHT_DIVIDER_X = 64;
-const ANSICHT_LABEL_Y = LCD_HEIGHT - 11;
+
+// manual 3.2.3: the `Ansicht` button spans the value boxes' columns and ends level with the
+// cylinder's base, set in from the divider, the right edge and the bottom.
+// ASSUMPTION: a 1 px light gap between the frame and the inverse bar, which the figure is too
+// coarse to show, and a bar one row taller than the figure's, for our taller font (issue #42).
+const ANSICHT_BUTTON_X = ANSICHT_DIVIDER_X + 2;
+const ANSICHT_BUTTON_WIDTH = 58;
+const ANSICHT_BUTTON_HEIGHT = 13;
 
 function drawTruppAnsicht(
   framebuffer: Framebuffer,
@@ -269,20 +276,32 @@ function drawTruppAnsicht(
     LCD_WIDTH - 1 - statussymbolWidth(model.statussymbol),
     17,
   );
+  drawAnsichtButton(framebuffer, model.label);
+}
+
+// The selected soft-key label: an inverse bar inside a frame (manual 3.2.3).
+function drawAnsichtButton(framebuffer: Framebuffer, label: string): void {
+  const top = CYLINDER_Y + CYLINDER.length - ANSICHT_BUTTON_HEIGHT;
+  strokeRect(
+    framebuffer,
+    ANSICHT_BUTTON_X,
+    top,
+    ANSICHT_BUTTON_WIDTH,
+    ANSICHT_BUTTON_HEIGHT,
+  );
+  const barWidth = ANSICHT_BUTTON_WIDTH - 4;
   fillRect(
     framebuffer,
-    ANSICHT_DIVIDER_X + 1,
-    ANSICHT_LABEL_Y,
-    LCD_WIDTH - ANSICHT_DIVIDER_X - 1,
-    11,
+    ANSICHT_BUTTON_X + 2,
+    top + 2,
+    barWidth,
+    ANSICHT_BUTTON_HEIGHT - 4,
   );
   drawText(
     framebuffer,
-    model.label,
-    Math.floor(
-      (ANSICHT_DIVIDER_X + 1 + LCD_WIDTH - textWidth(model.label)) / 2,
-    ),
-    ANSICHT_LABEL_Y + 2,
+    label,
+    ANSICHT_BUTTON_X + 2 + Math.floor((barWidth - textWidth(label)) / 2),
+    top + 3,
     { inverse: true },
   );
 }
@@ -321,8 +340,7 @@ const FLASCHE = [
   ".####.",
 ];
 
-// The figures' bottom row merges with the box border; the device's clock is square, so it
-// keeps its 11th row (issue #41).
+// The device's clock is square, so it keeps its 11th row (issue #41).
 const RESTZEIT_CLOCK = [
   "....###....",
   "..##.####..",
@@ -350,8 +368,10 @@ const RUECKZUG_ARROWS = [
   "..#....#..",
 ];
 
-const FLASCHENDRUCK_BOX_Y = 49;
-const RESTZEIT_BOX_Y = 71;
+// The Flaschendruck box is one row higher and the Restzeit box two rows lower than the figures'
+// rows, to fit the gap under the clock (issue #42).
+const FLASCHENDRUCK_BOX_Y = 48;
+const RESTZEIT_BOX_Y = 73;
 const RUECKZUGSDRUCK_BOX_Y = 94;
 
 // The parts the Trupp-Ansicht and ALARM figures share (manual 3.2.3, 5.5.3).
@@ -364,6 +384,7 @@ function drawTruppPanels(
     readonly restzeit: string;
     readonly fillLevel: number;
     readonly rueckzugsdruck: string | null;
+    readonly timeSplit: TimeSplit | null;
   },
 ): void {
   drawText(framebuffer, model.title, 1, 2);
@@ -374,14 +395,18 @@ function drawTruppPanels(
   fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
   fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
   drawCylinder(framebuffer, model.fillLevel);
-  // ASSUMPTION: the time-split bar is drawn empty until the Einsatzstatus times it splits are
-  // kept (LCD screen catalogue, gap G17).
-  strokeRect(framebuffer, 7, 52, 6, 68);
+  drawTimeSplitBar(framebuffer, model.timeSplit);
   drawBitmap(framebuffer, RUECKZUG_ARROWS, 4, 41);
   drawValueBox(framebuffer, model.flaschendruck, FLASCHENDRUCK_BOX_Y);
   drawPictogramOnBox(framebuffer, FLASCHE, 95, FLASCHENDRUCK_BOX_Y);
   drawValueBox(framebuffer, model.restzeit, RESTZEIT_BOX_Y);
-  drawPictogramOnBox(framebuffer, RESTZEIT_CLOCK, 92, RESTZEIT_BOX_Y);
+  // manual 3.2.3: a blank row separates the clock from the box, whose border stays closed
+  drawBitmap(
+    framebuffer,
+    RESTZEIT_CLOCK,
+    92,
+    RESTZEIT_BOX_Y - RESTZEIT_CLOCK.length - 1,
+  );
   // manual 3.2.3 item 9, 5.5.3: the box is drawn empty until there is a Rückzugsdruck
   drawValueBox(framebuffer, model.rueckzugsdruck ?? "", RUECKZUGSDRUCK_BOX_Y);
   drawPictogramOnBox(framebuffer, RUECKZUG_ARROWS, 93, RUECKZUGSDRUCK_BOX_Y);
@@ -435,9 +460,53 @@ function drawFlaschendruckEditor(
   drawRightAlignedText(framebuffer, "Restzeit", right, 84);
   drawValueBox(framebuffer, model.restzeit, 95);
   drawCylinder(framebuffer, model.fillLevel);
-  // ASSUMPTION: the time-split bar is drawn empty, as in the figure, before any time has run
-  // (LCD screen catalogue, gap G17).
-  strokeRect(framebuffer, 7, 52, 6, 68);
+  // manual 5.3: the editor's figure draws the bar empty
+  drawTimeSplitBar(framebuffer, null);
+}
+
+// manual 3.2.3 items 3–5
+const TIME_SPLIT_BAR_X = 7;
+const TIME_SPLIT_BAR_Y = 52;
+const TIME_SPLIT_BAR_WIDTH = 6;
+const TIME_SPLIT_BAR_HEIGHT = 68;
+
+// Field ③ fills from the top and field ⑤ from the bottom; field ④ is the white remainder.
+function drawTimeSplitBar(
+  framebuffer: Framebuffer,
+  timeSplit: TimeSplit | null,
+): void {
+  strokeRect(
+    framebuffer,
+    TIME_SPLIT_BAR_X,
+    TIME_SPLIT_BAR_Y,
+    TIME_SPLIT_BAR_WIDTH,
+    TIME_SPLIT_BAR_HEIGHT,
+  );
+  if (timeSplit === null) {
+    return;
+  }
+  const innerTop = TIME_SPLIT_BAR_Y + 1;
+  const innerHeight = TIME_SPLIT_BAR_HEIGHT - 2;
+  // Both edges are rounded from the top, so fields that meet fill the inside exactly.
+  const anmarschRows = Math.round(innerHeight * timeSplit.anmarschzeitShare);
+  const rueckmarschTop = Math.max(
+    anmarschRows,
+    Math.round(innerHeight * (1 - timeSplit.rueckmarschzeitShare)),
+  );
+  fillRect(
+    framebuffer,
+    TIME_SPLIT_BAR_X + 1,
+    innerTop,
+    TIME_SPLIT_BAR_WIDTH - 2,
+    anmarschRows,
+  );
+  fillRect(
+    framebuffer,
+    TIME_SPLIT_BAR_X + 1,
+    innerTop + rueckmarschTop,
+    TIME_SPLIT_BAR_WIDTH - 2,
+    innerHeight - rueckmarschTop,
+  );
 }
 
 // The box casts a 1 px drop shadow down and to the right (manual 3.2.3, 5.4, 5.5.3, 5.7).

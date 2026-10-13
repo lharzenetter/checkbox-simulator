@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createInitialState, reduce } from "../core/index";
+import {
+  createInitialState,
+  P81_FLASCHENTYP_2_BAR,
+  reduce,
+} from "../core/index";
 import type { Event, Key, State } from "../core/index";
 import { screenModel, screenText } from "./screen-model";
 
@@ -857,6 +861,98 @@ describe("the Einsatzstatus screens", () => {
   it("shows no Rückzugsdruck on the Trupp-Ansicht in Anmarsch", () => {
     expect(screenModel(stateAfter(...TRUPP_01, press("OK")))).toMatchObject({
       rueckzugsdruck: null,
+    });
+  });
+
+  // manual 3.2.3 items 3–5: the bar stays empty until there is an Anmarschzeit (issue #42)
+  it("leaves the time-split bar empty in Bereitschaft and during the first Anmarsch", () => {
+    const bereitschaft = stateAfter(
+      HLF_AT_F,
+      press("OK"),
+      HLF_AT_M,
+      press("Down"),
+      press("OK"),
+      press("OK"),
+      press("OK"),
+    );
+    expect(screenModel(bereitschaft)).toMatchObject({
+      layout: "truppAnsicht",
+      timeSplit: null,
+    });
+    expect(
+      screenModel(stateAfter(...TRUPP_01, at(5), press("OK"))),
+    ).toMatchObject({ layout: "truppAnsicht", timeSplit: null });
+  });
+
+  // manual 3.2.3 items 3–5; timing-and-alarm-rules §5.5, 5.6, 5.8; ADR 0008: field ⑤ is the
+  // Rückmarschzeit `2·t_A + t_res`, here 2 × 5 min + 5 min of the 30 min Einsatzzeit
+  it("splits the bar into Anmarschzeit and Rückmarschzeit once the Einsatzziel is reached", () => {
+    expect(screenModel(stateAfter(...EINSATZZIEL, press("OK")))).toMatchObject({
+      layout: "truppAnsicht",
+      timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschzeitShare: 15 / 30 },
+    });
+  });
+
+  // timing-and-alarm-rules §5.7: the Rückzugsdruck is field ⑤ in bar, `[42] + 2·t_A × P_N / T`
+  it("agrees with the Rückzugsdruck on the same screen", () => {
+    const model = screenModel(stateAfter(...EINSATZZIEL, press("OK")));
+    if (model.layout !== "truppAnsicht" || model.timeSplit === null) {
+      throw new Error("expected the Trupp-Ansicht with a time split");
+    }
+    expect(model.rueckzugsdruck).toBe(
+      `${String(model.timeSplit.rueckmarschzeitShare * P81_FLASCHENTYP_2_BAR)} bar`,
+    );
+  });
+
+  // manual 5.7 step 5, RÜCKMARSCH figure: the Anmarschzeit is kept on the Rückmarsch
+  it("keeps the time split on the Trupp-Ansicht in `RÜCKMARSCH` after the Einsatzziel", () => {
+    expect(
+      screenModel(
+        stateAfter(
+          ...EINSATZZIEL,
+          ...truppMenueAt(2),
+          press("OK"),
+          press("OK"),
+        ),
+      ),
+    ).toMatchObject({
+      title: "Trupp 01 RÜCKMARSCH",
+      timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschzeitShare: 15 / 30 },
+    });
+  });
+
+  // ASSUMPTION: field ⑤ is cut back where the two would overlap (issue #42)
+  it("cuts the Rückmarschzeit back so the fields never overflow the bar after a long Anmarsch", () => {
+    // the Alarmgrenzen fire on the way; the Rückzugsalarm fires on reaching the Einsatzziel
+    const longAnmarsch = stateAfter(
+      ...TRUPP_01,
+      at(25),
+      press("OK"),
+      ...truppMenueAt(2),
+      press("OK"),
+      press("OK"),
+    );
+    expect(screenModel(longAnmarsch)).toMatchObject({
+      layout: "alarm",
+      timeSplit: {
+        anmarschzeitShare: 25 / 30,
+        rueckmarschzeitShare: expect.closeTo(5 / 30) as number,
+      },
+    });
+  });
+
+  // ASSUMPTION: field ③ is clamped to the bar (issue #42)
+  it("fills the whole bar with the Anmarschzeit once it exceeds the Einsatzzeit", () => {
+    const overdueAnmarsch = stateAfter(
+      ...TRUPP_01,
+      at(35),
+      press("OK"),
+      ...truppMenueAt(2),
+      press("OK"),
+      press("OK"),
+    );
+    expect(screenModel(overdueAnmarsch)).toMatchObject({
+      timeSplit: { anmarschzeitShare: 1, rueckmarschzeitShare: 0 },
     });
   });
 

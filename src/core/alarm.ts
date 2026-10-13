@@ -5,11 +5,10 @@ import {
   P05_ALARMINTERVALL_BEREITSCHAFT_MS,
   P06_ALARMINTERVALL_EINSATZZEIT_MS,
   P10_EINSATZZEIT_3_MS,
-  P42_RESERVEDRUCK_BAR,
   P61_ALARMGRENZE_1_EINSATZZEIT_3_PROZENT,
   P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT,
 } from "./parameters";
-import { computeRestzeitMs } from "./restzeit";
+import { rueckmarschzeitMs } from "./restzeit";
 import type { Trupp } from "./state";
 
 // `trupp` is `after`, with its Rückzugsalarm disarmed once that has fired.
@@ -45,19 +44,13 @@ export function checkAlarms(before: Trupp, after: Trupp): AlarmCheck {
 // Restzeit already at or below the threshold fires at once; disarming it on firing keeps a raise
 // from re-arming it, and only Einsatzziel erreicht arms it, so Rückmarsch never fires it
 function isRueckzugsalarmDue(trupp: Trupp): boolean {
-  if (
-    !trupp.rueckzugsalarmArmed ||
-    trupp.einsatzstatus !== "einsatzzielErreicht" ||
-    trupp.anmarschzeitMs === null
-  ) {
-    return false;
-  }
-  // §5.6: the Reservedruck converts to time like any Flaschendruck (§1.3)
-  const reservedruckMs = computeRestzeitMs(
-    trupp.einsatzzeitMs,
-    P42_RESERVEDRUCK_BAR,
+  const thresholdMs = rueckmarschzeitMs(trupp);
+  return (
+    trupp.rueckzugsalarmArmed &&
+    trupp.einsatzstatus === "einsatzzielErreicht" &&
+    thresholdMs !== null &&
+    trupp.restzeitMs <= thresholdMs
   );
-  return trupp.restzeitMs <= 2 * trupp.anmarschzeitMs + reservedruckMs;
 }
 
 // timing-and-alarm-rules §4.3, 4.4: every [05] of simulated time since entering Bereitschaft

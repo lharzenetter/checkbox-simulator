@@ -110,6 +110,10 @@ _Avoid_: remaining time, countdown
 The running time from the start of a Trupp's Anmarsch until it reports Einsatzziel erreicht; doubled, it sizes the Rückzugsalarm.
 _Avoid_: approach time, Hinweg
 
+**Rückmarschzeit**:
+The time a Trupp's Rückmarsch is budgeted: twice its Anmarschzeit plus the Reservedruck converted to time; the Rückzugsalarm fires when the Restzeit falls to it.
+_Avoid_: return time, Rückweg
+
 **Flaschendruck**:
 The pressure of a Trupp's breathing-air cylinders, in bar.
 _Avoid_: pressure, Druck

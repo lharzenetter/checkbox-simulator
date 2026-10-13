@@ -47,3 +47,15 @@ export function rueckzugsdruckBar(trupp: Trupp): number | null {
       (2 * trupp.anmarschzeitMs * P81_FLASCHENTYP_2_BAR) / trupp.einsatzzeitMs,
   );
 }
+
+/** The Rückmarschzeit, timing-and-alarm-rules §5.5, 5.6; `null` while the Trupp has no Anmarschzeit. */
+export function rueckmarschzeitMs(trupp: Trupp): number | null {
+  if (trupp.anmarschzeitMs === null) {
+    return null;
+  }
+  // §5.6: the Reservedruck converts to time like any Flaschendruck (§1.3)
+  return (
+    2 * trupp.anmarschzeitMs +
+    computeRestzeitMs(trupp.einsatzzeitMs, P42_RESERVEDRUCK_BAR)
+  );
+}

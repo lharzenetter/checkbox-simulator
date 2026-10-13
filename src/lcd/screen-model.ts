@@ -9,6 +9,7 @@ import {
   isSicherShown,
   NOTAUSSCHALTUNG_AKTIONEN,
   P81_FLASCHENTYP_2_BAR,
+  rueckmarschzeitMs,
   rueckzugsdruckBar,
   selectedTrupp,
   truppLoggingOff,
@@ -30,6 +31,14 @@ import type {
 export interface Statussymbol {
   readonly einsatzstatus: Einsatzstatus;
   readonly count: number;
+}
+
+/** The time-split bar's filled fields, as shares of the Einsatzzeit, 0–1, that never overlap. */
+export interface TimeSplit {
+  /** Field ③, from the top. */
+  readonly anmarschzeitShare: number;
+  /** Field ⑤, from the bottom. */
+  readonly rueckmarschzeitShare: number;
 }
 
 /** One occupied row of the Einsatzliste. */
@@ -119,6 +128,8 @@ export type ScreenModel =
       readonly fillLevel: number;
       /** `null` while the Trupp has no Anmarschzeit. */
       readonly rueckzugsdruck: string | null;
+      /** `null` while the Trupp has no Anmarschzeit. */
+      readonly timeSplit: TimeSplit | null;
       readonly label: string;
     }
   | {
@@ -132,6 +143,8 @@ export type ScreenModel =
       readonly fillLevel: number;
       /** `null` while the Trupp has no Anmarschzeit. */
       readonly rueckzugsdruck: string | null;
+      /** `null` while the Trupp has no Anmarschzeit. */
+      readonly timeSplit: TimeSplit | null;
       /** `Alarmende mit OK`, in its two lines. */
       readonly prompt: readonly string[];
     }
@@ -400,6 +413,7 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
     rueckzugsdruck: formatRueckzugsdruck(trupp),
+    timeSplit: timeSplitOf(trupp),
     label: "Ansicht",
   };
 }
@@ -416,6 +430,7 @@ function alarmModel(trupp: Trupp): ScreenModel {
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
     rueckzugsdruck: formatRueckzugsdruck(trupp),
+    timeSplit: timeSplitOf(trupp),
     prompt: ["Alarmende", "mit OK"],
   };
 }
@@ -477,6 +492,28 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
 function formatRueckzugsdruck(trupp: Trupp): string | null {
   const bar = rueckzugsdruckBar(trupp);
   return bar === null ? null : formatBar(bar);
+}
+
+// manual 3.2.3 items 3–5; timing-and-alarm-rules §5.8
+// ASSUMPTION: the fields are linear in the Einsatzzeit, the bar is empty until there is an
+// Anmarschzeit, and field ⑤ gives way where the two would overlap (issue #42).
+function timeSplitOf(trupp: Trupp): TimeSplit | null {
+  const rueckmarschzeit = rueckmarschzeitMs(trupp);
+  if (trupp.anmarschzeitMs === null || rueckmarschzeit === null) {
+    return null;
+  }
+  const anmarschzeitShare = shareOfEinsatzzeit(trupp, trupp.anmarschzeitMs);
+  return {
+    anmarschzeitShare,
+    rueckmarschzeitShare: Math.min(
+      1 - anmarschzeitShare,
+      shareOfEinsatzzeit(trupp, rueckmarschzeit),
+    ),
+  };
+}
+
+function shareOfEinsatzzeit(trupp: Trupp, durationMs: number): number {
+  return Math.min(1, Math.max(0, durationMs / trupp.einsatzzeitMs));
 }
 
 function statussymbolOf(trupp: Trupp): Statussymbol {
