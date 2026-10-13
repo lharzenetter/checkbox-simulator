@@ -783,16 +783,22 @@ function logIn(state: State, login: Login): State {
   );
 }
 
-// ASSUMPTION: below [07] OK does nothing until the login Daueralarm exists, which the navigation
-// model starts there instead ("Define the key-by-screen navigation model").
+// timing-and-alarm-rules §7.5: below [07] OK starts the login Daueralarm and the Anmeldefenster
+// stays; OK while it sounds neither silences nor restarts it (§7.6)
 function confirmTrupp(state: State): State {
   const login = requireLogin(state);
-  if (
-    login.atemschutztraeger.length < P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER
-  ) {
-    return state;
+  if (hasEnoughAtemschutztraeger(login)) {
+    return enterScreen(state, "anfangsdruckEditor");
   }
-  return enterScreen(state, "anfangsdruckEditor");
+  return login.daueralarmSinceRealMs === null
+    ? withLogin(state, { ...login, daueralarmSinceRealMs: state.realNow })
+    : state;
+}
+
+function hasEnoughAtemschutztraeger(login: Login): boolean {
+  return (
+    login.atemschutztraeger.length >= P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER
+  );
 }
 
 // decided in "Define the key-by-screen navigation model", its "Tally on Check" table
@@ -856,6 +862,7 @@ function startLogin(state: State, atemschutztraeger: Atemschutztraeger): State {
         anmeldeaktion: "truppOkEinsatz",
         anfangsdruckBar: P81_FLASCHENTYP_2_BAR,
         draftFlaschendruckBar: null,
+        daueralarmSinceRealMs: null,
       },
     },
     "einsatzzeitWaehlen",
@@ -874,6 +881,7 @@ function openAbmelden(
       logoff: {
         truppnummer: trupp.truppnummer,
         markedTallyIds: [atemschutztraeger.tallyId],
+        daueralarmSinceRealMs: null,
       },
     },
     "abmelden",
@@ -886,7 +894,9 @@ function handleAbmeldenKey(state: State, key: Key): State {
     case "X":
       return enterScreen({ ...state, logoff: null }, "einsatzliste");
     case "OK":
-      return isEveryoneMarked(state) ? logOff(state) : state;
+      return isEveryoneMarked(state)
+        ? logOff(state)
+        : startLogoffDaueralarm(state);
     case "Up":
     case "Down":
     case "Check":
@@ -894,6 +904,18 @@ function handleAbmeldenKey(state: State, key: Key): State {
     default:
       return assertNever(key);
   }
+}
+
+// timing-and-alarm-rules §7.3; OK while it sounds neither silences nor restarts it (§7.4)
+function startLogoffDaueralarm(state: State): State {
+  const logoff = requireLogoff(state);
+  if (logoff.daueralarmSinceRealMs !== null) {
+    return state;
+  }
+  return {
+    ...state,
+    logoff: { ...logoff, daueralarmSinceRealMs: state.realNow },
+  };
 }
 
 function isEveryoneMarked(state: State): boolean {
@@ -962,13 +984,20 @@ function markAtemschutztraeger(state: State, tallyId: string): State {
   ) {
     return state;
   }
-  return {
+  const marked: State = {
     ...state,
     logoff: {
       ...logoff,
       markedTallyIds: [...logoff.markedTallyIds, tallyId],
     },
   };
+  // timing-and-alarm-rules §7.4: the last mark stops the Daueralarm, and ABMELDEN waits for OK
+  return isEveryoneMarked(marked)
+    ? {
+        ...marked,
+        logoff: { ...requireLogoff(marked), daueralarmSinceRealMs: null },
+      }
+    : marked;
 }
 
 function requireLogoff(state: State): Logoff {
@@ -1000,13 +1029,18 @@ function addAtemschutztraeger(
   ) {
     return state;
   }
-  return {
-    ...state,
-    login: {
-      ...login,
-      atemschutztraeger: [...login.atemschutztraeger, atemschutztraeger],
-    },
+  const joined: Login = {
+    ...login,
+    atemschutztraeger: [...login.atemschutztraeger, atemschutztraeger],
   };
+  // timing-and-alarm-rules §7.6: the [07]th member stops the Daueralarm, and the Anmeldefenster
+  // waits for OK
+  return withLogin(
+    state,
+    hasEnoughAtemschutztraeger(joined)
+      ? { ...joined, daueralarmSinceRealMs: null }
+      : joined,
+  );
 }
 
 function isInTrupp(

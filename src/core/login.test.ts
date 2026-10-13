@@ -132,10 +132,12 @@ describe("the Anmeldefenster", () => {
     expect(state.login?.anfangsdruckBar).toBe(300);
   });
 
-  // manual 9.1 [07]: a Trupp needs at least two Atemschutzträger
+  // manual 9.1 [07]: a Trupp needs at least two Atemschutzträger; OK starts the login Daueralarm
+  // instead, covered with V19
   it("does not confirm a Trupp of one", () => {
-    const state = anmeldefenster();
-    expect(reduce(state, press("OK"))).toBe(state);
+    const state = reduce(anmeldefenster(), press("OK"));
+    expect(state.screen).toBe("anmeldefenster");
+    expect(state.login?.atemschutztraeger).toHaveLength(1);
   });
 
   // decided in "Define the key-by-screen navigation model"

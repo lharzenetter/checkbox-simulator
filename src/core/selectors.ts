@@ -1,21 +1,37 @@
 import { ALARM_BLINK_PHASE_MS, SICHER_PHASE_MS } from "./parameters";
 import type { Einsatzstatus, State, Trupp, TruppMenueAktion } from "./state";
 
-/** Whether the siren sounds and the LED blinks; decided in "Decide how alarms are presented". */
+/**
+ * Whether the siren sounds and the LED blinks: while an Alarm is pending or a Daueralarm is active.
+ */
+// decided in "Decide how alarms are presented", points 2 and 4
 export function isAlarmSounding(state: State): boolean {
-  return state.pendingAlarms.length > 0;
+  return (
+    state.pendingAlarms.length > 0 || daueralarmSinceRealMs(state) !== null
+  );
+}
+
+// Real time at which the active Daueralarm started; `null` while none is.
+function daueralarmSinceRealMs(state: State): number | null {
+  return (
+    state.login?.daueralarmSinceRealMs ??
+    state.logoff?.daueralarmSinceRealMs ??
+    null
+  );
 }
 
 /**
  * Real milliseconds into the current wail cycle of the siren and the LED: the LED is lit for the
  * first {@link ALARM_BLINK_PHASE_MS}, dark for the second. Cycles run from the moment S12 is
- * entered.
+ * entered, or, while a Daueralarm's own screen is in front, from the moment it started.
  */
 // decided in "Decide how alarms are presented", points 2 and 8
 export function alarmCycleMs(state: State): number {
-  return (
-    (state.realNow - state.screenEnteredRealMs) % (2 * ALARM_BLINK_PHASE_MS)
-  );
+  const startedRealMs =
+    state.screen === "alarm"
+      ? state.screenEnteredRealMs
+      : (daueralarmSinceRealMs(state) ?? state.screenEnteredRealMs);
+  return (state.realNow - startedRealMs) % (2 * ALARM_BLINK_PHASE_MS);
 }
 
 /** Whether the red LED is lit now; it blinks in step with the siren. */

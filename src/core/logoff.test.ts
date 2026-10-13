@@ -81,10 +81,8 @@ describe("opening ABMELDEN", () => {
   it("opens ABMELDEN for the Trupp with the member marked when their Tally is held to Check", () => {
     const state = reduce(truppInAnmarsch(), hold(A2));
     expect(state.screen).toBe("abmelden");
-    expect(state.logoff).toEqual({
-      truppnummer: 1,
-      markedTallyIds: [A2.tallyId],
-    });
+    expect(state.logoff?.truppnummer).toBe(1);
+    expect(state.logoff?.markedTallyIds).toEqual([A2.tallyId]);
   });
   // decided in "Define the key-by-screen navigation model": logoffs still work while 6 Trupps run
   it("opens ABMELDEN while six Trupps run", () => {
@@ -133,11 +131,12 @@ describe("marking on ABMELDEN", () => {
 });
 
 describe("leaving ABMELDEN", () => {
-  // timing-and-alarm-rules §12.7: no logoff with anyone missing; the logoff Daueralarm (§7.3) is
-  // not simulated yet
-  it("does nothing on OK while a member is unmarked", () => {
-    const abmelden = run(truppInAnmarsch(), hold(A1));
-    expect(reduce(abmelden, press("OK"))).toBe(abmelden);
+  // timing-and-alarm-rules §12.7: no logoff with anyone missing; OK starts the logoff Daueralarm
+  // instead, covered with V18
+  it("does not log off while a member is unmarked", () => {
+    const state = run(truppInAnmarsch(), hold(A1), press("OK"));
+    expect(state.screen).toBe("abmelden");
+    expect(state.trupps).toHaveLength(1);
   });
 
   // decided in "Define the key-by-screen navigation model": no auto-logoff

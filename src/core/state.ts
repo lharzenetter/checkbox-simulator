@@ -91,6 +91,8 @@ export interface Login {
   readonly anfangsdruckBar: number;
   /** The value being edited on `Esz-Zeit ändern`; `null` on every other screen. */
   readonly draftFlaschendruckBar: number | null;
+  /** Real time at which the login Daueralarm started; `null` while it is silent. */
+  readonly daueralarmSinceRealMs: number | null;
 }
 
 /** A Trupp being logged off on ABMELDEN. */
@@ -98,6 +100,8 @@ export interface Logoff {
   readonly truppnummer: number;
   /** The Atemschutzträger who have held their Tally to Check, in that order. */
   readonly markedTallyIds: readonly string[];
+  /** Real time at which the logoff Daueralarm started; `null` while it is silent. */
+  readonly daueralarmSinceRealMs: number | null;
 }
 
 /** The Trupp-Menü's items. */
