@@ -55,7 +55,7 @@ A Trupp's current phase: Bereitschaft, Anmarsch, Einsatzziel erreicht, or Rückz
 _Avoid_: state, Status
 
 **Bereitschaft**:
-The Einsatzstatus of a Trupp waiting in a safe area, with its Einsatzzeit paused; leaving it starts a new Anmarsch.
+The Einsatzstatus of a Trupp waiting in a safe area, with its Einsatzzeit paused; with the Rückzugsalarmmodus on, leaving it starts a new Anmarsch.
 _Avoid_: standby, pause
 
 **Einsatzzeit**:
