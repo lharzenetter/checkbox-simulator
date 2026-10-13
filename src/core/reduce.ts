@@ -1,5 +1,5 @@
 import { abschaltzeitRestMs } from "./abschaltzeit";
-import { fireAlarms } from "./alarm";
+import { checkAlarms } from "./alarm";
 import { assertNever } from "./assert-never";
 import type { Event, Key } from "./event";
 import {
@@ -485,7 +485,7 @@ function leaveTruppMenue(
   updated: Trupp,
   screen: Screen,
 ): State {
-  const { trupp: fired, hasFired } = fireAlarms(trupp, updated);
+  const { trupp: fired, hasFired } = checkAlarms(trupp, updated);
   return raiseAlarms(
     enterScreen(
       withTruppMenue(replaceTrupp(state, trupp, fired), null),
@@ -1033,7 +1033,7 @@ function requireLogin(state: State): Login {
 
 function handleTick(state: State, elapsedMs: number): State {
   const checks = state.trupps.map((trupp) =>
-    fireAlarms(trupp, runDown(trupp, elapsedMs)),
+    checkAlarms(trupp, runDown(trupp, elapsedMs)),
   );
   const trupps = checks.map(({ trupp }) => trupp);
   const fired = checks

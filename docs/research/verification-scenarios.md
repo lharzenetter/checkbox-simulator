@@ -174,7 +174,7 @@ Variant, rounding (§5.7): Einsatzziel erreicht at 5:04 instead. `R` = 24:56, so
 | 5:00 | Einsatzziel erreicht, accept (250)       | threshold 15:00                                |
 | 7:00 | Druck ändern, enter 145                  | `R` = 14:30 → Rückzugsalarm on OK              |
 | 7:30 | Druck ändern, enter 155 (raise, 3 steps) | `R` = 15:30, above the threshold again         |
-| 8:31 | —                                        | `R` = 14:59, below again: **no** Rückzugsalarm |
+| 8:01 | —                                        | `R` = 14:59, below again: **no** Rückzugsalarm |
 
 ### V11 — Anmarsch → Rückmarsch skips the Rückzugsalarm; Rückmarsch is final
 

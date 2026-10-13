@@ -8,34 +8,34 @@ import {
   P42_RESERVEDRUCK_BAR,
   P61_ALARMGRENZE_1_EINSATZZEIT_3_PROZENT,
   P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT,
-  P81_FLASCHENTYP_2_BAR,
 } from "./parameters";
+import { computeRestzeitMs } from "./restzeit";
 import type { Trupp } from "./state";
 
+// `trupp` is `after`, with its Rückzugsalarm disarmed once that has fired.
 export interface AlarmCheck {
-  /** `after`, with its Rückzugsalarm disarmed once that has fired. */
   readonly trupp: Trupp;
   readonly hasFired: boolean;
 }
 
-// Whether the Trupp, running down from `before` to `after`, reached a point that fires an Alarm.
+// Whether the Trupp, running down from `before` to `after`, reached a point that fires an Alarm,
+// and the Trupp as it stands once that Alarm has fired.
 // timing-and-alarm-rules §4.7: in Bereitschaft only the Bereitschaft Alarm sounds.
 // ASSUMPTION: an Alarm point a pressure entry passes in Bereitschaft is dropped, not held until
 // `Trupp -> Einsatz`; §4.7 pauses the other Alarms but does not say what happens to one passed
 // while paused (taken in "Repeat overdue and Bereitschaft Alarms", issue #33).
-export function fireAlarms(before: Trupp, after: Trupp): AlarmCheck {
+export function checkAlarms(before: Trupp, after: Trupp): AlarmCheck {
   if (after.einsatzstatus === "bereitschaft") {
     return {
       trupp: after,
       hasFired: hasReachedBereitschaftInterval(before, after),
     };
   }
-  if (hasReachedRueckzugspunkt(after)) {
-    return { trupp: { ...after, rueckzugsalarmArmed: false }, hasFired: true };
-  }
+  const isRueckzugsalarm = isRueckzugsalarmDue(after);
   return {
-    trupp: after,
+    trupp: isRueckzugsalarm ? { ...after, rueckzugsalarmArmed: false } : after,
     hasFired:
+      isRueckzugsalarm ||
       hasReachedAlarmgrenze(before, after) ||
       hasReachedEinsatzzeit(before, after),
   };
@@ -44,7 +44,7 @@ export function fireAlarms(before: Trupp, after: Trupp): AlarmCheck {
 // timing-and-alarm-rules §5.5, 5.6, 5.9, 5.13, 5.14: checked against the current Restzeit, so a
 // Restzeit already at or below the threshold fires at once; disarming it on firing keeps a raise
 // from re-arming it, and only Einsatzziel erreicht arms it, so Rückmarsch never fires it
-function hasReachedRueckzugspunkt(trupp: Trupp): boolean {
+function isRueckzugsalarmDue(trupp: Trupp): boolean {
   if (
     !trupp.rueckzugsalarmArmed ||
     trupp.einsatzstatus !== "einsatzzielErreicht" ||
@@ -52,9 +52,12 @@ function hasReachedRueckzugspunkt(trupp: Trupp): boolean {
   ) {
     return false;
   }
-  const reserveMs =
-    (P42_RESERVEDRUCK_BAR * trupp.einsatzzeitMs) / P81_FLASCHENTYP_2_BAR;
-  return trupp.restzeitMs <= 2 * trupp.anmarschzeitMs + reserveMs;
+  // §5.6: the Reservedruck converts to time like any Flaschendruck (§1.3)
+  const reservedruckMs = computeRestzeitMs(
+    trupp.einsatzzeitMs,
+    P42_RESERVEDRUCK_BAR,
+  );
+  return trupp.restzeitMs <= 2 * trupp.anmarschzeitMs + reservedruckMs;
 }
 
 // timing-and-alarm-rules §4.3, 4.4: every [05] of simulated time since entering Bereitschaft
