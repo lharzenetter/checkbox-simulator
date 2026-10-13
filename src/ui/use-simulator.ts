@@ -1,16 +1,19 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { createInitialState, reduce } from "../core/index";
 import type { Event, State } from "../core/index";
 import {
-  loadDeviceMemory,
+  discardSession,
+  loadStores,
   resetToFactory,
   saveDeviceMemory,
+  saveSession,
 } from "../storage/index";
 import {
   acceptsDeviceKeys,
   pauseClock,
   playClock,
   readClocks,
+  resumeSimulationClock,
   setClockSpeed,
   startSimulationClock,
 } from "../world/index";
@@ -35,27 +38,50 @@ export function useSimulator(): {
   readonly muted: boolean;
   readonly toggleMute: () => void;
   readonly resetToFactory: () => void;
+  // A session saved before the reload waits for "fortsetzen / verwerfen?".
+  readonly sessionChoicePending: boolean;
+  readonly resumeSession: () => void;
+  readonly discardSession: () => void;
 } {
-  const [deviceMemory] = useState(() => loadDeviceMemory(localStorage));
+  const [{ deviceMemory, session }] = useState(() => loadStores(localStorage));
+  // Before the first launch is done no key has reached the device, so there is nothing to resume.
+  const savedSession = deviceMemory.firstLaunchDone ? session : null;
+  const [sessionChoicePending, setSessionChoicePending] = useState(
+    savedSession !== null,
+  );
+  // Off once the stores are cleared for a reload, so nothing is written back before it.
+  const persisting = useRef(true);
   const [vehicles, setVehicles] = useState(deviceMemory.vehicles);
   const [firstLaunchDone, setFirstLaunchDone] = useState(
     deviceMemory.firstLaunchDone,
   );
   const [muted, setMuted] = useState(deviceMemory.muted);
   const [clock, setClock] = useState(() =>
-    startSimulationClock({
-      realNow: performance.now(),
-      uhrzeit: localTimeOfDay(),
-    }),
+    savedSession === null
+      ? startSimulationClock({
+          realNow: performance.now(),
+          uhrzeit: localTimeOfDay(),
+        })
+      : resumeSimulationClock({
+          realNow: performance.now(),
+          clocks: { now: savedSession.now, realNow: savedSession.realNow },
+        }),
   );
-  const [state, dispatchToCore] = useReducer(reduce, clock, (startedClock) =>
-    createInitialState(
-      readClocks(startedClock, performance.now()),
-      deviceMemory.einsatzprotokolle,
-    ),
+  const [state, dispatchToCore] = useReducer(
+    reduce,
+    clock,
+    (startedClock) =>
+      savedSession ??
+      createInitialState(
+        readClocks(startedClock, performance.now()),
+        deviceMemory.einsatzprotokolle,
+      ),
   );
 
   useEffect(() => {
+    if (!persisting.current) {
+      return;
+    }
     saveDeviceMemory(localStorage, {
       vehicles,
       firstLaunchDone,
@@ -63,6 +89,13 @@ export function useSimulator(): {
       einsatzprotokolle: state.einsatzprotokolle,
     });
   }, [vehicles, firstLaunchDone, muted, state.einsatzprotokolle]);
+
+  // Until the Trainee chooses, the saved session stays as it was, so another reload asks again.
+  useEffect(() => {
+    if (persisting.current && !sessionChoicePending) {
+      saveSession(localStorage, state);
+    }
+  }, [state, sessionChoicePending]);
 
   useEffect(() => {
     let frame = requestAnimationFrame(tick);
@@ -123,7 +156,20 @@ export function useSimulator(): {
   // Reloading starts a new session on the cleared storage, so the first-launch dialog returns
   // and the Uhrzeit starts again at the real time of day.
   const resetToFactoryAndReload = useCallback(() => {
+    persisting.current = false;
     resetToFactory(localStorage);
+    location.reload();
+  }, []);
+  // The clock was resumed paused at the saved session; decided in "Decide what survives a page
+  // reload".
+  const resumeSession = useCallback(() => {
+    setSessionChoicePending(false);
+  }, []);
+  // Reloading without the session starts a new one with the Uhrzeit at the real time of day; its
+  // Trupps go without an Einsatzprotokoll. Decided in "Decide what survives a page reload".
+  const discardSessionAndReload = useCallback(() => {
+    persisting.current = false;
+    discardSession(localStorage);
     location.reload();
   }, []);
 
@@ -140,5 +186,8 @@ export function useSimulator(): {
     muted,
     toggleMute,
     resetToFactory: resetToFactoryAndReload,
+    sessionChoicePending,
+    resumeSession,
+    discardSession: discardSessionAndReload,
   };
 }

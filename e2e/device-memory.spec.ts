@@ -34,6 +34,7 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
 
   await page.reload();
   await expect(firstLaunch).toBeHidden();
+  await page.getByRole("button", { name: "Verwerfen" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Ton aus" }),
   ).toBeVisible();
@@ -90,9 +91,9 @@ test("wipe incompatible stored data", async ({ page }) => {
   await expect(
     page.getByRole("dialog", { name: "Willkommen beim Checkbox-Simulator" }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(() =>
-      localStorage.getItem("checkbox-simulator/session"),
-    ),
-  ).toBeNull();
+  // The wiped session is replaced by the new one the first launch begins.
+  const session = await page.evaluate(() =>
+    localStorage.getItem("checkbox-simulator/session"),
+  );
+  expect(JSON.parse(session ?? "{}")).toMatchObject({ trupps: [] });
 });

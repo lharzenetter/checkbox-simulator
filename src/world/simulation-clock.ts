@@ -42,6 +42,28 @@ export function startSimulationClock({
   };
 }
 
+/**
+ * The clock of a session resumed after a reload: paused, holding both clocks where the saved
+ * session stopped. `realNow` is a real monotonic reading of the new page. The time the page was
+ * closed is frozen, never caught up. Decided in "Decide what survives a page reload".
+ */
+export function resumeSimulationClock({
+  realNow,
+  clocks,
+}: {
+  readonly realNow: number;
+  readonly clocks: Clocks;
+}): SimulationClock {
+  // ASSUMPTION: the speed is not part of the saved session, so a resumed session starts at 1×
+  // like a new one; "Decide what survives a page reload" saves only the device core's state.
+  return {
+    speed: 1,
+    paused: true,
+    anchorRealMs: Math.round(realNow),
+    anchor: clocks,
+  };
+}
+
 /** Both clocks for a `tick` at the real reading `realNow`, in whole milliseconds. */
 export function readClocks(clock: SimulationClock, realNow: number): Clocks {
   if (clock.paused) {

@@ -6,6 +6,7 @@ import {
   pauseClock,
   playClock,
   readClocks,
+  resumeSimulationClock,
   setClockSpeed,
   startSimulationClock,
 } from "./index";
@@ -88,6 +89,26 @@ describe("the simulation clock", () => {
     expect(readClocks(resumed, 61_000)).toEqual({
       now: TIME_OF_DAY + 3_000,
       realNow: 2_000,
+    });
+  });
+});
+
+describe("the resumed simulation clock", () => {
+  const SAVED = { now: TIME_OF_DAY + 600_000, realNow: 90_000 };
+
+  // decided in "Decide what survives a page reload": the time the page was closed is frozen
+  it("holds both clocks paused where the saved session stopped", () => {
+    const clock = resumeSimulationClock({ realNow: 3_000.4, clocks: SAVED });
+    expect(clock.paused).toBe(true);
+    expect(readClocks(clock, 50_000)).toEqual(SAVED);
+  });
+
+  it("runs on from the saved clocks on play, never catching up", () => {
+    const clock = resumeSimulationClock({ realNow: 3_000, clocks: SAVED });
+    const playing = playClock(clock, 10_000);
+    expect(readClocks(playing, 11_000)).toEqual({
+      now: SAVED.now + 1_000,
+      realNow: SAVED.realNow + 1_000,
     });
   });
 });

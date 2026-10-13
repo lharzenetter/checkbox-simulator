@@ -7,6 +7,7 @@ import { ClockControls } from "./ClockControls";
 import { FirstLaunchDialog } from "./FirstLaunchDialog";
 import { FrontPanel } from "./FrontPanel";
 import { MuteToggle } from "./MuteToggle";
+import { SessionChoiceDialog } from "./SessionChoiceDialog";
 import { Settings } from "./Settings";
 import { TallyRoster } from "./TallyRoster";
 import { useKeyMap } from "./use-key-map";
@@ -28,6 +29,9 @@ export function App() {
     muted,
     toggleMute,
     resetToFactory,
+    sessionChoicePending,
+    resumeSession,
+    discardSession,
   } = useSimulator();
   const [settingsOpen, setSettingsOpen] = useState(false);
   // decided in "Decide how alarms are presented", points 7 and 8: pause and mute silence only
@@ -69,7 +73,7 @@ export function App() {
     [tapTally],
   );
   useKeyMap({
-    enabled: firstLaunchDone && !settingsOpen,
+    enabled: firstLaunchDone && !sessionChoicePending && !settingsOpen,
     onKeyPressed: pressKey,
     onKeyReleased: releaseKey,
     onTallyKeyPressed: tapTallyAt,
@@ -109,6 +113,12 @@ export function App() {
       </div>
       {!firstLaunchDone && (
         <FirstLaunchDialog vehicles={vehicles} onConfirm={nameVehicles} />
+      )}
+      {sessionChoicePending && (
+        <SessionChoiceDialog
+          onResume={resumeSession}
+          onDiscard={discardSession}
+        />
       )}
       {settingsOpen && (
         <Settings

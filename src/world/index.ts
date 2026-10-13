@@ -13,6 +13,7 @@ export {
   pauseClock,
   playClock,
   readClocks,
+  resumeSimulationClock,
   setClockSpeed,
   SPEEDS,
   startSimulationClock,

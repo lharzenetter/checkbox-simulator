@@ -1,10 +1,7 @@
-import type {
-  Atemschutztraeger,
-  Einsatzprotokoll,
-  Einsatzstatus,
-} from "../core/index";
+import type { Einsatzprotokoll } from "../core/index";
 import { DEFAULT_VEHICLES, isValidVehicle } from "../world/index";
 import type { Vehicle, Vehicles } from "../world/index";
+import { isAtemschutztraeger, isEinsatzstatus, isRecord } from "./parse";
 
 /** What the Checkbox's non-volatile memory keeps until a factory reset. */
 export interface DeviceMemory {
@@ -25,19 +22,12 @@ export const FACTORY_DEVICE_MEMORY: DeviceMemory = {
 };
 
 // Every key the simulator stores starts with this prefix, so a wipe can find the session too.
-const KEY_PREFIX = "checkbox-simulator/";
+export const KEY_PREFIX = "checkbox-simulator/";
 const DEVICE_MEMORY_KEY = `${KEY_PREFIX}device-memory`;
 
 // Raise on any change to the stored shape: older data is then wiped, never migrated (decided in
 // "Decide what survives a page reload").
 const DEVICE_MEMORY_VERSION = 1;
-
-const EINSATZSTATUS_VALUES: readonly Einsatzstatus[] = [
-  "bereitschaft",
-  "anmarsch",
-  "einsatzzielErreicht",
-  "rueckmarsch",
-];
 
 /**
  * Reads the device memory. Stored data the simulator can no longer read is wiped in full,
@@ -126,23 +116,9 @@ function isEinsatzprotokoll(value: unknown): value is Einsatzprotokoll {
     Number.isInteger(value.einsatzzeitMs) &&
     Array.isArray(value.atemschutztraeger) &&
     value.atemschutztraeger.every(isAtemschutztraeger) &&
-    EINSATZSTATUS_VALUES.some(
-      (einsatzstatus) => einsatzstatus === value.einsatzstatus,
-    ) &&
+    isEinsatzstatus(value.einsatzstatus) &&
     typeof value.sicherheitstrupp === "boolean" &&
     Number.isInteger(value.loggedInAtMs) &&
     Number.isInteger(value.loggedOffAtMs)
   );
-}
-
-function isAtemschutztraeger(value: unknown): value is Atemschutztraeger {
-  return (
-    isRecord(value) &&
-    typeof value.tallyId === "string" &&
-    typeof value.name === "string"
-  );
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
