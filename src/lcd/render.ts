@@ -332,7 +332,7 @@ const RESTZEIT_CLOCK = [
   "#....######",
   "#.....#####",
   ".#.....###.",
-  ".#.....###.",
+  ".#......##.",
   "..##...##..",
   "....###....",
 ];
@@ -570,7 +570,9 @@ function drawEinsatzliste(
     if (row === null) {
       return;
     }
-    const textY = top + 4;
+    // Checked against the device: the 13-row Statussymbol keeps one free row to each rule, and
+    // the text sits level with it.
+    const textY = top + 3;
     if (row.selected) {
       fillRect(framebuffer, 1, textY - 2, textWidth(row.truppnummer) + 4, 11);
     }
@@ -589,7 +591,7 @@ function drawEinsatzliste(
         framebuffer,
         row.statussymbol,
         centredInSymbolColumn(statussymbolWidth(row.statussymbol)),
-        top + 1,
+        top,
       );
     }
     drawRightAlignedText(framebuffer, row.restzeit, RESTZEIT_RIGHT, textY);
