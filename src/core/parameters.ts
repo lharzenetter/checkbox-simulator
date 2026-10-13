@@ -27,6 +27,7 @@ export const P04_ALARMGRENZE_2_EINSATZZEIT_1_PROZENT = 66;
 export const P61_ALARMGRENZE_1_EINSATZZEIT_3_PROZENT = 33;
 export const P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT = 66;
 export const P13_TRUPP_DETAILANSICHT_MS = 15_000;
+export const P42_RESERVEDRUCK_BAR = 50;
 export const P73_DRUCK_VERGROESSERBAR_BAR = 5;
 
 // [14] fixes the Atemschutzflaschentyp to Flaschentyp 2, so every cylinder's Nenndruck is [81].

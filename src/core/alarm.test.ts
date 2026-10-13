@@ -328,8 +328,48 @@ describe("the red LED", () => {
   });
 });
 
-// verification-scenarios V6 needs Einsatzziel erreicht and Rückzug antreten, which arrive with
-// issue #31 ("Move a Trupp through its Einsatzstatus").
-describe.todo(
-  "V6: Alarms in every Einsatzstatus; Rückmarsch suppresses only the Rückzugsalarm",
-);
+// verification-scenarios V6 up to 30:00; timing-and-alarm-rules §2.3, 3.5, 5.9, 12.2. The overdue
+// repeat at 35:00 comes with issue #33 ("Repeat overdue and Bereitschaft Alarms").
+describe("V6: Alarms in every Einsatzstatus", () => {
+  // Opens the Trupp-Menü, chooses the item and accepts the editor's value with OK.
+  function accept(state: State, downs: number): State {
+    return run(
+      state,
+      press("OK"),
+      press("OK"),
+      ...Array.from({ length: downs }, () => press("Down")),
+      press("OK"),
+      press("OK"),
+    );
+  }
+
+  it("sounds in Einsatzziel erreicht and in Rückmarsch, and Rückmarsch suppresses the Rückzugsalarm", () => {
+    // Einsatzziel erreicht is the Anmarsch menu's third item
+    let state = accept(run(truppInAnmarsch(), tickAt(3)), 2);
+    expect(state.trupps[0]?.einsatzstatus).toBe("einsatzzielErreicht");
+    expect(restzeitOf(state)).toBe(27 * 60_000);
+
+    state = reduce(state, tickAt(9, 54));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    // Rückzug antreten is the Einsatzziel erreicht menu's third item
+    state = accept(run(state, tickAt(12)), 2);
+    expect(state.trupps[0]?.einsatzstatus).toBe("rueckmarsch");
+    expect(restzeitOf(state)).toBe(18 * 60_000);
+    state = reduce(state, press("X"));
+
+    // R = 11:00 = 2·t_A + t_res
+    state = reduce(state, tickAt(19));
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(11 * 60_000);
+
+    state = reduce(state, tickAt(19, 48));
+    expectAlarmFor(state, 1);
+    state = reduce(state, press("OK"));
+
+    state = reduce(state, tickAt(30));
+    expectAlarmFor(state, 1);
+    expect(state.trupps[0]?.einsatzstatus).toBe("rueckmarsch");
+  });
+});

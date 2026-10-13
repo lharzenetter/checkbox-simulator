@@ -1,3 +1,4 @@
+import { assertNever } from "../core/index";
 import type { Einsatzstatus } from "../core/index";
 import { drawBitmap, drawText, textWidth } from "./framebuffer";
 import type { Framebuffer } from "./framebuffer";
@@ -102,19 +103,112 @@ function drawBereitschaft(
   drawBitmap(framebuffer, HOUSE, left, y);
 }
 
+// Every Atemschutzträger inside the house (H); more than three: the count and one figure inside
+// (L), manual 3.2.2.
+// ASSUMPTION: three Atemschutzträger stand closer to fit the house, extending gap G3 of the LCD
+// screen catalogue as for Bereitschaft.
+function drawEinsatzzielErreicht(
+  framebuffer: Framebuffer,
+  count: number,
+  x: number,
+  y: number,
+): void {
+  const personY = y + SYMBOL_HEIGHT - ATEMSCHUTZTRAEGER.length - 1;
+  const house = drawCount(framebuffer, count, x, y);
+  drawBitmap(framebuffer, HOUSE, house, y);
+  const inside = count > 3 ? 1 : count;
+  for (let index = 0; index < inside; index++) {
+    drawBitmap(
+      framebuffer,
+      ATEMSCHUTZTRAEGER,
+      house + HOUSE_INSIDE_LEFT + index * INSIDE_PITCH,
+      personY,
+    );
+  }
+}
+
+// All but one Atemschutzträger inside the house and the last one leaving on the right (I); more
+// than three: the count, an arrow out of the house and one figure outside on the right (M),
+// manual 3.2.2.
+// ASSUMPTION: three Atemschutzträger draw two inside, extending gap G3 of the LCD screen
+// catalogue as for Bereitschaft.
+function drawRueckmarsch(
+  framebuffer: Framebuffer,
+  count: number,
+  x: number,
+  y: number,
+): void {
+  const personY = y + SYMBOL_HEIGHT - ATEMSCHUTZTRAEGER.length;
+  const house = drawCount(framebuffer, count, x, y);
+  drawBitmap(framebuffer, HOUSE, house, y);
+  if (count > 3) {
+    drawBitmap(framebuffer, ARROW_IN, house + HOUSE_WIDTH - 7, y + 5);
+  } else {
+    for (let index = 0; index < count - 1; index++) {
+      drawBitmap(
+        framebuffer,
+        ATEMSCHUTZTRAEGER,
+        house + HOUSE_INSIDE_LEFT + index * INSIDE_PITCH,
+        personY - 1,
+      );
+    }
+  }
+  drawBitmap(framebuffer, ATEMSCHUTZTRAEGER, house + HOUSE_WIDTH + 1, personY);
+}
+
+const HOUSE_INSIDE_LEFT = 3;
+const INSIDE_PITCH = 5;
+
+// Draws a larger Trupp's `4×` and returns where the house starts.
+function drawCount(
+  framebuffer: Framebuffer,
+  count: number,
+  x: number,
+  y: number,
+): number {
+  if (count <= 3) {
+    return x;
+  }
+  const countText = `${String(count)}×`;
+  drawText(
+    framebuffer,
+    countText,
+    x,
+    y + SYMBOL_HEIGHT - ATEMSCHUTZTRAEGER.length + 1,
+  );
+  return x + textWidth(countText) + 2;
+}
+
 const DRAWERS: Readonly<
   Record<
     Einsatzstatus,
     (framebuffer: Framebuffer, count: number, x: number, y: number) => void
   >
-> = { bereitschaft: drawBereitschaft, anmarsch: drawAnmarsch };
+> = {
+  bereitschaft: drawBereitschaft,
+  anmarsch: drawAnmarsch,
+  einsatzzielErreicht: drawEinsatzzielErreicht,
+  rueckmarsch: drawRueckmarsch,
+};
 
 /** The width {@link drawStatussymbol} draws, for centring it in its column. */
 export function statussymbolWidth(statussymbol: Statussymbol): number {
   const { count, einsatzstatus } = statussymbol;
-  if (count > 3) {
-    return textWidth(`${String(count)}×`) + 2 + PERSON_PITCH + HOUSE_WIDTH;
+  const countWidth = count > 3 ? textWidth(`${String(count)}×`) + 2 : 0;
+  switch (einsatzstatus) {
+    case "bereitschaft":
+      return count > 3
+        ? countWidth + PERSON_PITCH + HOUSE_WIDTH
+        : count * PERSON_PITCH + HOUSE_WIDTH;
+    case "anmarsch":
+      return count > 3
+        ? countWidth + PERSON_PITCH + HOUSE_WIDTH
+        : (count - 1) * PERSON_PITCH + HOUSE_WIDTH;
+    case "einsatzzielErreicht":
+      return countWidth + HOUSE_WIDTH;
+    case "rueckmarsch":
+      return countWidth + HOUSE_WIDTH + PERSON_PITCH;
+    default:
+      return assertNever(einsatzstatus);
   }
-  const outside = einsatzstatus === "bereitschaft" ? count : count - 1;
-  return outside * PERSON_PITCH + HOUSE_WIDTH;
 }

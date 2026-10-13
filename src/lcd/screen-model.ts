@@ -8,6 +8,7 @@ import {
   estimateFlaschendruckBar,
   isSicherShown,
   P81_FLASCHENTYP_2_BAR,
+  rueckzugsdruckBar,
   selectedTrupp,
   truppLoggingOff,
   truppMenueAktionen,
@@ -114,6 +115,8 @@ export type ScreenModel =
       readonly restzeit: string;
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
+      /** `null` while the Trupp has no Anmarschzeit. */
+      readonly rueckzugsdruck: string | null;
       readonly label: string;
     }
   | {
@@ -125,6 +128,8 @@ export type ScreenModel =
       readonly restzeit: string;
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
+      /** `null` while the Trupp has no Anmarschzeit. */
+      readonly rueckzugsdruck: string | null;
       /** `Alarmende mit OK`, in its two lines. */
       readonly prompt: readonly string[];
     }
@@ -180,6 +185,8 @@ const EINSATZLISTE_ROWS = 6;
 const EINSATZSTATUS_HEADERS: Readonly<Record<Einsatzstatus, string>> = {
   bereitschaft: "BEREITSCHAFT",
   anmarsch: "ANMARSCH",
+  einsatzzielErreicht: "EINSATZ",
+  rueckmarsch: "RÜCKMARSCH",
 };
 
 // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
@@ -296,22 +303,41 @@ function flaschendruckAendernModel(login: Login): ScreenModel {
   };
 }
 
-// The same Druck ändern figure, opened from the Trupp-Menü (manual 5.6.4).
+// The same Druck ändern figure, opened from the Trupp-Menü (manual 5.4, 5.6.4, 5.7), titled
+// after the item that opened it.
 function truppFlaschendruckAendernModel(
   trupp: Trupp,
   truppMenue: TruppMenue,
 ): ScreenModel {
   if (truppMenue.draftFlaschendruckBar === null) {
-    throw new Error("Esz-Zeit ändern has no Flaschendruck to edit");
+    throw new Error("The pressure editor has no Flaschendruck to edit");
   }
   return {
     ...flaschendruckEditorModel(
       trupp,
-      "Esz-Zeit ändern",
+      truppFlaschendruckEditorTitle(truppMenue.aktion),
       truppMenue.draftFlaschendruckBar,
     ),
     truppnummer: null,
   };
+}
+
+// decided in "Define the key-by-screen navigation model", its pressure editor table
+function truppFlaschendruckEditorTitle(aktion: TruppMenueAktion): string {
+  switch (aktion) {
+    case "flaschendruckAendern":
+      return "Esz-Zeit ändern";
+    case "einsatzzielErreicht":
+      return "Esz-Ziel erreicht";
+    case "rueckzugAntreten":
+      return "Rückzug antreten";
+    case "truppEinsatz":
+    case "truppBereitschaft":
+    case "attributeEintragen":
+      throw new Error(`${aktion} opens no pressure editor`);
+    default:
+      return assertNever(aktion);
+  }
 }
 
 function flaschendruckEditorModel(
@@ -347,6 +373,7 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
+    rueckzugsdruck: formatRueckzugsdruck(trupp),
     label: "Ansicht",
   };
 }
@@ -362,6 +389,7 @@ function alarmModel(trupp: Trupp): ScreenModel {
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
+    rueckzugsdruck: formatRueckzugsdruck(trupp),
     prompt: ["Alarmende", "mit OK"],
   };
 }
@@ -417,6 +445,12 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
     statussymbol: statussymbolOf(trupp),
     restzeit: formatRestzeit(trupp.restzeitMs),
   };
+}
+
+// manual 3.2.3 item 9, 5.5.3: the box stays empty until the Trupp has an Anmarschzeit
+function formatRueckzugsdruck(trupp: Trupp): string | null {
+  const bar = rueckzugsdruckBar(trupp);
+  return bar === null ? null : formatBar(bar);
 }
 
 function statussymbolOf(trupp: Trupp): Statussymbol {
@@ -497,6 +531,7 @@ export function screenText(model: ScreenModel): readonly string[] {
         ...model.atemschutztraeger,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
+        ...rueckzugsdruckText(model.rueckzugsdruck),
         model.label,
       ];
     case "alarm":
@@ -505,6 +540,7 @@ export function screenText(model: ScreenModel): readonly string[] {
         ...model.atemschutztraeger,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
+        ...rueckzugsdruckText(model.rueckzugsdruck),
         ...model.prompt,
       ];
     case "truppMenue":
@@ -535,6 +571,10 @@ export function screenText(model: ScreenModel): readonly string[] {
   }
 }
 
+function rueckzugsdruckText(rueckzugsdruck: string | null): readonly string[] {
+  return rueckzugsdruck === null ? [] : [`Rückzugsdruck ${rueckzugsdruck}`];
+}
+
 function einsatzlisteRowText(row: EinsatzlisteRow): string {
   const markiert = row.selected ? " markiert" : "";
   const { count, einsatzstatus } = row.statussymbol;
@@ -550,6 +590,8 @@ export const SICHER = "SICHER";
 const EINSATZSTATUS_LABELS: Readonly<Record<Einsatzstatus, string>> = {
   bereitschaft: "Bereitschaft",
   anmarsch: "Anmarsch",
+  einsatzzielErreicht: "Einsatzziel erreicht",
+  rueckmarsch: "Rückmarsch",
 };
 
 // The leading `*` is kept as drawn (LCD screen catalogue, gap G15).

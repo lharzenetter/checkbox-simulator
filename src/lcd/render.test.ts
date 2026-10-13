@@ -233,4 +233,139 @@ describe("the LCD framebuffer", () => {
       ),
     ).toMatchSnapshot();
   });
+
+  // manual 3.2.2: Einsatzziel erreicht (H, L) and Rückmarsch (I, M)
+  it("draws the Einsatzliste with Trupps at their Einsatzziel and in Rückmarsch", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          ...TO_EINSATZZIEL,
+          { type: "tallyHeld", tallyId: "5", name: "LF AT-F" },
+          press("OK"),
+          { type: "tallyHeld", tallyId: "6", name: "LF AT-M" },
+          { type: "tallyHeld", tallyId: "7", name: "LF WT-F" },
+          { type: "tallyHeld", tallyId: "8", name: "LF WT-M" },
+          press("OK"),
+          press("OK"),
+          ...TO_EINSATZZIEL,
+          { type: "tallyHeld", tallyId: "3", name: "HLF WT-F" },
+          press("OK"),
+          { type: "tallyHeld", tallyId: "4", name: "HLF WT-M" },
+          press("OK"),
+          press("OK"),
+          ...TO_RUECKMARSCH,
+          press("X"),
+          { type: "tallyHeld", tallyId: "9", name: "TLF AT-F" },
+          press("OK"),
+          { type: "tallyHeld", tallyId: "10", name: "TLF AT-M" },
+          { type: "tallyHeld", tallyId: "11", name: "TLF WT-F" },
+          { type: "tallyHeld", tallyId: "12", name: "TLF WT-M" },
+          press("OK"),
+          press("OK"),
+          ...TO_RUECKMARSCH,
+          press("X"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 3.2.3, Trupp-Ansicht figure, with its Rückzugsdruck (item 9)
+  it("draws the Trupp-Ansicht at the Einsatzziel with the Rückzugsdruck", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          {
+            type: "tick",
+            now: FIGURE_UHRZEIT + 5 * 60_000,
+            realNow: 5 * 60_000,
+          },
+          ...TO_EINSATZZIEL,
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.7 step 5, RÜCKMARSCH figure
+  it("draws the Trupp-Ansicht in RÜCKMARSCH", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          {
+            type: "tick",
+            now: FIGURE_UHRZEIT + 5 * 60_000,
+            realNow: 5 * 60_000,
+          },
+          ...TO_EINSATZZIEL,
+          press("OK"),
+          press("OK"),
+          press("Down"),
+          press("Down"),
+          press("OK"),
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.6.2, Trupp-Menü figure (EINSATZ)
+  it("draws the Trupp-Menü of a Trupp at its Einsatzziel", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          ...TO_EINSATZZIEL,
+          press("OK"),
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.4 step 5, Esz-Ziel erreicht figure
+  it("draws Esz-Ziel erreicht", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          press("OK"),
+          press("OK"),
+          press("Down"),
+          press("Down"),
+          press("OK"),
+          press("Down"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
 });
+
+// From the Einsatzliste: Trupp-Ansicht, Trupp-Menü, `Einsatzziel erreicht`, accept.
+const TO_EINSATZZIEL = [
+  press("OK"),
+  press("OK"),
+  press("Down"),
+  press("Down"),
+  press("OK"),
+  press("OK"),
+] as const;
+
+// From the Einsatzliste: Trupp-Ansicht, Trupp-Menü, `Rückzug antreten`, accept; it ends on the
+// Trupp-Ansicht.
+const TO_RUECKMARSCH = [
+  press("OK"),
+  press("OK"),
+  press("Down"),
+  press("Down"),
+  press("Down"),
+  press("OK"),
+  press("OK"),
+] as const;

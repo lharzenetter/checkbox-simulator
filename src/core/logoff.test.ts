@@ -41,6 +41,28 @@ function truppInAnmarsch(): State {
   );
 }
 
+/** Trupp 01 at its Einsatzziel, its Restzeit accepted unchanged, on the Einsatzliste. */
+function truppAtEinsatzziel(): State {
+  return chooseInTruppMenue(truppInAnmarsch(), 2);
+}
+
+/** Trupp 01 straight from Anmarsch into Rückmarsch, back on the Einsatzliste. */
+function truppInRueckmarsch(): State {
+  return reduce(chooseInTruppMenue(truppInAnmarsch(), 3), press("X"));
+}
+
+// Opens the Trupp-Menü, moves down to the item and accepts its pressure editor with OK.
+function chooseInTruppMenue(state: State, downs: number): State {
+  return run(
+    state,
+    press("OK"),
+    press("OK"),
+    ...Array.from({ length: downs }, () => press("Down")),
+    press("OK"),
+    press("OK"),
+  );
+}
+
 /** Trupp 01 of A1 and A2, logged in to Bereitschaft, on the Einsatzliste. */
 function truppInBereitschaft(): State {
   return run(
@@ -140,9 +162,11 @@ describe("leaving ABMELDEN", () => {
   });
 });
 
-// timing-and-alarm-rules §12.7; verification scenario V17, for the Einsatzstatus values that exist
+// timing-and-alarm-rules §12.7; verification scenario V17
 describe.each([
   { einsatzstatus: "anmarsch", truppInStatus: truppInAnmarsch },
+  { einsatzstatus: "einsatzzielErreicht", truppInStatus: truppAtEinsatzziel },
+  { einsatzstatus: "rueckmarsch", truppInStatus: truppInRueckmarsch },
   { einsatzstatus: "bereitschaft", truppInStatus: truppInBereitschaft },
 ])(
   "logging off a Trupp in $einsatzstatus",
@@ -153,6 +177,13 @@ describe.each([
       const later = run(running, tickAfter(running, 9 * 60_000));
       return run(later, hold(A1), hold(A2), press("OK"));
     }
+
+    it("fires none of its Alarms afterwards", () => {
+      const state = loggedOff();
+      const later = reduce(state, tickAfter(state, 30 * 60_000));
+      expect(later.pendingAlarms).toEqual([]);
+      expect(later.screen).not.toBe("alarm");
+    });
 
     it("removes the Trupp from the Einsatzliste", () => {
       const state = loggedOff();

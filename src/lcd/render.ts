@@ -191,20 +191,13 @@ function drawTruppAnsicht(
   model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  // ASSUMPTION: the Rückzugsdruck box is left out until the Rückzugsalarm is simulated
-  // (manual 3.2.3 item 9), and the Statussymbol, which the figure does not draw, takes its place
-  // as issue #30 asks.
+  // ASSUMPTION: the Statussymbol, which the figure does not draw, sits right of the names, as
+  // issue #30 asks, leaving its box to the Rückzugsdruck (manual 3.2.3 item 9).
   drawStatussymbol(
     framebuffer,
     model.statussymbol,
-    Math.floor(
-      (ANSICHT_DIVIDER_X +
-        1 +
-        LCD_WIDTH -
-        statussymbolWidth(model.statussymbol)) /
-        2,
-    ),
-    93,
+    LCD_WIDTH - 1 - statussymbolWidth(model.statussymbol),
+    17,
   );
   fillRect(
     framebuffer,
@@ -224,15 +217,13 @@ function drawTruppAnsicht(
   );
 }
 
-// Laid out after the ALARM figure (manual 5.5.3): the Trupp-Ansicht with an empty Rückzugsdruck
-// box under its ↓↑ mark and `Alarmende mit OK` in place of the `Ansicht` label.
+// Laid out after the ALARM figure (manual 5.5.3): the Trupp-Ansicht with `Alarmende mit OK` in
+// place of the `Ansicht` label.
 function drawAlarm(
   framebuffer: Framebuffer,
   model: Extract<ScreenModel, { layout: "alarm" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  drawBitmap(framebuffer, RUECKZUG_ARROWS, panelIconX() - 1, 85);
-  strokeRect(framebuffer, VALUE_BOX_X, 94, VALUE_BOX_WIDTH, 11);
   model.prompt.forEach((line, index) => {
     drawText(
       framebuffer,
@@ -269,6 +260,7 @@ function drawTruppPanels(
     readonly flaschendruck: string;
     readonly restzeit: string;
     readonly fillLevel: number;
+    readonly rueckzugsdruck: string | null;
   },
 ): void {
   drawText(framebuffer, model.title, 1, 2);
@@ -286,6 +278,9 @@ function drawTruppPanels(
   drawValueBox(framebuffer, model.flaschendruck, 45);
   drawBitmap(framebuffer, CLOCK, panelIconX() - 1, 60);
   drawValueBox(framebuffer, model.restzeit, 69);
+  // manual 3.2.3 item 9, 5.5.3: the box is drawn empty until there is a Rückzugsdruck
+  drawBitmap(framebuffer, RUECKZUG_ARROWS, panelIconX() - 1, 85);
+  drawValueBox(framebuffer, model.rueckzugsdruck ?? "", 94);
 }
 
 function drawLines(

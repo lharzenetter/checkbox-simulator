@@ -13,7 +13,10 @@ export type Screen =
   | "truppAnsicht"
   /** S09, for the selected Trupp. */
   | "truppMenue"
-  /** The Flaschendruck editor `Esz-Zeit ändern`, opened by `Druck ändern` on the Trupp-Menü. */
+  /**
+   * The Flaschendruck editor opened from the Trupp-Menü by `Druck ändern`, `Einsatzziel erreicht`
+   * or `Rückzug antreten`; the Trupp-Menü's item says which.
+   */
   | "truppFlaschendruckAendern"
   /** S13 Trupp ABMELDEN. */
   | "abmelden"
@@ -26,8 +29,8 @@ export interface Atemschutztraeger {
   readonly name: string;
 }
 
-/** The Einsatzstatus values simulated so far. */
-export type Einsatzstatus = "bereitschaft" | "anmarsch";
+export type Einsatzstatus =
+  "bereitschaft" | "anmarsch" | "einsatzzielErreicht" | "rueckmarsch";
 
 /** A logged-in Trupp. */
 export interface Trupp {
@@ -40,6 +43,10 @@ export interface Trupp {
   readonly restzeitMs: number;
   /** Simulated time the Einsatz has run, Bereitschaft excluded: `t_run`, timing-and-alarm-rules. */
   readonly runningTimeMs: number;
+  /** The running time at which the current Anmarsch began. */
+  readonly anmarschBeganAtRunningTimeMs: number;
+  /** `t_A` of the current Anmarsch, once it reported Einsatzziel erreicht; `null` before. */
+  readonly anmarschzeitMs: number | null;
   readonly loggedInAtMs: number;
 }
 
@@ -96,9 +103,9 @@ export type TruppMenueAktion =
 
 /** The Trupp-Menü open for the selected Trupp, and the editors it opens. */
 export interface TruppMenue {
-  /** The item under the cursor. */
+  /** The item under the cursor, and the one that opened the pressure editor. */
   readonly aktion: TruppMenueAktion;
-  /** The value being edited on `Esz-Zeit ändern`; `null` on the Trupp-Menü. */
+  /** The value being edited in the pressure editor; `null` on the Trupp-Menü. */
   readonly draftFlaschendruckBar: number | null;
 }
 

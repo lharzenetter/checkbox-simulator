@@ -91,6 +91,19 @@ const TRUPP_MENUE_AKTIONEN: Readonly<
     "flaschendruckAendern",
     "attributeEintragen",
   ],
+  einsatzzielErreicht: [
+    "truppEinsatz",
+    "truppBereitschaft",
+    "rueckzugAntreten",
+    "flaschendruckAendern",
+    "attributeEintragen",
+  ],
+  rueckmarsch: [
+    "truppEinsatz",
+    "truppBereitschaft",
+    "flaschendruckAendern",
+    "attributeEintragen",
+  ],
   bereitschaft: [
     "truppEinsatz",
     "truppBereitschaft",

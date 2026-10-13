@@ -668,3 +668,160 @@ describe("S12 Trupp ALARM", () => {
     expect(model).toMatchObject({ fillLevel: 0 });
   });
 });
+
+describe("the Einsatzstatus screens", () => {
+  const TRUPP_01 = [
+    HLF_AT_F,
+    press("OK"),
+    HLF_AT_M,
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  function at(minutes: number): Event {
+    return {
+      type: "tick",
+      now: FIGURE_UHRZEIT + minutes * 60_000,
+      realNow: minutes * 60_000,
+    };
+  }
+
+  // Opens the Trupp-Menü and moves down to the item.
+  function truppMenueAt(downs: number): readonly Event[] {
+    return [
+      press("OK"),
+      press("OK"),
+      ...Array.from({ length: downs }, () => press("Down")),
+    ];
+  }
+
+  // Einsatzziel erreicht at 5:00, accepted at 250 bar
+  const EINSATZZIEL = [
+    ...TRUPP_01,
+    at(5),
+    ...truppMenueAt(2),
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // Anmarsch → Rückmarsch at 6:00, accepted at 240 bar
+  const RUECKMARSCH = [
+    ...TRUPP_01,
+    at(6),
+    ...truppMenueAt(3),
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // manual 5.4 step 5, Esz-Ziel erreicht figure; decided in "Define the key-by-screen navigation
+  // model", its pressure editor table
+  it("titles the Einsatzziel erreicht editor `Esz-Ziel erreicht`", () => {
+    const model = screenModel(
+      stateAfter(...TRUPP_01, at(5), ...truppMenueAt(2), press("OK")),
+    );
+    expect(screenText(model)).toEqual([
+      "Esz-Ziel erreicht",
+      "Flasche: 300 bar",
+      "Druck 250 bar",
+      "Restzeit 00:25:00",
+    ]);
+    expect(model).toMatchObject({
+      layout: "flaschendruckEditor",
+      truppnummer: null,
+    });
+  });
+
+  // manual 5.7; decided in "Define the key-by-screen navigation model", its pressure editor table
+  it("titles the Rückzug antreten editor `Rückzug antreten`", () => {
+    const model = screenModel(
+      stateAfter(...TRUPP_01, at(6), ...truppMenueAt(3), press("OK")),
+    );
+    expect(screenText(model)[0]).toBe("Rückzug antreten");
+  });
+
+  // manual 5.6.2, Trupp-Menü figure (EINSATZ); decided in "Define the key-by-screen navigation
+  // model", its Trupp-Menü table
+  it("heads the Trupp-Menü at the Einsatzziel `EINSATZ` with its items", () => {
+    const model = screenModel(stateAfter(...EINSATZZIEL, ...truppMenueAt(0)));
+    expect(model).toMatchObject({
+      layout: "truppMenue",
+      title: "Trupp 01 EINSATZ",
+      items: [
+        "Trupp -> Einsatz",
+        "Trupp -> Bereitschaft",
+        "Rückzug antreten",
+        "Druck ändern",
+      ],
+    });
+  });
+
+  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
+  it("heads the Trupp-Menü in Rückmarsch `RÜCKMARSCH` with its items", () => {
+    const model = screenModel(
+      // the editor left the Trupp-Ansicht open, so one OK opens the Trupp-Menü
+      stateAfter(...RUECKMARSCH, press("OK")),
+    );
+    expect(model).toMatchObject({
+      layout: "truppMenue",
+      title: "Trupp 01 RÜCKMARSCH",
+      items: [
+        "Trupp -> Einsatz",
+        "Trupp -> Bereitschaft",
+        "Druck ändern",
+        "Attribute eintragen",
+      ],
+    });
+  });
+
+  // manual 5.7 step 5, RÜCKMARSCH figure; decided in "Define the key-by-screen navigation model":
+  // the editor returns to the Trupp-Ansicht in RÜCKMARSCH; timing-and-alarm-rules §5.10
+  it("shows the Trupp-Ansicht in `RÜCKMARSCH` without a Rückzugsdruck after Anmarsch", () => {
+    const model = screenModel(stateAfter(...RUECKMARSCH));
+    expect(screenText(model)).toEqual([
+      "Trupp 01 RÜCKMARSCH",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Druck 240 bar",
+      "Restzeit 00:24:00",
+      "Ansicht",
+    ]);
+    expect(model).toMatchObject({
+      statussymbol: { einsatzstatus: "rueckmarsch", count: 2 },
+      rueckzugsdruck: null,
+    });
+  });
+
+  // manual 3.2.3 item 9; timing-and-alarm-rules §5.7; verification scenario V7
+  it("shows the Rückzugsdruck on the Trupp-Ansicht once the Einsatzziel is reached", () => {
+    const model = screenModel(stateAfter(...EINSATZZIEL, press("OK")));
+    expect(screenText(model)).toEqual([
+      "Trupp 01 EINSATZ",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Druck 250 bar",
+      "Restzeit 00:25:00",
+      "Rückzugsdruck 150 bar",
+      "Ansicht",
+    ]);
+    expect(model).toMatchObject({
+      statussymbol: { einsatzstatus: "einsatzzielErreicht", count: 2 },
+    });
+  });
+
+  // manual 3.2.3 item 9: the Anmarsch has no Anmarschzeit yet (timing-and-alarm-rules §5.13)
+  it("shows no Rückzugsdruck on the Trupp-Ansicht in Anmarsch", () => {
+    expect(screenModel(stateAfter(...TRUPP_01, press("OK")))).toMatchObject({
+      rueckzugsdruck: null,
+    });
+  });
+
+  // manual 3.2.2
+  it("lists the Einsatzstatus of each Trupp on the Einsatzliste", () => {
+    expect(screenText(screenModel(stateAfter(...EINSATZZIEL)))).toContain(
+      "01 markiert  2× Einsatzziel erreicht  00:25:00",
+    );
+    expect(
+      screenText(screenModel(stateAfter(...RUECKMARSCH, press("X")))),
+    ).toContain("01 markiert  2× Rückmarsch  00:24:00");
+  });
+});

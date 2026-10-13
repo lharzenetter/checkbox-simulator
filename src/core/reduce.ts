@@ -191,8 +191,7 @@ function handleTruppAnsichtKey(state: State, key: Key): State {
   }
 }
 
-// decided in "Define the key-by-screen navigation model"; the status-changing items come with
-// the Einsatzstatus transitions, and `Attribute eintragen` is inert
+// decided in "Define the key-by-screen navigation model"; `Attribute eintragen` is inert
 function handleTruppMenueKey(state: State, key: Key): State {
   const truppMenue = requireTruppMenue(state);
   switch (key) {
@@ -205,17 +204,7 @@ function handleTruppMenueKey(state: State, key: Key): State {
     case "X":
       return enterScreen(withTruppMenue(state, null), "truppAnsicht");
     case "OK":
-      return truppMenue.aktion === "flaschendruckAendern"
-        ? enterScreen(
-            withTruppMenue(state, {
-              ...truppMenue,
-              draftFlaschendruckBar: snapToFlaschendruckGrid(
-                estimateFlaschendruckBar(selectedTrupp(state)),
-              ),
-            }),
-            "truppFlaschendruckAendern",
-          )
-        : state;
+      return chooseTruppMenueAktion(state, truppMenue);
     case "Check":
       return state;
     default:
@@ -223,8 +212,63 @@ function handleTruppMenueKey(state: State, key: Key): State {
   }
 }
 
+// decided in "Define the key-by-screen navigation model", its Trupp-Menü and pressure editor
+// tables; timing-and-alarm-rules §12.5
+function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
+  switch (truppMenue.aktion) {
+    case "truppEinsatz":
+    case "truppBereitschaft":
+      return enterScreen(
+        withTruppMenue(
+          changeEinsatzstatus(state, selectedTrupp(state), truppMenue.aktion),
+          null,
+        ),
+        "einsatzliste",
+      );
+    case "einsatzzielErreicht":
+    case "rueckzugAntreten":
+    case "flaschendruckAendern":
+      return enterScreen(
+        withTruppMenue(state, {
+          ...truppMenue,
+          draftFlaschendruckBar: snapToFlaschendruckGrid(
+            estimateFlaschendruckBar(selectedTrupp(state)),
+          ),
+        }),
+        "truppFlaschendruckAendern",
+      );
+    case "attributeEintragen":
+      return state;
+    default:
+      return assertNever(truppMenue.aktion);
+  }
+}
+
+// timing-and-alarm-rules §4.1, 4.6, 5.15, 12.3, 12.4, 12.5: Bereitschaft is a safe area, so
+// `Trupp -> Einsatz` starts a new Anmarsch, and choosing the current status changes nothing
+function changeEinsatzstatus(
+  state: State,
+  trupp: Trupp,
+  aktion: "truppEinsatz" | "truppBereitschaft",
+): State {
+  const isBereitschaft = trupp.einsatzstatus === "bereitschaft";
+  if (aktion === "truppBereitschaft") {
+    return isBereitschaft
+      ? state
+      : replaceTrupp(state, trupp, { ...trupp, einsatzstatus: "bereitschaft" });
+  }
+  return isBereitschaft
+    ? replaceTrupp(state, trupp, {
+        ...trupp,
+        einsatzstatus: "anmarsch",
+        anmarschBeganAtRunningTimeMs: trupp.runningTimeMs,
+        anmarschzeitMs: null,
+      })
+    : state;
+}
+
 // decided in "Define the key-by-screen navigation model": OK enters the Flaschendruck, X keeps
-// the old one
+// the old one and the Einsatzstatus
 function handleTruppFlaschendruckAendernKey(state: State, key: Key): State {
   const truppMenue = requireTruppMenue(state);
   const draftFlaschendruckBar = requireTruppDraftFlaschendruck(truppMenue);
@@ -236,17 +280,7 @@ function handleTruppFlaschendruckAendernKey(state: State, key: Key): State {
         draftFlaschendruckBar: changeFlaschendruck(draftFlaschendruckBar, key),
       });
     case "OK":
-      return enterScreen(
-        withTruppMenue(
-          enterFlaschendruck(
-            state,
-            selectedTrupp(state),
-            draftFlaschendruckBar,
-          ),
-          null,
-        ),
-        "einsatzliste",
-      );
+      return confirmFlaschendruck(state, truppMenue, draftFlaschendruckBar);
     case "X":
       return enterScreen(
         withTruppMenue(state, { ...truppMenue, draftFlaschendruckBar: null }),
@@ -280,16 +314,71 @@ function changeFlaschendruck(
     : Math.max(flaschendruckBar - P76_DRUCK_SPRUNGGROESSE_BAR, 0);
 }
 
-// timing-and-alarm-rules §1.4
-function enterFlaschendruck(
+// decided in "Define the key-by-screen navigation model", its pressure editor table: Rückzug
+// antreten shows the Trupp in RÜCKMARSCH, the others return to the Einsatzliste
+function confirmFlaschendruck(
   state: State,
-  trupp: Trupp,
+  truppMenue: TruppMenue,
   flaschendruckBar: number,
 ): State {
-  const updated: Trupp = {
+  const trupp = selectedTrupp(state);
+  const entered = enterFlaschendruck(trupp, flaschendruckBar);
+  switch (truppMenue.aktion) {
+    case "einsatzzielErreicht":
+      return leaveTruppMenue(
+        state,
+        trupp,
+        reachEinsatzziel(entered),
+        "einsatzliste",
+      );
+    case "rueckzugAntreten":
+      return leaveTruppMenue(
+        state,
+        trupp,
+        { ...entered, einsatzstatus: "rueckmarsch" },
+        "truppAnsicht",
+      );
+    case "flaschendruckAendern":
+      return leaveTruppMenue(state, trupp, entered, "einsatzliste");
+    case "truppEinsatz":
+    case "truppBereitschaft":
+    case "attributeEintragen":
+      throw new Error(`${truppMenue.aktion} opens no pressure editor`);
+    default:
+      return assertNever(truppMenue.aktion);
+  }
+}
+
+function leaveTruppMenue(
+  state: State,
+  trupp: Trupp,
+  updated: Trupp,
+  screen: Screen,
+): State {
+  return enterScreen(
+    withTruppMenue(replaceTrupp(state, trupp, updated), null),
+    screen,
+  );
+}
+
+// timing-and-alarm-rules §1.4
+function enterFlaschendruck(trupp: Trupp, flaschendruckBar: number): Trupp {
+  return {
     ...trupp,
     restzeitMs: computeRestzeitMs(trupp.einsatzzeitMs, flaschendruckBar),
   };
+}
+
+// timing-and-alarm-rules §5.4, 5.15: `t_A` is measured from the start of the current Anmarsch
+function reachEinsatzziel(trupp: Trupp): Trupp {
+  return {
+    ...trupp,
+    einsatzstatus: "einsatzzielErreicht",
+    anmarschzeitMs: trupp.runningTimeMs - trupp.anmarschBeganAtRunningTimeMs,
+  };
+}
+
+function replaceTrupp(state: State, trupp: Trupp, updated: Trupp): State {
   return {
     ...state,
     trupps: state.trupps.map((candidate) =>
@@ -539,6 +628,8 @@ function logIn(state: State, login: Login): State {
     sicherheitstrupp: login.anmeldeaktion === "sicherheitstruppOk",
     restzeitMs: computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
     runningTimeMs: 0,
+    anmarschBeganAtRunningTimeMs: 0,
+    anmarschzeitMs: null,
     loggedInAtMs: state.now,
   };
   return enterScreen(

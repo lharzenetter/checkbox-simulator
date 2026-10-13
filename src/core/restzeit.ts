@@ -1,4 +1,5 @@
 import {
+  P42_RESERVEDRUCK_BAR,
   P76_DRUCK_SPRUNGGROESSE_BAR,
   P81_FLASCHENTYP_2_BAR,
 } from "./parameters";
@@ -30,5 +31,19 @@ export function snapToFlaschendruckGrid(flaschendruckBar: number): number {
   return (
     Math.floor(flaschendruckBar / P76_DRUCK_SPRUNGGROESSE_BAR) *
     P76_DRUCK_SPRUNGGROESSE_BAR
+  );
+}
+
+/**
+ * The Rückzugsdruck the Trupp-Ansicht shows: `[42] + 2·t_A × P_N / T` in whole bar, rounded
+ * down, timing-and-alarm-rules §5.7; `null` while the Trupp has no Anmarschzeit.
+ */
+export function rueckzugsdruckBar(trupp: Trupp): number | null {
+  if (trupp.anmarschzeitMs === null) {
+    return null;
+  }
+  return Math.floor(
+    P42_RESERVEDRUCK_BAR +
+      (2 * trupp.anmarschzeitMs * P81_FLASCHENTYP_2_BAR) / trupp.einsatzzeitMs,
   );
 }
