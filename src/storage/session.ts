@@ -16,7 +16,7 @@ import {
   isEinsatzstatus,
   isMemberOf,
   isRecord,
-} from "./parse";
+} from "./guards";
 
 /** Both stores as a page load finds them. */
 export interface Stores {

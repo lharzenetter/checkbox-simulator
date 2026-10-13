@@ -12,12 +12,12 @@ export function SessionChoiceDialog({
   onDiscard: () => void;
 }) {
   return (
-    <ModalDialog title="Laufenden Einsatz fortsetzen?">
+    <ModalDialog title="Letzte Sitzung fortsetzen?">
       <p>
-        Vor dem Neuladen lief noch ein Einsatz. Beim Fortsetzen geht es
-        angehalten an derselben Stelle weiter. Beim Verwerfen werden die
-        angemeldeten Trupps ohne Einsatzprotokoll gelöscht; die Fahrzeugnamen
-        und Einsatzprotokolle bleiben erhalten.
+        Die Checkbox hat den Stand vor dem Neuladen behalten. Beim Fortsetzen
+        geht es angehalten an derselben Stelle weiter. Beim Verwerfen werden
+        angemeldete Trupps ohne Einsatzprotokoll gelöscht; die Fahrzeugnamen und
+        Einsatzprotokolle bleiben erhalten.
       </p>
       <div className={styles.actions}>
         <button type="button" className={styles.choice} onClick={onResume}>

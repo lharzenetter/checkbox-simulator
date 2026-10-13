@@ -38,7 +38,8 @@ export function useSimulator(): {
   readonly muted: boolean;
   readonly toggleMute: () => void;
   readonly resetToFactory: () => void;
-  // A session saved before the reload waits for "fortsetzen / verwerfen?".
+  // A session saved before the reload waits for "fortsetzen / verwerfen?". The key map is off
+  // meanwhile and so releases every key, so keys held when it was saved are not held on play.
   readonly sessionChoicePending: boolean;
   readonly resumeSession: () => void;
   readonly discardSession: () => void;
@@ -165,8 +166,8 @@ export function useSimulator(): {
   const resumeSession = useCallback(() => {
     setSessionChoicePending(false);
   }, []);
-  // Reloading without the session starts a new one with the Uhrzeit at the real time of day; its
-  // Trupps go without an Einsatzprotokoll. Decided in "Decide what survives a page reload".
+  // Reloading without the session starts a new one; decided in "Decide what survives a page
+  // reload".
   const discardSessionAndReload = useCallback(() => {
     persisting.current = false;
     discardSession(localStorage);

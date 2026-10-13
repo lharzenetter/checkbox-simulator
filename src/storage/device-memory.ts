@@ -1,7 +1,7 @@
 import type { Einsatzprotokoll } from "../core/index";
 import { DEFAULT_VEHICLES, isValidVehicle } from "../world/index";
 import type { Vehicle, Vehicles } from "../world/index";
-import { isAtemschutztraeger, isEinsatzstatus, isRecord } from "./parse";
+import { isAtemschutztraeger, isEinsatzstatus, isRecord } from "./guards";
 
 /** What the Checkbox's non-volatile memory keeps until a factory reset. */
 export interface DeviceMemory {

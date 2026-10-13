@@ -9,7 +9,7 @@ async function logInTrupp(page: Page): Promise<void> {
 }
 
 function sessionDialog(page: Page) {
-  return page.getByRole("dialog", { name: "Laufenden Einsatz fortsetzen?" });
+  return page.getByRole("dialog", { name: "Letzte Sitzung fortsetzen?" });
 }
 
 test("resume the running session paused after a reload", async ({ page }) => {
@@ -81,8 +81,14 @@ test("discard the running session after a reload", async ({ page }) => {
     einsatzprotokolle: readonly unknown[];
   };
   expect(einsatzprotokolle).toHaveLength(1);
-  const { trupps } = JSON.parse(stored.session ?? "{}") as {
+  const { trupps, now } = JSON.parse(stored.session ?? "{}") as {
     trupps: readonly unknown[];
+    now: number;
   };
   expect(trupps).toEqual([]);
+  // The new session's Uhrzeit is the real local time of day, as the core counts it.
+  const timeOfDay = await page.evaluate(
+    () => Date.now() - new Date().getTimezoneOffset() * 60_000,
+  );
+  expect(Math.abs(timeOfDay - now)).toBeLessThan(60_000);
 });
