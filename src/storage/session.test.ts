@@ -203,6 +203,28 @@ describe("incompatible stored session data", () => {
       "has an unknown key held for the Notausschaltung",
       sessionJson({ notausschaltungKeysHeld: ["OK"] }),
     ],
+    ["shows S12 with no Alarm pending", sessionJson({ pendingAlarms: [] })],
+    [
+      "has an Alarm pending for no logged-in Trupp",
+      sessionJson({ pendingAlarms: [2, 5] }),
+    ],
+    [
+      "has a Trupp with an Einsatzzeit the device does not offer",
+      sessionJson({
+        trupps: MID_EINSATZ.trupps.map((trupp) => ({
+          ...trupp,
+          einsatzzeitMs: 3_600_000,
+        })),
+      }),
+    ],
+    [
+      "shows the Anmeldefenster without a login",
+      sessionJson({ screen: "anmeldefenster", login: null }),
+    ],
+    [
+      "shows the Trupp-Menü without a Trupp selected",
+      sessionJson({ screen: "truppMenue", selectedTruppnummer: null }),
+    ],
   ])("is wiped with the device memory when it %s", (_, stored) => {
     const storage = storageWith({
       [SESSION_KEY]: stored,

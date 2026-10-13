@@ -9,6 +9,7 @@ import type {
   TruppMenue,
   TruppMenueAktion,
 } from "../core/index";
+import { assertNever, EINSATZZEITEN_MS } from "../core/index";
 import { KEY_PREFIX, loadDeviceMemory, resetToFactory } from "./device-memory";
 import type { DeviceMemory } from "./device-memory";
 import {
@@ -70,6 +71,16 @@ const NOTAUSSCHALTUNG_AKTIONEN: Readonly<Record<NotausschaltungAktion, true>> =
     markierterTrupp: true,
     alleTrupps: true,
     zurueck: true,
+  };
+// decided in "Define the key-by-screen navigation model", its pressure editor table
+const OPENS_FLASCHENDRUCK_EDITOR: Readonly<Record<TruppMenueAktion, boolean>> =
+  {
+    truppEinsatz: false,
+    truppBereitschaft: false,
+    einsatzzielErreicht: true,
+    rueckzugAntreten: true,
+    flaschendruckAendern: true,
+    attributeEintragen: false,
   };
 const NOTAUSSCHALTUNG_KEYS: Readonly<Record<"X" | "Check", true>> = {
   X: true,
@@ -175,7 +186,7 @@ function parseSession(
   ) {
     return null;
   }
-  return {
+  const session: State = {
     screen,
     now,
     realNow,
@@ -193,6 +204,88 @@ function parseSession(
     notausschaltungHeldSinceRealMs,
     notausschaltung,
   };
+  return isConsistent(session) ? session : null;
+}
+
+// The core and the LCD throw on a state that breaks these, so such a session is as unreadable as
+// a malformed one and is wiped in full (decided in "Decide what survives a page reload").
+function isConsistent(state: State): boolean {
+  return (
+    state.trupps.every(({ einsatzzeitMs }) =>
+      EINSATZZEITEN_MS.some((offered) => offered === einsatzzeitMs),
+    ) &&
+    state.pendingAlarms.every((truppnummer) =>
+      namesTrupp(state, truppnummer),
+    ) &&
+    (state.selectedTruppnummer === null ||
+      namesTrupp(state, state.selectedTruppnummer)) &&
+    hasScreenSubState(state)
+  );
+}
+
+function hasScreenSubState(state: State): boolean {
+  switch (state.screen) {
+    case "aus":
+    case "startdisplay":
+    case "service":
+    case "einsatzliste":
+      return true;
+    case "einsatzzeitWaehlen":
+    case "anmeldefenster":
+    case "anfangsdruckEditor":
+      return state.login !== null;
+    case "flaschendruckAendern":
+      return state.login !== null && state.login.draftFlaschendruckBar !== null;
+    case "truppAnsicht":
+      return state.selectedTruppnummer !== null;
+    case "truppMenue":
+      return state.selectedTruppnummer !== null && state.truppMenue !== null;
+    case "truppFlaschendruckAendern":
+      return (
+        state.selectedTruppnummer !== null &&
+        state.truppMenue !== null &&
+        hasFlaschendruckEditor(state.truppMenue)
+      );
+    case "abmelden":
+      return (
+        state.logoff !== null && namesTrupp(state, state.logoff.truppnummer)
+      );
+    // The last OK shows the interrupted screen again, so it must be one that can be shown.
+    case "alarm":
+      return (
+        state.pendingAlarms.length > 0 &&
+        (state.interruptedScreen === null ||
+          hasScreenSubState({
+            ...state,
+            screen: state.interruptedScreen,
+            interruptedScreen: null,
+            pendingAlarms: [],
+          }))
+      );
+    case "notausschaltungAuswahl":
+      return (
+        state.notausschaltung !== null && state.selectedTruppnummer !== null
+      );
+    // OK ends the marked Trupp unless all Trupps were chosen.
+    case "notausschaltungBestaetigung":
+      return (
+        state.notausschaltung === "alleTrupps" ||
+        (state.notausschaltung !== null && state.selectedTruppnummer !== null)
+      );
+    default:
+      return assertNever(state.screen);
+  }
+}
+
+function hasFlaschendruckEditor({
+  aktion,
+  draftFlaschendruckBar,
+}: TruppMenue): boolean {
+  return draftFlaschendruckBar !== null && OPENS_FLASCHENDRUCK_EDITOR[aktion];
+}
+
+function namesTrupp(state: State, truppnummer: number): boolean {
+  return state.trupps.some((trupp) => trupp.truppnummer === truppnummer);
 }
 
 function isTrupp(value: unknown): value is Trupp {
