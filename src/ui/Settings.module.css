@@ -1,0 +1,35 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reset {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #6b7178;
+}
+
+.secondary,
+.danger {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 2px solid #6b7178;
+  border-radius: 8px;
+  background: #3a3f45;
+  color: #e6e6e3;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.danger {
+  border-color: #d9534f;
+  color: #ffb3b0;
+}
+
+.secondary:focus-visible,
+.danger:focus-visible {
+  outline: 3px solid #6ea8fe;
+  outline-offset: 2px;
+}

@@ -8,11 +8,19 @@ export type Role =
   | "Wassertruppführer"
   | "Wassertruppmann";
 
-/** One of the Roster's Tallys: the role it stands for on one vehicle. */
-export interface RosterTally {
-  readonly tallyId: string;
+/** A vehicle's names: its Funkrufname for the world panel and its Kurzname for the LCD. */
+export interface Vehicle {
   readonly funkrufname: string;
   readonly kurzname: string;
+}
+
+/** The Roster's two vehicles, in Roster order. */
+export type Vehicles = readonly [Vehicle, Vehicle];
+
+/** One of the Roster's Tallys: the role it stands for on one of the two vehicles. */
+export interface RosterTally {
+  readonly tallyId: string;
+  readonly vehicleIndex: 0 | 1;
   readonly role: Role;
 }
 
@@ -31,36 +39,56 @@ const ROLES: readonly Role[] = [
   "Wassertruppmann",
 ];
 
-const VEHICLES = [
+/** The vehicles' names until the Trainee changes them. */
+export const DEFAULT_VEHICLES: Vehicles = [
   { funkrufname: "HLF", kurzname: "HLF" },
   { funkrufname: "LF", kurzname: "LF" },
-] as const;
+];
+
+/** The longest Kurzname, so the longest LCD text (`<Kurzname> AT-F`) fits a line. */
+export const KURZNAME_MAX_LENGTH = 10;
+
+// The characters the LCD font draws: printable ASCII plus the German umlauts and ß.
+const KURZNAME_PATTERN = /^[\x20-\x7EÄÖÜäöüß]+$/;
 
 /**
  * The eight Roster Tallys in shortcut order `1`–`8`. Decided in "Decide the contents of the
  * fixed Tally roster".
  */
-export const ROSTER: readonly RosterTally[] = VEHICLES.flatMap(
-  (vehicle, vehicleIndex) =>
+export const ROSTER: readonly RosterTally[] = ([0, 1] as const).flatMap(
+  (vehicleIndex) =>
     ROLES.map((role, roleIndex) => ({
       tallyId: String(vehicleIndex * ROLES.length + roleIndex + 1),
-      ...vehicle,
+      vehicleIndex,
       role,
     })),
 );
 
 /** The event of tapping a Roster Tally on Check; the Checkbox reads the LCD text stored on it. */
-export function tallyHeld(tally: RosterTally): Event {
+export function tallyHeld(tally: RosterTally, vehicles: Vehicles): Event {
   return {
     type: "tallyHeld",
     tallyId: tally.tallyId,
-    name: `${tally.kurzname} ${ROLE_CODES[tally.role]}`,
+    name: `${vehicles[tally.vehicleIndex].kurzname} ${ROLE_CODES[tally.role]}`,
   };
 }
 
 /** How the world panel names a Roster Tally, e.g. "HLF · Angriffstruppführer". */
-export function rosterLabel(tally: RosterTally): string {
-  return `${tally.funkrufname} · ${tally.role}`;
+export function rosterLabel(tally: RosterTally, vehicles: Vehicles): string {
+  return `${vehicles[tally.vehicleIndex].funkrufname} · ${tally.role}`;
+}
+
+/**
+ * Whether a vehicle's names can be kept: a Funkrufname that is not blank, and a Kurzname of at
+ * most {@link KURZNAME_MAX_LENGTH} characters that the LCD can show.
+ */
+export function isValidVehicle(vehicle: Vehicle): boolean {
+  return (
+    vehicle.funkrufname.trim() !== "" &&
+    vehicle.kurzname.trim() !== "" &&
+    vehicle.kurzname.length <= KURZNAME_MAX_LENGTH &&
+    KURZNAME_PATTERN.test(vehicle.kurzname)
+  );
 }
 
 /** The read-only hint of which Trupp a Roster Tally belongs to. */

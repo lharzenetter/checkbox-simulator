@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { openSimulator } from "./first-launch";
 
 test("sound an Alarm at the first Alarmgrenze", async ({ page }) => {
   await page.clock.install();
-  await page.goto("/");
+  await openSimulator(page);
   const lcd = page.getByRole("img");
   const led = page.getByRole("status", { name: /^Alarm-LED/ });
   await expect(lcd).toHaveAttribute("aria-label", "Display aus");

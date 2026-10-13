@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { openSimulator } from "./first-launch";
 
 test("log off a Trupp", async ({ page }) => {
   await page.clock.install();
-  await page.goto("/");
+  await openSimulator(page);
   const lcd = page.getByRole("img");
   const roster = page.getByRole("region", { name: "Atemschutzträger" });
   await expect(lcd).toHaveAttribute("aria-label", "Display aus");

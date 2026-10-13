@@ -291,4 +291,13 @@ describe("the Einsatzprotokolle", () => {
       SESSION_START.now + 101 * 60_000,
     );
   });
+
+  // decided in "Decide what survives a page reload": they are device memory, kept across sessions
+  it("carries the device memory's Einsatzprotokolle into a new session", () => {
+    const previousSession = logInAndOff(createInitialState(SESSION_START));
+    const kept = previousSession.einsatzprotokolle;
+    const state = logInAndOff(createInitialState(SESSION_START, kept));
+    expect(state.einsatzprotokolle).toHaveLength(2);
+    expect(state.einsatzprotokolle[0]).toEqual(kept[0]);
+  });
 });

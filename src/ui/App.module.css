@@ -18,3 +18,29 @@
   gap: 24px;
   width: 100%;
 }
+
+.chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.settings {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 2px solid #6b7178;
+  border-radius: 8px;
+  background: #3a3f45;
+  color: #e6e6e3;
+  font:
+    600 1rem/1.2 system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+
+.settings:focus-visible {
+  outline: 3px solid #6ea8fe;
+  outline-offset: 2px;
+}

@@ -1,11 +1,13 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { alarmCycleMs, isAlarmSounding } from "../core/index";
 import type { Key } from "../core/index";
 import { ROSTER, tallyHeld } from "../world/index";
 import type { RosterTally } from "../world/index";
 import { ClockControls } from "./ClockControls";
+import { FirstLaunchDialog } from "./FirstLaunchDialog";
 import { FrontPanel } from "./FrontPanel";
 import { MuteToggle } from "./MuteToggle";
+import { Settings } from "./Settings";
 import { TallyRoster } from "./TallyRoster";
 import { useKeyMap } from "./use-key-map";
 import { useSiren } from "./use-siren";
@@ -13,8 +15,21 @@ import { useSimulator } from "./use-simulator";
 import styles from "./App.module.css";
 
 export function App() {
-  const { state, dispatch, clock, pause, play, setSpeed, muted, toggleMute } =
-    useSimulator();
+  const {
+    state,
+    dispatch,
+    clock,
+    pause,
+    play,
+    setSpeed,
+    vehicles,
+    firstLaunchDone,
+    nameVehicles,
+    muted,
+    toggleMute,
+    resetToFactory,
+  } = useSimulator();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // decided in "Decide how alarms are presented", points 7 and 8: pause and mute silence only
   // the siren
   useSiren({
@@ -36,10 +51,10 @@ export function App() {
   const tapTally = useCallback(
     (tally: RosterTally | undefined) => {
       if (tally !== undefined) {
-        dispatch(tallyHeld(tally));
+        dispatch(tallyHeld(tally, vehicles));
       }
     },
-    [dispatch],
+    [dispatch, vehicles],
   );
   const tapTallyAt = useCallback(
     (rosterIndex: number) => {
@@ -54,6 +69,7 @@ export function App() {
     [tapTally],
   );
   useKeyMap({
+    enabled: firstLaunchDone && !settingsOpen,
     onKeyPressed: pressKey,
     onKeyReleased: releaseKey,
     onTallyKeyPressed: tapTallyAt,
@@ -67,15 +83,43 @@ export function App() {
         onPlay={play}
         onSpeedChosen={setSpeed}
       />
-      <MuteToggle muted={muted} onToggle={toggleMute} />
+      <div className={styles.chrome}>
+        <MuteToggle muted={muted} onToggle={toggleMute} />
+        <button
+          type="button"
+          className={styles.settings}
+          onClick={() => {
+            setSettingsOpen(true);
+          }}
+        >
+          Einstellungen
+        </button>
+      </div>
       <div className={styles.stage}>
         <FrontPanel
           state={state}
           dispatch={dispatch}
           onTallyDropped={tapTallyById}
         />
-        <TallyRoster state={state} onTallyTapped={tapTally} />
+        <TallyRoster
+          state={state}
+          vehicles={vehicles}
+          onTallyTapped={tapTally}
+        />
       </div>
+      {!firstLaunchDone && (
+        <FirstLaunchDialog vehicles={vehicles} onConfirm={nameVehicles} />
+      )}
+      {settingsOpen && (
+        <Settings
+          vehicles={vehicles}
+          onVehiclesNamed={nameVehicles}
+          onFactoryReset={resetToFactory}
+          onClose={() => {
+            setSettingsOpen(false);
+          }}
+        />
+      )}
     </main>
   );
 }

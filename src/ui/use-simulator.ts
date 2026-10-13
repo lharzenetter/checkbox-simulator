@@ -2,6 +2,11 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 import { createInitialState, reduce } from "../core/index";
 import type { Event, State } from "../core/index";
 import {
+  loadDeviceMemory,
+  resetToFactory,
+  saveDeviceMemory,
+} from "../storage/index";
+import {
   acceptsDeviceKeys,
   pauseClock,
   playClock,
@@ -9,7 +14,7 @@ import {
   setClockSpeed,
   startSimulationClock,
 } from "../world/index";
-import type { SimulationClock, Speed } from "../world/index";
+import type { SimulationClock, Speed, Vehicles } from "../world/index";
 
 // The core's Uhrzeit is local wall-clock time counted as if it were UTC (see `Clocks`).
 function localTimeOfDay(): number {
@@ -23,9 +28,20 @@ export function useSimulator(): {
   readonly pause: () => void;
   readonly play: () => void;
   readonly setSpeed: (speed: Speed) => void;
+  readonly vehicles: Vehicles;
+  readonly firstLaunchDone: boolean;
+  /** Keeps the vehicles' names and marks the first launch done. */
+  readonly nameVehicles: (vehicles: Vehicles) => void;
   readonly muted: boolean;
   readonly toggleMute: () => void;
+  readonly resetToFactory: () => void;
 } {
+  const [deviceMemory] = useState(() => loadDeviceMemory(localStorage));
+  const [vehicles, setVehicles] = useState(deviceMemory.vehicles);
+  const [firstLaunchDone, setFirstLaunchDone] = useState(
+    deviceMemory.firstLaunchDone,
+  );
+  const [muted, setMuted] = useState(deviceMemory.muted);
   const [clock, setClock] = useState(() =>
     startSimulationClock({
       realNow: performance.now(),
@@ -33,8 +49,20 @@ export function useSimulator(): {
     }),
   );
   const [state, dispatchToCore] = useReducer(reduce, clock, (startedClock) =>
-    createInitialState(readClocks(startedClock, performance.now())),
+    createInitialState(
+      readClocks(startedClock, performance.now()),
+      deviceMemory.einsatzprotokolle,
+    ),
   );
+
+  useEffect(() => {
+    saveDeviceMemory(localStorage, {
+      vehicles,
+      firstLaunchDone,
+      muted,
+      einsatzprotokolle: state.einsatzprotokolle,
+    });
+  }, [vehicles, firstLaunchDone, muted, state.einsatzprotokolle]);
 
   useEffect(() => {
     let frame = requestAnimationFrame(tick);
@@ -85,11 +113,32 @@ export function useSimulator(): {
     [updateClock],
   );
 
-  // ASSUMPTION: the mute setting lives only in memory until device memory is persisted (#38).
-  const [muted, setMuted] = useState(false);
+  const nameVehicles = useCallback((named: Vehicles) => {
+    setVehicles(named);
+    setFirstLaunchDone(true);
+  }, []);
   const toggleMute = useCallback(() => {
     setMuted((current) => !current);
   }, []);
+  // Reloading starts a new session on the cleared storage, so the first-launch dialog returns
+  // and the Uhrzeit starts again at the real time of day.
+  const resetToFactoryAndReload = useCallback(() => {
+    resetToFactory(localStorage);
+    location.reload();
+  }, []);
 
-  return { state, dispatch, clock, pause, play, setSpeed, muted, toggleMute };
+  return {
+    state,
+    dispatch,
+    clock,
+    pause,
+    play,
+    setSpeed,
+    vehicles,
+    firstLaunchDone,
+    nameVehicles,
+    muted,
+    toggleMute,
+    resetToFactory: resetToFactoryAndReload,
+  };
 }

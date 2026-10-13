@@ -1,7 +1,7 @@
 import type { DragEvent } from "react";
 import type { State } from "../core/index";
 import { ROSTER, rosterLabel, truppHint } from "../world/index";
-import type { RosterTally } from "../world/index";
+import type { RosterTally, Vehicles } from "../world/index";
 import styles from "./TallyRoster.module.css";
 
 /** The drag data type that carries a Roster Tally's id onto Check. */
@@ -9,9 +9,11 @@ export const TALLY_DRAG_TYPE = "application/x-checkbox-tally";
 
 export function TallyRoster({
   state,
+  vehicles,
   onTallyTapped,
 }: {
   state: State;
+  vehicles: Vehicles;
   onTallyTapped: (tally: RosterTally) => void;
 }) {
   return (
@@ -19,7 +21,7 @@ export function TallyRoster({
       <h2 className={styles.heading}>Atemschutzträger</h2>
       <ol className={styles.list}>
         {ROSTER.map((tally, index) => {
-          const label = rosterLabel(tally);
+          const label = rosterLabel(tally, vehicles);
           return (
             <li
               key={tally.tallyId}

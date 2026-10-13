@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { openSimulator } from "./first-launch";
 
 test("pause and speed up the clock", async ({ page }) => {
   await page.clock.install();
-  await page.goto("/");
+  await openSimulator(page);
   const lcd = page.getByRole("img");
   const pause = page.getByRole("button", { name: /Pause/ });
   const play = page.getByRole("button", { name: /Weiter/ });

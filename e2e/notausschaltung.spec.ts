@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openSimulator } from "./first-launch";
 import type { Page } from "@playwright/test";
 
 const NOTAUSSCHALTUNG_AUSWAHL =
@@ -22,7 +23,7 @@ async function logInTrupp01(page: Page): Promise<void> {
 
 test("perform a Notausschaltung with the keyboard", async ({ page }) => {
   await page.clock.install();
-  await page.goto("/");
+  await openSimulator(page);
   const lcd = page.getByRole("img");
   const roster = page.getByRole("region", { name: "Atemschutzträger" });
   await logInTrupp01(page);
@@ -49,7 +50,7 @@ test("perform a Notausschaltung with the keyboard", async ({ page }) => {
 
 test("hold X and Check with two pointers", async ({ page }) => {
   await page.clock.install();
-  await page.goto("/");
+  await openSimulator(page);
   await logInTrupp01(page);
   const x = page.getByRole("button", { name: "Taste X" });
   const check = page.getByRole("button", { name: "Taste Check" });
@@ -65,7 +66,7 @@ test("hold X and Check with two pointers", async ({ page }) => {
 
 test("let go of a pointer early", async ({ page }) => {
   await page.clock.install();
-  await page.goto("/");
+  await openSimulator(page);
   await logInTrupp01(page);
   const x = page.getByRole("button", { name: "Taste X" });
   const check = page.getByRole("button", { name: "Taste Check" });

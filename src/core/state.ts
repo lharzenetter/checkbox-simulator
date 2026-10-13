@@ -161,8 +161,14 @@ export interface Clocks {
   readonly realNow: number;
 }
 
-/** The Checkbox as it is when a new session begins: switched off. */
-export function createInitialState({ now, realNow }: Clocks): State {
+/**
+ * The Checkbox as it is when a new session begins: switched off, with the Einsatzprotokolle its
+ * device memory kept from earlier sessions.
+ */
+export function createInitialState(
+  { now, realNow }: Clocks,
+  einsatzprotokolle: readonly Einsatzprotokoll[] = [],
+): State {
   return {
     screen: "aus",
     now,
@@ -174,7 +180,7 @@ export function createInitialState({ now, realNow }: Clocks): State {
     truppMenue: null,
     trupps: [],
     selectedTruppnummer: null,
-    einsatzprotokolle: [],
+    einsatzprotokolle,
     pendingAlarms: [],
     interruptedScreen: null,
     notausschaltungKeysHeld: [],
