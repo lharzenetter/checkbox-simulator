@@ -30,6 +30,18 @@ _Avoid_: user, wearer, Person
 A group of 2–6 Atemschutzträger monitored together as one entry in the Einsatzliste.
 _Avoid_: team, squad, Einsatztrupp
 
+**Angriffstrupp** / **Wassertrupp**:
+The two Trupp roles of a vehicle's crew; in the simulator's roster each vehicle has one of each.
+_Avoid_: attack team, water team
+
+**Truppführer** / **Truppmann**:
+The two positions within a Trupp of two: the leader and the second member.
+_Avoid_: leader, member
+
+**Funkrufname**:
+A vehicle's radio call sign, e.g. "Florian Musterstadt 1/46-1"; the Trainee sets one per vehicle.
+_Avoid_: call sign, Fahrzeugname
+
 **Sicherungstrupp**:
 A Trupp registered as standby rescue team; it is shown alternating with the text SICHER.
 _Avoid_: Sicherheitstrupp, rescue team
@@ -101,3 +113,7 @@ _Avoid_: log, protocol, report
 **Trainee**:
 The single person using the simulator, who both operates the Checkbox and plays every Atemschutzträger.
 _Avoid_: user, operator, player
+
+**Roster**:
+The fixed set of eight virtual Transponders: two vehicles × (Angriffstrupp + Wassertrupp) × (Truppführer + Truppmann).
+_Avoid_: Personalliste, crew list
