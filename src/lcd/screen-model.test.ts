@@ -433,3 +433,173 @@ describe("S13 ABMELDEN", () => {
     ]);
   });
 });
+
+describe("S11 Trupp-Ansicht", () => {
+  const TRUPP_01 = [
+    HLF_AT_F,
+    press("OK"),
+    HLF_AT_M,
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // manual 3.2.3, Trupp-Ansicht figure; decided in "Define the key-by-screen navigation model"
+  it("reads as in the figure, labelled `Ansicht`", () => {
+    const model = screenModel(
+      reduce(tickBy(stateAfter(...TRUPP_01), 15 * 60_000), press("OK")),
+    );
+    expect(screenText(model)).toEqual([
+      "Trupp 01 ANMARSCH",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Druck 150 bar",
+      "Restzeit 00:15:00",
+      "Ansicht",
+    ]);
+    expect(model).toMatchObject({ layout: "truppAnsicht", fillLevel: 0.5 });
+  });
+
+  // timing-and-alarm-rules §1.7: whole bar, rounded down
+  it("shows the Aktueller Flaschendruck rounded down", () => {
+    const model = screenModel(
+      reduce(tickBy(stateAfter(...TRUPP_01), (6 * 60 + 3) * 1000), press("OK")),
+    );
+    expect(screenText(model)).toContain("Druck 239 bar");
+  });
+
+  // timing-and-alarm-rules §1.7: clamped at 0 once the Restzeit is negative
+  it("shows 0 bar and the negative Restzeit once the Einsatzzeit is exceeded", () => {
+    const model = screenModel(
+      reduce(tickBy(stateAfter(...TRUPP_01), 31 * 60_000), press("OK")),
+    );
+    expect(screenText(model)).toContain("Druck 0 bar");
+    expect(screenText(model)).toContain("Restzeit -0:01:00");
+    expect(model).toMatchObject({ fillLevel: 0 });
+  });
+
+  it("heads a Trupp in Bereitschaft with `BEREITSCHAFT`", () => {
+    const model = screenModel(
+      stateAfter(
+        HLF_AT_F,
+        press("OK"),
+        HLF_AT_M,
+        press("Down"),
+        press("OK"),
+        press("OK"),
+        press("OK"),
+      ),
+    );
+    expect(screenText(model)[0]).toBe("Trupp 01 BEREITSCHAFT");
+  });
+});
+
+describe("S09 Trupp-Menü", () => {
+  const TRUPP_MENUE = [
+    HLF_AT_F,
+    press("OK"),
+    HLF_AT_M,
+    press("OK"),
+    press("OK"),
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // manual 5.4, Trupp-Menü figure (ANMARSCH); decided in "Define the key-by-screen navigation
+  // model", its Trupp-Menü table
+  it("reads as the ANMARSCH figure, cursor on the first item", () => {
+    const model = screenModel(stateAfter(...TRUPP_MENUE));
+    expect(screenText(model)).toEqual([
+      "Trupp 01 ANMARSCH",
+      "*HLF AT-F",
+      "*HLF AT-M",
+      "Restzeit 00:30:00",
+      "Trupp -> Einsatz",
+      "Trupp -> Bereitschaft",
+      "Einsatzziel erreicht",
+      "Rückzug antreten",
+    ]);
+    expect(model).toMatchObject({ layout: "truppMenue", selectedIndex: 0 });
+  });
+
+  // decided in "Define the key-by-screen navigation model": the list scrolls past 4 lines
+  it("scrolls to keep the cursor in view", () => {
+    const model = screenModel(
+      stateAfter(
+        ...TRUPP_MENUE,
+        ...Array.from({ length: 5 }, () => press("Down")),
+      ),
+    );
+    expect(model).toMatchObject({
+      items: [
+        "Einsatzziel erreicht",
+        "Rückzug antreten",
+        "Druck ändern",
+        "Attribute eintragen",
+      ],
+      selectedIndex: 3,
+    });
+  });
+
+  it("shows the Restzeit running down", () => {
+    const model = screenModel(tickBy(stateAfter(...TRUPP_MENUE), 5_000));
+    expect(screenText(model)).toContain("Restzeit 00:29:55");
+  });
+
+  it("lists the Bereitschaft items under `BEREITSCHAFT`", () => {
+    const model = screenModel(
+      stateAfter(
+        HLF_AT_F,
+        press("OK"),
+        HLF_AT_M,
+        press("Down"),
+        press("OK"),
+        press("OK"),
+        press("OK"),
+        press("OK"),
+      ),
+    );
+    expect(model).toMatchObject({
+      title: "Trupp 01 BEREITSCHAFT",
+      items: [
+        "Trupp -> Einsatz",
+        "Trupp -> Bereitschaft",
+        "Druck ändern",
+        "Attribute eintragen",
+      ],
+    });
+  });
+});
+
+describe("S08 Esz-Zeit ändern from the Trupp-Menü", () => {
+  // manual 5.6.4, Druck ändern figure; timing-and-alarm-rules §1.4, 1.7
+  it("opens at the snapped estimate with the Restzeit it gives", () => {
+    const model = screenModel(
+      stateAfter(
+        HLF_AT_F,
+        press("OK"),
+        HLF_AT_M,
+        press("OK"),
+        press("OK"),
+        {
+          type: "tick",
+          now: FIGURE_UHRZEIT + (6 * 60 + 3) * 1000,
+          realNow: (6 * 60 + 3) * 1000,
+        },
+        press("OK"),
+        press("OK"),
+        ...Array.from({ length: 4 }, () => press("Down")),
+        press("OK"),
+      ),
+    );
+    expect(screenText(model)).toEqual([
+      "Esz-Zeit ändern",
+      "Flasche: 300 bar",
+      "Druck 235 bar",
+      "Restzeit 00:23:30",
+    ]);
+    expect(model).toMatchObject({
+      layout: "flaschendruckEditor",
+      truppnummer: null,
+    });
+  });
+});

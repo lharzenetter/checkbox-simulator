@@ -1,5 +1,5 @@
 import { SICHER_PHASE_MS } from "./parameters";
-import type { State, Trupp } from "./state";
+import type { Einsatzstatus, State, Trupp, TruppMenueAktion } from "./state";
 
 /** The logged-in Trupp whose Atemschutzträger holds the Tally, if any. */
 export function truppOfTally(state: State, tallyId: string): Trupp | undefined {
@@ -32,4 +32,40 @@ export function isSicherShown(state: State, trupp: Trupp): boolean {
     (state.realNow - state.screenEnteredRealMs) / SICHER_PHASE_MS,
   );
   return trupp.sicherheitstrupp && phase % 2 === 0;
+}
+
+/** The Trupp selected on the Einsatzliste; only valid while one is. */
+export function selectedTrupp(state: State): Trupp {
+  const trupp = state.trupps.find(
+    (candidate) => candidate.truppnummer === state.selectedTruppnummer,
+  );
+  if (trupp === undefined) {
+    throw new Error(`The ${state.screen} screen has no Trupp selected`);
+  }
+  return trupp;
+}
+
+// decided in "Define the key-by-screen navigation model", its Trupp-Menü table
+const TRUPP_MENUE_AKTIONEN: Readonly<
+  Record<Einsatzstatus, readonly TruppMenueAktion[]>
+> = {
+  anmarsch: [
+    "truppEinsatz",
+    "truppBereitschaft",
+    "einsatzzielErreicht",
+    "rueckzugAntreten",
+    "flaschendruckAendern",
+    "attributeEintragen",
+  ],
+  bereitschaft: [
+    "truppEinsatz",
+    "truppBereitschaft",
+    "flaschendruckAendern",
+    "attributeEintragen",
+  ],
+};
+
+/** The Trupp-Menü's items for the selected Trupp, top to bottom. */
+export function truppMenueAktionen(state: State): readonly TruppMenueAktion[] {
+  return TRUPP_MENUE_AKTIONEN[selectedTrupp(state).einsatzstatus];
 }

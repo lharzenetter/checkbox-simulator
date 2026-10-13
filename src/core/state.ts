@@ -9,6 +9,12 @@ export type Screen =
   /** The Flaschendruck editor `Esz-Zeit ändern`, opened by `Druck ändern` on the Anmeldefenster. */
   | "flaschendruckAendern"
   | "einsatzliste"
+  /** S11, showing the selected Trupp. */
+  | "truppAnsicht"
+  /** S09, for the selected Trupp. */
+  | "truppMenue"
+  /** The Flaschendruck editor `Esz-Zeit ändern`, opened by `Druck ändern` on the Trupp-Menü. */
+  | "truppFlaschendruckAendern"
   /** S13 Trupp ABMELDEN. */
   | "abmelden";
 
@@ -75,6 +81,23 @@ export interface Logoff {
   readonly markedTallyIds: readonly string[];
 }
 
+/** The Trupp-Menü's items. */
+export type TruppMenueAktion =
+  | "truppEinsatz"
+  | "truppBereitschaft"
+  | "einsatzzielErreicht"
+  | "rueckzugAntreten"
+  | "flaschendruckAendern"
+  | "attributeEintragen";
+
+/** The Trupp-Menü open for the selected Trupp, and the editors it opens. */
+export interface TruppMenue {
+  /** The item under the cursor. */
+  readonly aktion: TruppMenueAktion;
+  /** The value being edited on `Esz-Zeit ändern`; `null` on the Trupp-Menü. */
+  readonly draftFlaschendruckBar: number | null;
+}
+
 /** The whole device state: plain immutable data that serialises to storage as-is. */
 export interface State {
   readonly screen: Screen;
@@ -84,8 +107,11 @@ export interface State {
   readonly realNow: number;
   /** Real time at which the current screen was entered; drives the display timings. */
   readonly screenEnteredRealMs: number;
+  /** Real time of the last screen change or key press there; drives the [13] timeout. */
+  readonly idleSinceRealMs: number;
   readonly login: Login | null;
   readonly logoff: Logoff | null;
+  readonly truppMenue: TruppMenue | null;
   /** The logged-in Trupps, ordered by Truppnummer. */
   readonly trupps: readonly Trupp[];
   /** The Truppnummer marked on the Einsatzliste. */
@@ -113,8 +139,10 @@ export function createInitialState({ now, realNow }: Clocks): State {
     now,
     realNow,
     screenEnteredRealMs: realNow,
+    idleSinceRealMs: realNow,
     login: null,
     logoff: null,
+    truppMenue: null,
     trupps: [],
     selectedTruppnummer: null,
     einsatzprotokolle: [],

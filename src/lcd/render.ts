@@ -61,6 +61,12 @@ export function renderScreen(model: ScreenModel): Framebuffer {
     case "einsatzliste":
       drawEinsatzliste(framebuffer, model);
       break;
+    case "truppAnsicht":
+      drawTruppAnsicht(framebuffer, model);
+      break;
+    case "truppMenue":
+      drawTruppMenue(framebuffer, model);
+      break;
     case "abmelden":
       drawAbmelden(framebuffer, model);
       break;
@@ -143,6 +149,80 @@ function drawAbmelden(
   });
   fillRect(framebuffer, 0, 99, LCD_WIDTH, 1);
   drawLines(framebuffer, model.hinweis, 104);
+}
+
+// Laid out after the Trupp-Menü figures (manual 5.4, 5.6.2): names under the title, the Restzeit
+// between two rules, and four item lines at the bottom with a full-width selection bar.
+const TRUPP_MENUE_ITEMS_Y = LCD_HEIGHT - 4 * LINE_PITCH;
+
+function drawTruppMenue(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "truppMenue" }>,
+): void {
+  drawText(framebuffer, model.title, 1, 2);
+  drawLines(framebuffer, model.atemschutztraeger, 13);
+  const restzeitY = TRUPP_MENUE_ITEMS_Y - 12;
+  fillRect(framebuffer, 0, restzeitY - 3, LCD_WIDTH, 1);
+  drawBitmap(framebuffer, CLOCK, 1, restzeitY);
+  drawText(framebuffer, model.restzeit, 13, restzeitY);
+  fillRect(framebuffer, 0, TRUPP_MENUE_ITEMS_Y - 3, LCD_WIDTH, 1);
+  model.items.forEach((item, index) => {
+    const y = TRUPP_MENUE_ITEMS_Y + index * LINE_PITCH;
+    const selected = index === model.selectedIndex;
+    if (selected) {
+      fillRect(framebuffer, 0, y - 1, LCD_WIDTH, LINE_PITCH);
+    }
+    drawText(framebuffer, item, 1, y, { inverse: selected });
+  });
+}
+
+// Laid out after the Trupp-Ansicht figure (manual 3.2.3): the S06 cylinder and time-split bar on
+// the left, the values on the right of a divider, and the inverse `Ansicht` label at the bottom.
+const ANSICHT_DIVIDER_X = 64;
+const ANSICHT_LABEL_Y = LCD_HEIGHT - 11;
+
+const BOTTLE = [".###.", "..#..", ".###.", "#####", "#####", "#####", "#####"];
+
+function drawTruppAnsicht(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
+): void {
+  drawText(framebuffer, model.title, 1, 2);
+  fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
+  // ASSUMPTION: only the two names the figure has room for are drawn; a larger Trupp's further
+  // Atemschutzträger are left off (LCD screen catalogue, S11).
+  drawLines(framebuffer, model.atemschutztraeger.slice(0, 2), 13);
+  fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
+  fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
+  drawCylinder(framebuffer, model.fillLevel);
+  // ASSUMPTION: the time-split bar is drawn empty until the Einsatzstatus times it splits are
+  // kept (LCD screen catalogue, gap G17).
+  strokeRect(framebuffer, 7, 52, 6, 68);
+  const iconX = Math.floor(
+    (ANSICHT_DIVIDER_X + VALUE_BOX_X + VALUE_BOX_WIDTH - 5) / 2,
+  );
+  drawBitmap(framebuffer, BOTTLE, iconX, 36);
+  drawValueBox(framebuffer, model.flaschendruck, 45);
+  drawBitmap(framebuffer, CLOCK, iconX - 1, 60);
+  drawValueBox(framebuffer, model.restzeit, 69);
+  // ASSUMPTION: the Rückzugsdruck box is left out until the Rückzugsalarm is simulated
+  // (manual 3.2.3 item 9).
+  fillRect(
+    framebuffer,
+    ANSICHT_DIVIDER_X + 1,
+    ANSICHT_LABEL_Y,
+    LCD_WIDTH - ANSICHT_DIVIDER_X - 1,
+    11,
+  );
+  drawText(
+    framebuffer,
+    model.label,
+    Math.floor(
+      (ANSICHT_DIVIDER_X + 1 + LCD_WIDTH - textWidth(model.label)) / 2,
+    ),
+    ANSICHT_LABEL_Y + 2,
+    { inverse: true },
+  );
 }
 
 function drawLines(

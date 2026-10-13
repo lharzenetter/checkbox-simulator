@@ -167,4 +167,52 @@ describe("the LCD framebuffer", () => {
       toAscii(framebufferAfter(...LOGIN, press("OK"), HLF_AT_F)),
     ).toMatchSnapshot();
   });
+
+  // manual 3.2.3, Trupp-Ansicht figure, at its 00:16:00
+  it("draws the Trupp-Ansicht", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          {
+            type: "tick",
+            now: FIGURE_UHRZEIT + 14 * 60_000,
+            realNow: 14 * 60_000,
+          },
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.4, Trupp-Menü figure (ANMARSCH)
+  it("draws the Trupp-Menü of a Trupp in Anmarsch", () => {
+    expect(
+      toAscii(
+        framebufferAfter(...LOGIN, press("OK"), press("OK"), press("OK")),
+      ),
+    ).toMatchSnapshot();
+  });
+
+  // manual 5.6.4, Druck ändern figure, opened from the Trupp-Menü
+  it("draws Esz-Zeit ändern from the Trupp-Menü", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          ...LOGIN,
+          press("OK"),
+          {
+            type: "tick",
+            now: FIGURE_UHRZEIT + 5 * 60_000,
+            realNow: 5 * 60_000,
+          },
+          press("OK"),
+          press("OK"),
+          ...Array.from({ length: 4 }, () => press("Down")),
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
 });

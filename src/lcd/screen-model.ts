@@ -4,9 +4,12 @@ import {
   assertNever,
   computeRestzeitMs,
   EINSATZZEITEN_MS,
+  estimateFlaschendruckBar,
   isSicherShown,
   P81_FLASCHENTYP_2_BAR,
+  selectedTrupp,
   truppLoggingOff,
+  truppMenueAktionen,
 } from "../core/index";
 import type {
   Anmeldeaktion,
@@ -15,6 +18,8 @@ import type {
   Einsatzstatus,
   State,
   Trupp,
+  TruppMenue,
+  TruppMenueAktion,
 } from "../core/index";
 
 /** A Trupp's Statussymbol: its Einsatzstatus and how many Atemschutzträger it has. */
@@ -99,6 +104,27 @@ export type ScreenModel =
       readonly rows: readonly (EinsatzlisteRow | null)[];
     }
   | {
+      readonly layout: "truppAnsicht";
+      readonly title: string;
+      readonly atemschutztraeger: readonly string[];
+      /** The Aktueller Flaschendruck. */
+      readonly flaschendruck: string;
+      readonly restzeit: string;
+      /** The cylinder graphic's fill, 0–1. */
+      readonly fillLevel: number;
+      readonly label: string;
+    }
+  | {
+      readonly layout: "truppMenue";
+      readonly title: string;
+      readonly atemschutztraeger: readonly string[];
+      readonly restzeit: string;
+      /** The items in view, at most four. */
+      readonly items: readonly string[];
+      /** The cursor's line among the items in view. */
+      readonly selectedIndex: number;
+    }
+  | {
       readonly layout: "abmelden";
       readonly title: string;
       readonly atemschutztraeger: readonly AbmeldenRow[];
@@ -135,6 +161,26 @@ const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
 // manual 9.1 [72]
 const EINSATZLISTE_ROWS = 6;
 
+// The header words of the Trupp-Menü figures; decided in "Define the key-by-screen navigation
+// model", its Trupp-Menü table.
+const EINSATZSTATUS_HEADERS: Readonly<Record<Einsatzstatus, string>> = {
+  bereitschaft: "BEREITSCHAFT",
+  anmarsch: "ANMARSCH",
+};
+
+// decided in "Define the key-by-screen navigation model", its Trupp-Menü table
+const TRUPP_MENUE_ITEMS: Readonly<Record<TruppMenueAktion, string>> = {
+  truppEinsatz: "Trupp -> Einsatz",
+  truppBereitschaft: "Trupp -> Bereitschaft",
+  einsatzzielErreicht: "Einsatzziel erreicht",
+  rueckzugAntreten: "Rückzug antreten",
+  flaschendruckAendern: "Druck ändern",
+  attributeEintragen: "Attribute eintragen",
+};
+
+// manual 5.4, Trupp-Menü figure: four item lines
+const TRUPP_MENUE_LINES = 4;
+
 /** Derives what the LCD shows from the device state. */
 export function screenModel(state: State): ScreenModel {
   switch (state.screen) {
@@ -169,6 +215,15 @@ export function screenModel(state: State): ScreenModel {
       return flaschendruckAendernModel(requireLogin(state));
     case "einsatzliste":
       return einsatzlisteModel(state);
+    case "truppAnsicht":
+      return truppAnsichtModel(selectedTrupp(state));
+    case "truppMenue":
+      return truppMenueModel(state, requireTruppMenue(state));
+    case "truppFlaschendruckAendern":
+      return truppFlaschendruckAendernModel(
+        selectedTrupp(state),
+        requireTruppMenue(state),
+      );
     case "abmelden":
       return abmeldenModel(state);
     default:
@@ -225,22 +280,84 @@ function flaschendruckAendernModel(login: Login): ScreenModel {
   };
 }
 
+// The same Druck ändern figure, opened from the Trupp-Menü (manual 5.6.4).
+function truppFlaschendruckAendernModel(
+  trupp: Trupp,
+  truppMenue: TruppMenue,
+): ScreenModel {
+  if (truppMenue.draftFlaschendruckBar === null) {
+    throw new Error("Esz-Zeit ändern has no Flaschendruck to edit");
+  }
+  return {
+    ...flaschendruckEditorModel(
+      trupp,
+      "Esz-Zeit ändern",
+      truppMenue.draftFlaschendruckBar,
+    ),
+    truppnummer: null,
+  };
+}
+
 function flaschendruckEditorModel(
-  login: Login,
+  { truppnummer, einsatzzeitMs }: Pick<Trupp, "truppnummer" | "einsatzzeitMs">,
   title: string,
   flaschendruckBar: number,
 ): Extract<ScreenModel, { layout: "flaschendruckEditor" }> {
   return {
     layout: "flaschendruckEditor",
     title,
-    truppnummer: formatTruppnummer(login.truppnummer),
+    truppnummer: formatTruppnummer(truppnummer),
     cylinder: formatBar(P81_FLASCHENTYP_2_BAR),
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatRestzeit(
-      computeRestzeitMs(login.einsatzzeitMs, flaschendruckBar),
+      computeRestzeitMs(einsatzzeitMs, flaschendruckBar),
     ),
-    fillLevel: Math.min(1, flaschendruckBar / P81_FLASCHENTYP_2_BAR),
+    fillLevel: cylinderFillLevel(flaschendruckBar),
   };
+}
+
+function cylinderFillLevel(flaschendruckBar: number): number {
+  return Math.min(1, flaschendruckBar / P81_FLASCHENTYP_2_BAR);
+}
+
+// manual 3.2.3, Trupp-Ansicht figure
+function truppAnsichtModel(trupp: Trupp): ScreenModel {
+  const flaschendruckBar = estimateFlaschendruckBar(trupp);
+  return {
+    layout: "truppAnsicht",
+    title: truppHeader(trupp),
+    atemschutztraeger: trupp.atemschutztraeger.map(formatName),
+    flaschendruck: formatBar(flaschendruckBar),
+    restzeit: formatRestzeit(trupp.restzeitMs),
+    fillLevel: cylinderFillLevel(flaschendruckBar),
+    label: "Ansicht",
+  };
+}
+
+// manual 5.4, Trupp-Menü figure
+function truppMenueModel(state: State, truppMenue: TruppMenue): ScreenModel {
+  const trupp = selectedTrupp(state);
+  const aktionen = truppMenueAktionen(state);
+  const cursor = aktionen.indexOf(truppMenue.aktion);
+  // ASSUMPTION: the list scrolls only as far as needed to keep the cursor on the bottom line;
+  // the navigation model says only that it scrolls past 4 lines.
+  const firstInView = Math.max(0, cursor - (TRUPP_MENUE_LINES - 1));
+  return {
+    layout: "truppMenue",
+    title: truppHeader(trupp),
+    atemschutztraeger: trupp.atemschutztraeger.map(formatName),
+    restzeit: formatRestzeit(trupp.restzeitMs),
+    items: aktionen
+      .slice(firstInView, firstInView + TRUPP_MENUE_LINES)
+      .map((aktion) => TRUPP_MENUE_ITEMS[aktion]),
+    selectedIndex: cursor - firstInView,
+  };
+}
+
+// A Sicherheitstrupp's header follows its Einsatzstatus, as decided in "Define the key-by-screen
+// navigation model".
+function truppHeader(trupp: Trupp): string {
+  return `Trupp ${formatTruppnummer(trupp.truppnummer)} ${EINSATZSTATUS_HEADERS[trupp.einsatzstatus]}`;
 }
 
 function einsatzlisteModel(state: State): ScreenModel {
@@ -288,6 +405,14 @@ function abmeldenModel(state: State): ScreenModel {
   };
 }
 
+// Only the Trupp-Menü and its editor have one, so its absence is a broken invariant.
+function requireTruppMenue(state: State): TruppMenue {
+  if (state.truppMenue === null) {
+    throw new Error(`The ${state.screen} screen has no Trupp-Menü`);
+  }
+  return state.truppMenue;
+}
+
 // Only these screens have an Login, so its absence is a broken invariant.
 function requireLogin(state: State): Login {
   if (state.login === null) {
@@ -329,6 +454,21 @@ export function screenText(model: ScreenModel): readonly string[] {
         `Flasche: ${model.cylinder}`,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
+      ];
+    case "truppAnsicht":
+      return [
+        model.title,
+        ...model.atemschutztraeger,
+        `Druck ${model.flaschendruck}`,
+        `Restzeit ${model.restzeit}`,
+        model.label,
+      ];
+    case "truppMenue":
+      return [
+        model.title,
+        ...model.atemschutztraeger,
+        `Restzeit ${model.restzeit}`,
+        ...model.items,
       ];
     case "abmelden":
       return [

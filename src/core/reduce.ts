@@ -5,16 +5,27 @@ import {
   EINSATZPROTOKOLL_CAPACITY,
   P01_EINSATZZEIT_1_MS,
   P10_EINSATZZEIT_3_MS,
+  P13_TRUPP_DETAILANSICHT_MS,
   P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER,
   P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER,
   P72_ANZAHL_DER_MAXIMALEN_TRUPPS,
+  P73_DRUCK_VERGROESSERBAR_BAR,
   P76_DRUCK_SPRUNGGROESSE_BAR,
   P77_MAX_UEBER_SOLL_PROZENT,
   P78_MIN_UNTER_SOLL_PROZENT,
   P81_FLASCHENTYP_2_BAR,
 } from "./parameters";
-import { computeRestzeitMs } from "./restzeit";
-import { truppLoggingOff, truppOfTally } from "./selectors";
+import {
+  computeRestzeitMs,
+  estimateFlaschendruckBar,
+  snapToFlaschendruckGrid,
+} from "./restzeit";
+import {
+  selectedTrupp,
+  truppLoggingOff,
+  truppMenueAktionen,
+  truppOfTally,
+} from "./selectors";
 import type {
   Logoff,
   Anmeldeaktion,
@@ -24,6 +35,7 @@ import type {
   Screen,
   State,
   Trupp,
+  TruppMenue,
 } from "./state";
 
 /** Applies one event to the device state. Input with no meaning on the current screen is ignored. */
@@ -63,12 +75,184 @@ function handleKeyPress(state: State, key: Key): State {
     case "flaschendruckAendern":
       return handleFlaschendruckAendernKey(state, key);
     case "einsatzliste":
-      return key === "Up" || key === "Down" ? moveSelection(state, key) : state;
+      return handleEinsatzlisteKey(state, key);
+    case "truppAnsicht":
+      return handleTruppAnsichtKey(resetIdle(state), key);
+    case "truppMenue":
+      return handleTruppMenueKey(resetIdle(state), key);
+    case "truppFlaschendruckAendern":
+      return handleTruppFlaschendruckAendernKey(state, key);
     case "abmelden":
       return handleAbmeldenKey(state, key);
     default:
       return assertNever(state.screen);
   }
+}
+
+// decided in "Define the key-by-screen navigation model"
+function handleEinsatzlisteKey(state: State, key: Key): State {
+  switch (key) {
+    case "Up":
+    case "Down":
+      return moveSelection(state, key);
+    case "OK":
+      return state.selectedTruppnummer === null
+        ? state
+        : enterScreen(state, "truppAnsicht");
+    case "X":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+// decided in "Define the key-by-screen navigation model": read-only
+function handleTruppAnsichtKey(state: State, key: Key): State {
+  switch (key) {
+    case "OK":
+      return enterScreen(
+        withTruppMenue(state, {
+          aktion: firstOf(truppMenueAktionen(state)),
+          draftFlaschendruckBar: null,
+        }),
+        "truppMenue",
+      );
+    case "X":
+      return enterScreen(state, "einsatzliste");
+    case "Up":
+    case "Down":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+// decided in "Define the key-by-screen navigation model"; the status-changing items come with
+// the Einsatzstatus transitions, and `Attribute eintragen` is inert
+function handleTruppMenueKey(state: State, key: Key): State {
+  const truppMenue = requireTruppMenue(state);
+  switch (key) {
+    case "Up":
+    case "Down":
+      return withTruppMenue(state, {
+        ...truppMenue,
+        aktion: moveCursor(truppMenueAktionen(state), truppMenue.aktion, key),
+      });
+    case "X":
+      return enterScreen(withTruppMenue(state, null), "truppAnsicht");
+    case "OK":
+      return truppMenue.aktion === "flaschendruckAendern"
+        ? enterScreen(
+            withTruppMenue(state, {
+              ...truppMenue,
+              draftFlaschendruckBar: snapToFlaschendruckGrid(
+                estimateFlaschendruckBar(selectedTrupp(state)),
+              ),
+            }),
+            "truppFlaschendruckAendern",
+          )
+        : state;
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+// decided in "Define the key-by-screen navigation model": OK enters the Flaschendruck, X keeps
+// the old one
+function handleTruppFlaschendruckAendernKey(state: State, key: Key): State {
+  const truppMenue = requireTruppMenue(state);
+  const draftFlaschendruckBar = requireTruppDraftFlaschendruck(truppMenue);
+  switch (key) {
+    case "Up":
+    case "Down":
+      return withTruppMenue(state, {
+        ...truppMenue,
+        draftFlaschendruckBar: changeFlaschendruck(draftFlaschendruckBar, key),
+      });
+    case "OK":
+      return enterScreen(
+        withTruppMenue(
+          enterFlaschendruck(
+            state,
+            selectedTrupp(state),
+            draftFlaschendruckBar,
+          ),
+          null,
+        ),
+        "einsatzliste",
+      );
+    case "X":
+      return enterScreen(
+        withTruppMenue(state, { ...truppMenue, draftFlaschendruckBar: null }),
+        "truppMenue",
+      );
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+function requireTruppDraftFlaschendruck(truppMenue: TruppMenue): number {
+  if (truppMenue.draftFlaschendruckBar === null) {
+    throw new Error("Esz-Zeit ändern has no Flaschendruck to edit");
+  }
+  return truppMenue.draftFlaschendruckBar;
+}
+
+// timing-and-alarm-rules §1.5, 1.8: raised in [73] steps up to the Anfangsdruck's ceiling,
+// lowered in [76] steps down to an empty cylinder (verification scenario V5)
+function changeFlaschendruck(
+  flaschendruckBar: number,
+  key: "Up" | "Down",
+): number {
+  return key === "Up"
+    ? Math.min(
+        flaschendruckBar + P73_DRUCK_VERGROESSERBAR_BAR,
+        ANFANGSDRUCK_MAX_BAR,
+      )
+    : Math.max(flaschendruckBar - P76_DRUCK_SPRUNGGROESSE_BAR, 0);
+}
+
+// timing-and-alarm-rules §1.4
+function enterFlaschendruck(
+  state: State,
+  trupp: Trupp,
+  flaschendruckBar: number,
+): State {
+  const updated: Trupp = {
+    ...trupp,
+    restzeitMs: computeRestzeitMs(trupp.einsatzzeitMs, flaschendruckBar),
+  };
+  return {
+    ...state,
+    trupps: state.trupps.map((candidate) =>
+      candidate === trupp ? updated : candidate,
+    ),
+  };
+}
+
+function withTruppMenue(state: State, truppMenue: TruppMenue | null): State {
+  return { ...state, truppMenue };
+}
+
+function requireTruppMenue(state: State): TruppMenue {
+  if (state.truppMenue === null) {
+    throw new Error(`The ${state.screen} screen has no Trupp-Menü`);
+  }
+  return state.truppMenue;
+}
+
+function firstOf<T>(choices: readonly T[]): T {
+  const first = choices[0];
+  if (first === undefined) {
+    throw new Error("A cursor needs at least one choice");
+  }
+  return first;
 }
 
 // decided in "Define the key-by-screen navigation model": occupied rows only, wrapping
@@ -328,9 +512,10 @@ function handleTallyHeld(
     case "aus":
     case "startdisplay":
     case "einsatzliste":
-      return isInTrupp(state, atemschutztraeger)
-        ? openAbmelden(state, atemschutztraeger)
-        : startLogin(state, atemschutztraeger);
+      return routeTally(state, atemschutztraeger);
+    case "truppAnsicht":
+    case "truppMenue":
+      return routeTallyFromTrupp(state, atemschutztraeger);
     case "anmeldefenster":
       return addAtemschutztraeger(state, atemschutztraeger);
     case "abmelden":
@@ -339,10 +524,26 @@ function handleTallyHeld(
     case "einsatzzeitWaehlen":
     case "anfangsdruckEditor":
     case "flaschendruckAendern":
+    case "truppFlaschendruckAendern":
       return state;
     default:
       return assertNever(state.screen);
   }
+}
+
+function routeTally(state: State, atemschutztraeger: Atemschutztraeger): State {
+  return isInTrupp(state, atemschutztraeger)
+    ? openAbmelden(state, atemschutztraeger)
+    : startLogin(state, atemschutztraeger);
+}
+
+// The Trupp-Menü closes only if the Tally opens another screen; an ignored one leaves it open.
+function routeTallyFromTrupp(
+  state: State,
+  atemschutztraeger: Atemschutztraeger,
+): State {
+  const routed = routeTally(withTruppMenue(state, null), atemschutztraeger);
+  return routed.screen === state.screen ? state : routed;
 }
 
 function startLogin(state: State, atemschutztraeger: Atemschutztraeger): State {
@@ -537,7 +738,25 @@ function handleTick(state: State, elapsedMs: number): State {
     ...state,
     trupps: state.trupps.map((trupp) => runDown(trupp, elapsedMs)),
   };
+  if (isTruppDetailansichtTimedOut(ticked)) {
+    return enterScreen(withTruppMenue(ticked, null), "einsatzliste");
+  }
   return abschaltzeitRestMs(ticked) === 0 ? enterScreen(ticked, "aus") : ticked;
+}
+
+// timing-and-alarm-rules §9 [13], 9.1
+// ASSUMPTION: the pressure editor `Esz-Zeit ändern` has no timeout; [13] names only the Trupp-
+// Ansicht and the Trupp-Menü ("Define the key-by-screen navigation model").
+function isTruppDetailansichtTimedOut(state: State): boolean {
+  return (
+    (state.screen === "truppAnsicht" || state.screen === "truppMenue") &&
+    state.realNow - state.idleSinceRealMs >= P13_TRUPP_DETAILANSICHT_MS
+  );
+}
+
+// timing-and-alarm-rules §9 [13]: idle means no key pressed
+function resetIdle(state: State): State {
+  return { ...state, idleSinceRealMs: state.realNow };
 }
 
 // timing-and-alarm-rules §1.1, 1.2, 4.1
@@ -552,5 +771,10 @@ function runDown(trupp: Trupp, elapsedMs: number): Trupp {
 // from SERVICE shows the full Abschaltzeit again; the manual leaves SERVICE's timing open
 // (LCD screen catalogue, S02).
 function enterScreen(state: State, screen: Screen): State {
-  return { ...state, screen, screenEnteredRealMs: state.realNow };
+  return {
+    ...state,
+    screen,
+    screenEnteredRealMs: state.realNow,
+    idleSinceRealMs: state.realNow,
+  };
 }

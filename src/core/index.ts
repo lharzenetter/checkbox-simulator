@@ -3,8 +3,14 @@ export { assertNever } from "./assert-never";
 export type { Event, Key } from "./event";
 export { P81_FLASCHENTYP_2_BAR } from "./parameters";
 export { ANMELDEAKTIONEN, EINSATZZEITEN_MS, reduce } from "./reduce";
-export { computeRestzeitMs } from "./restzeit";
-export { isSicherShown, truppLoggingOff, truppOfTally } from "./selectors";
+export { computeRestzeitMs, estimateFlaschendruckBar } from "./restzeit";
+export {
+  isSicherShown,
+  selectedTrupp,
+  truppLoggingOff,
+  truppMenueAktionen,
+  truppOfTally,
+} from "./selectors";
 export { createInitialState } from "./state";
 export type {
   Logoff,
@@ -17,4 +23,6 @@ export type {
   Screen,
   State,
   Trupp,
+  TruppMenue,
+  TruppMenueAktion,
 } from "./state";
