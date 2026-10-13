@@ -868,7 +868,7 @@ Keys: **A** up, **B** down, **C** OK, **D** Abbruch, **E** = Transponder-/Check-
 ## Gaps and ambiguities
 
 These are points the manual does not settle.
-G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5#issuecomment-6142167472); that resolution holds the decisions, so they are not restated here.
+G1, G2, G4, G6, G7, G9, G10, G11 and G13 are decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5#issuecomment-6142167472); that resolution holds the decisions, so they are not restated here. [Decide when a Daueralarm starts and ends](https://github.com/lharzenetter/checkbox-simulator/issues/14) amends G7: C on ABMELDEN with members unmarked, and C on the Anmeldefenster below [07], start a Daueralarm instead of doing nothing ([rules 7.3–7.6](timing-and-alarm-rules.md#7-daueralarm)).
 G8 and G12 moved to the ticket *Specify the service menu screens and keys*.
 
 - **G1 – Right column of the Einsatzliste.**
