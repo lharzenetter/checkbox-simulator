@@ -24,6 +24,29 @@ function localTimeOfDay(): number {
   return Date.now() - new Date().getTimezoneOffset() * 60_000;
 }
 
+// Reading the `localStorage` global itself throws (SecurityError) when the browser blocks
+// storage; the simulator then runs on a storage that keeps nothing.
+function browserStorage(): Storage {
+  try {
+    return localStorage;
+  } catch {
+    return {
+      length: 0,
+      clear() {
+        // Keeps nothing; see above.
+      },
+      getItem: () => null,
+      key: () => null,
+      removeItem() {
+        // Keeps nothing; see above.
+      },
+      setItem() {
+        // Keeps nothing; see above.
+      },
+    };
+  }
+}
+
 export function useSimulator(): {
   readonly state: State;
   readonly dispatch: (event: Event) => void;
@@ -44,7 +67,8 @@ export function useSimulator(): {
   readonly resumeSession: () => void;
   readonly discardSession: () => void;
 } {
-  const [{ deviceMemory, session }] = useState(() => loadStores(localStorage));
+  const [storage] = useState(browserStorage);
+  const [{ deviceMemory, session }] = useState(() => loadStores(storage));
   // Before the first launch is done no key has reached the device, so there is nothing to resume.
   const savedSession = deviceMemory.firstLaunchDone ? session : null;
   const [sessionChoicePending, setSessionChoicePending] = useState(
@@ -83,20 +107,20 @@ export function useSimulator(): {
     if (!persisting.current) {
       return;
     }
-    saveDeviceMemory(localStorage, {
+    saveDeviceMemory(storage, {
       vehicles,
       firstLaunchDone,
       muted,
       einsatzprotokolle: state.einsatzprotokolle,
     });
-  }, [vehicles, firstLaunchDone, muted, state.einsatzprotokolle]);
+  }, [storage, vehicles, firstLaunchDone, muted, state.einsatzprotokolle]);
 
   // Until the Trainee chooses, the saved session stays as it was, so another reload asks again.
   useEffect(() => {
     if (persisting.current && !sessionChoicePending) {
-      saveSession(localStorage, state);
+      saveSession(storage, state);
     }
-  }, [state, sessionChoicePending]);
+  }, [storage, state, sessionChoicePending]);
 
   useEffect(() => {
     let frame = requestAnimationFrame(tick);
@@ -158,9 +182,9 @@ export function useSimulator(): {
   // and the Uhrzeit starts again at the real time of day.
   const resetToFactoryAndReload = useCallback(() => {
     persisting.current = false;
-    resetToFactory(localStorage);
+    resetToFactory(storage);
     location.reload();
-  }, []);
+  }, [storage]);
   // The clock was resumed paused at the saved session; decided in "Decide what survives a page
   // reload".
   const resumeSession = useCallback(() => {
@@ -170,9 +194,9 @@ export function useSimulator(): {
   // reload".
   const discardSessionAndReload = useCallback(() => {
     persisting.current = false;
-    discardSession(localStorage);
+    discardSession(storage);
     location.reload();
-  }, []);
+  }, [storage]);
 
   return {
     state,

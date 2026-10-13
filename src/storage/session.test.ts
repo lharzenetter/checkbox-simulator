@@ -228,3 +228,39 @@ describe("incompatible stored session data", () => {
     expect(storage.getItem(SESSION_KEY)).toBeNull();
   });
 });
+
+describe("browser storage that is blocked or full", () => {
+  class BlockedStorage extends MemoryStorage {
+    override getItem(): string | null {
+      throw new DOMException("", "SecurityError");
+    }
+  }
+
+  class FullStorage extends MemoryStorage {
+    override setItem(): void {
+      throw new DOMException("", "QuotaExceededError");
+    }
+
+    override removeItem(): void {
+      throw new DOMException("", "SecurityError");
+    }
+  }
+
+  // decided in the issue #28 branch review: the simulator runs without storage
+  it("starts from the factory device memory and no session when it cannot be read", () => {
+    expect(loadStores(new BlockedStorage())).toEqual({
+      deviceMemory: FACTORY_DEVICE_MEMORY,
+      session: null,
+    });
+  });
+
+  // decided in the issue #28 branch review: the simulator runs without storage
+  it("drops the writes it cannot take", () => {
+    const storage = new FullStorage();
+    expect(() => {
+      saveSession(storage, MID_EINSATZ);
+      saveDeviceMemory(storage, DEVICE_MEMORY);
+      discardSession(storage);
+    }).not.toThrow();
+  });
+});

@@ -1,7 +1,13 @@
 import type { Einsatzprotokoll } from "../core/index";
 import { DEFAULT_VEHICLES, isValidVehicle } from "../world/index";
 import type { Vehicle, Vehicles } from "../world/index";
-import { isAtemschutztraeger, isEinsatzstatus, isRecord } from "./guards";
+import {
+  isAtemschutztraeger,
+  isEinsatzstatus,
+  isRecord,
+  readItem,
+  tryWrite,
+} from "./guards";
 
 /** What the Checkbox's non-volatile memory keeps until a factory reset. */
 export interface DeviceMemory {
@@ -34,7 +40,7 @@ const DEVICE_MEMORY_VERSION = 1;
  * together with the running session, and the factory device memory is returned instead.
  */
 export function loadDeviceMemory(storage: Storage): DeviceMemory {
-  const stored = storage.getItem(DEVICE_MEMORY_KEY);
+  const stored = readItem(storage, DEVICE_MEMORY_KEY);
   if (stored === null) {
     return FACTORY_DEVICE_MEMORY;
   }
@@ -48,20 +54,24 @@ export function loadDeviceMemory(storage: Storage): DeviceMemory {
 
 /** Writes the device memory, replacing what was kept before. */
 export function saveDeviceMemory(storage: Storage, memory: DeviceMemory): void {
-  storage.setItem(
-    DEVICE_MEMORY_KEY,
-    JSON.stringify({ version: DEVICE_MEMORY_VERSION, ...memory }),
-  );
+  tryWrite(() => {
+    storage.setItem(
+      DEVICE_MEMORY_KEY,
+      JSON.stringify({ version: DEVICE_MEMORY_VERSION, ...memory }),
+    );
+  });
 }
 
 /** Clears the device memory and the running session; other sites' keys are left alone. */
 export function resetToFactory(storage: Storage): void {
-  const simulatorKeys = Array.from({ length: storage.length }, (_, index) =>
-    storage.key(index),
-  ).filter((key): key is string => key?.startsWith(KEY_PREFIX) ?? false);
-  for (const key of simulatorKeys) {
-    storage.removeItem(key);
-  }
+  tryWrite(() => {
+    const simulatorKeys = Array.from({ length: storage.length }, (_, index) =>
+      storage.key(index),
+    ).filter((key): key is string => key?.startsWith(KEY_PREFIX) ?? false);
+    for (const key of simulatorKeys) {
+      storage.removeItem(key);
+    }
+  });
 }
 
 function parseDeviceMemory(stored: string): DeviceMemory | null {

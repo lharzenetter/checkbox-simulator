@@ -34,3 +34,23 @@ export function isAtemschutztraeger(
     typeof value.name === "string"
   );
 }
+
+// Browser storage may be blocked (SecurityError) or full (QuotaExceededError); the simulator
+// still runs without it, as if the stores were empty.
+export function readItem(storage: Storage, key: string): string | null {
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+// ASSUMPTION: a write the browser refuses is dropped silently, so the session runs on unsaved;
+// decided in the issue #28 branch review.
+export function tryWrite(write: () => void): void {
+  try {
+    write();
+  } catch {
+    // Dropped; see above.
+  }
+}

@@ -16,6 +16,8 @@ import {
   isEinsatzstatus,
   isMemberOf,
   isRecord,
+  readItem,
+  tryWrite,
 } from "./guards";
 
 /** Both stores as a page load finds them. */
@@ -80,7 +82,7 @@ const NOTAUSSCHALTUNG_KEYS: Readonly<Record<"X" | "Check", true>> = {
  */
 export function loadStores(storage: Storage): Stores {
   const deviceMemory = loadDeviceMemory(storage);
-  const stored = storage.getItem(SESSION_KEY);
+  const stored = readItem(storage, SESSION_KEY);
   if (stored === null) {
     return { deviceMemory, session: null };
   }
@@ -97,19 +99,23 @@ export function loadStores(storage: Storage): Stores {
  * out: they are device memory, saved with {@link saveDeviceMemory}.
  */
 export function saveSession(storage: Storage, session: State): void {
-  storage.setItem(
-    SESSION_KEY,
-    JSON.stringify({
-      version: SESSION_VERSION,
-      ...session,
-      einsatzprotokolle: undefined,
-    }),
-  );
+  tryWrite(() => {
+    storage.setItem(
+      SESSION_KEY,
+      JSON.stringify({
+        version: SESSION_VERSION,
+        ...session,
+        einsatzprotokolle: undefined,
+      }),
+    );
+  });
 }
 
 /** Drops the running session; the device memory is kept. */
 export function discardSession(storage: Storage): void {
-  storage.removeItem(SESSION_KEY);
+  tryWrite(() => {
+    storage.removeItem(SESSION_KEY);
+  });
 }
 
 function parseSession(
