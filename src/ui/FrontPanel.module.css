@@ -165,3 +165,41 @@
   color: var(--key-red);
   font-size: 0.7rem;
 }
+
+/* On phones the keys shrink by about 30% so the LCD gets the width. The Check key keeps its
+   size: it is the one pressed in a hurry. Matches the breakpoint in App.module.css. */
+@media (max-width: 560px) {
+  /* The full-size Check key spans both columns, so it does not widen them. */
+  .keypad {
+    grid-template-columns: repeat(2, auto);
+    grid-template-areas:
+      "up up"
+      "x ok"
+      "down down"
+      "check check";
+    gap: 7px;
+  }
+
+  .check {
+    justify-self: end;
+  }
+
+  .up,
+  .down {
+    width: 50px;
+    height: 31px;
+  }
+
+  .chevron {
+    width: 45px;
+    height: 27px;
+  }
+
+  .x,
+  .ok {
+    width: 48px;
+    height: 48px;
+    border-width: 8px;
+    font-size: 0.8rem;
+  }
+}
