@@ -48,6 +48,12 @@ function browserStorage(): Storage {
   }
 }
 
+/** The names the Trainee sets: the Feuerwehrname on the LCD and the two vehicles. */
+export interface Names {
+  readonly feuerwehrname: string;
+  readonly vehicles: Vehicles;
+}
+
 export function useSimulator(): {
   readonly state: State;
   readonly dispatch: (event: Event) => void;
@@ -57,10 +63,10 @@ export function useSimulator(): {
   readonly setSpeed: (speed: Speed) => void;
   readonly stepSpeed: (direction: "faster" | "slower") => void;
   readonly togglePause: () => void;
-  readonly vehicles: Vehicles;
+  readonly names: Names;
   readonly firstLaunchDone: boolean;
-  // Keeps the vehicles' names and marks the first launch done.
-  readonly nameVehicles: (vehicles: Vehicles) => void;
+  // Keeps the names and marks the first launch done.
+  readonly setNames: (names: Names) => void;
   readonly muted: boolean;
   readonly toggleMute: () => void;
   readonly resetToFactory: () => void;
@@ -79,7 +85,10 @@ export function useSimulator(): {
   );
   // Off once the stores are cleared for a reload, so nothing is written back before it.
   const persisting = useRef(true);
-  const [vehicles, setVehicles] = useState(deviceMemory.vehicles);
+  const [names, setNamesState] = useState<Names>({
+    feuerwehrname: deviceMemory.feuerwehrname,
+    vehicles: deviceMemory.vehicles,
+  });
   const [firstLaunchDone, setFirstLaunchDone] = useState(
     deviceMemory.firstLaunchDone,
   );
@@ -111,12 +120,12 @@ export function useSimulator(): {
       return;
     }
     saveDeviceMemory(storage, {
-      vehicles,
+      ...names,
       firstLaunchDone,
       muted,
       einsatzprotokolle: state.einsatzprotokolle,
     });
-  }, [storage, vehicles, firstLaunchDone, muted, state.einsatzprotokolle]);
+  }, [storage, names, firstLaunchDone, muted, state.einsatzprotokolle]);
 
   // Until the Trainee chooses, the saved session stays as it was, so another reload asks again.
   useEffect(() => {
@@ -189,8 +198,8 @@ export function useSimulator(): {
     );
   }, [updateClock]);
 
-  const nameVehicles = useCallback((named: Vehicles) => {
-    setVehicles(named);
+  const setNames = useCallback((named: Names) => {
+    setNamesState(named);
     setFirstLaunchDone(true);
   }, []);
   const toggleMute = useCallback(() => {
@@ -225,9 +234,9 @@ export function useSimulator(): {
     setSpeed,
     stepSpeed,
     togglePause,
-    vehicles,
+    names,
     firstLaunchDone,
-    nameVehicles,
+    setNames,
     muted,
     toggleMute,
     resetToFactory: resetToFactoryAndReload,

@@ -1,33 +1,57 @@
 import { useState } from "react";
 import type { ReactNode, SyntheticEvent } from "react";
+import { FEUERWEHRNAME_MAX_LENGTH, isValidFeuerwehrname } from "../core/index";
 import { isValidVehicle, KURZNAME_MAX_LENGTH } from "../world/index";
-import type { Vehicle, Vehicles } from "../world/index";
-import styles from "./VehicleNamesForm.module.css";
+import type { Vehicle } from "../world/index";
+import type { Names } from "./use-simulator";
+import styles from "./NamesForm.module.css";
 
-export function VehicleNamesForm({
-  initialVehicles,
+export function NamesForm({
+  initialNames,
   submitLabel,
   onSubmit,
   children,
 }: {
-  initialVehicles: Vehicles;
+  initialNames: Names;
   submitLabel: string;
-  onSubmit: (vehicles: Vehicles) => void;
+  onSubmit: (names: Names) => void;
   // Further buttons next to the submit button.
   children?: ReactNode;
 }) {
-  const [vehicles, setVehicles] = useState(initialVehicles);
-  const allValid = vehicles.every(isValidVehicle);
+  const [feuerwehrname, setFeuerwehrname] = useState(
+    initialNames.feuerwehrname,
+  );
+  const [vehicles, setVehicles] = useState(initialNames.vehicles);
+  const feuerwehrnameValid = isValidFeuerwehrname(feuerwehrname);
+  const allValid = feuerwehrnameValid && vehicles.every(isValidVehicle);
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>): void {
     event.preventDefault();
     if (allValid) {
-      onSubmit(vehicles);
+      onSubmit({ feuerwehrname, vehicles });
     }
   }
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      <label className={styles.field}>
+        Feuerwehrname
+        <input
+          className={styles.input}
+          value={feuerwehrname}
+          required
+          maxLength={FEUERWEHRNAME_MAX_LENGTH}
+          onChange={(event) => {
+            setFeuerwehrname(event.target.value);
+          }}
+        />
+      </label>
+      {!feuerwehrnameValid && (
+        <p className={styles.problem} role="alert">
+          Bitte einen Feuerwehrnamen mit höchstens {FEUERWEHRNAME_MAX_LENGTH}{" "}
+          Zeichen angeben, die das Display zeigen kann.
+        </p>
+      )}
       {vehicles.map((vehicle, index) => (
         <VehicleFields
           key={index}

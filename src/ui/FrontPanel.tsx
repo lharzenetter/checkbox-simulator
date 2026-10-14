@@ -8,10 +8,12 @@ import styles from "./FrontPanel.module.css";
 
 export function FrontPanel({
   state,
+  feuerwehrname,
   dispatch,
   onTallyDropped,
 }: {
   state: State;
+  feuerwehrname: string;
   dispatch: (event: Event) => void;
   onTallyDropped: (tallyId: string) => void;
 }) {
@@ -42,7 +44,7 @@ export function FrontPanel({
           <span className={styles.brand}>CHECKBOX 5+1</span>
         </header>
         <div className={styles.lcdWindow}>
-          <Lcd state={state} />
+          <Lcd state={state} feuerwehrname={feuerwehrname} />
         </div>
         <div className={styles.keypad}>
           <DeviceKey

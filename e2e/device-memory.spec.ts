@@ -26,8 +26,16 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
     "Florian Musterstadt 1/46-1",
   );
   await vehicleField(page, "Fahrzeug 1", "Kurzname").fill("HLF 1");
+  const feuerwehrname = page.getByRole("textbox", { name: "Feuerwehrname" });
+  await expect(feuerwehrname).toHaveValue("FF-Musterstadt");
+  await feuerwehrname.fill("FF-Übersee");
   await page.getByRole("button", { name: "Übernehmen" }).click();
   await expect(firstLaunch).toBeHidden();
+  await page.getByRole("button", { name: "Taste Check" }).click();
+  await expect(page.getByRole("img")).toHaveAttribute(
+    "aria-label",
+    /^FF-Übersee\n/,
+  );
 
   await page.getByRole("button", { name: "Stummschalten" }).click();
   await logInAndOffTrupp(page);
@@ -53,8 +61,13 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
 
   await page.getByRole("button", { name: "Einstellungen" }).click();
   await vehicleField(page, "Fahrzeug 1", "Kurzname").fill("HLF Nord");
+  await page
+    .getByRole("textbox", { name: "Feuerwehrname" })
+    .fill("FF-Nordhafen");
   await page.getByRole("button", { name: "Speichern" }).click();
   const lcd = page.getByRole("img");
+  await page.getByRole("button", { name: "Taste Check" }).click();
+  await expect(lcd).toHaveAttribute("aria-label", /^FF-Nordhafen\n/);
   for (const key of ["1", "c", "2", "c", "c"]) {
     await page.keyboard.press(key);
   }
@@ -77,6 +90,9 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
     "1/43",
   );
   await expect(vehicleField(page, "Fahrzeug 1", "Kurzname")).toHaveValue("HLF");
+  await expect(
+    page.getByRole("textbox", { name: "Feuerwehrname" }),
+  ).toHaveValue("FF-Musterstadt");
 });
 
 test("wipe incompatible stored data", async ({ page }) => {

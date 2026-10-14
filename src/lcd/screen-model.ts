@@ -6,6 +6,7 @@ import {
   computeRestzeitMs,
   EINSATZZEITEN_MS,
   estimateFlaschendruckBar,
+  FACTORY_FEUERWEHRNAME,
   isSicherShown,
   NOTAUSSCHALTUNG_AKTIONEN,
   P81_FLASCHENTYP_2_BAR,
@@ -179,9 +180,9 @@ export type ScreenModel =
       readonly abbrechen: readonly string[];
     };
 
-// The Startdisplay figure's values (manual 5.2). The SERVICE menu that would edit the name is
-// inert, and the battery line is static, as decided in "Draw the simulator's scope".
-const FEUERWEHRNAME = "FF-Musterstadt";
+// The Startdisplay figure's values (manual 5.2). The SERVICE menu that would edit the
+// Feuerwehrname is inert, so the Trainee sets it in the simulator's settings instead; the battery
+// line is static, as decided in "Draw the simulator's scope".
 const FIRMWARE = "V04.02.23";
 const SERIENNUMMER = "#12345";
 const BATTERIEFACH = "B1";
@@ -231,15 +232,18 @@ const TRUPP_MENUE_ITEMS: Readonly<Record<TruppMenueAktion, string>> = {
 // manual 5.4, Trupp-Menü figure: four item lines
 const TRUPP_MENUE_LINES = 4;
 
-/** Derives what the LCD shows from the device state. */
-export function screenModel(state: State): ScreenModel {
+/** Derives what the LCD shows from the device state and the Feuerwehrname the Trainee set. */
+export function screenModel(
+  state: State,
+  feuerwehrname: string = FACTORY_FEUERWEHRNAME,
+): ScreenModel {
   switch (state.screen) {
     case "aus":
       return { layout: "aus" };
     case "startdisplay":
       return {
         layout: "startdisplay",
-        feuerwehrname: FEUERWEHRNAME,
+        feuerwehrname,
         versionszeile: `${FIRMWARE}  ${SERIENNUMMER}`,
         batteriefach: `${BATTERIEFACH}-`,
         batteriekapazitaet: `+ ${String(BATTERIEKAPAZITAET_PROZENT)}%`,
@@ -264,7 +268,7 @@ export function screenModel(state: State): ScreenModel {
     case "flaschendruckAendern":
       return flaschendruckAendernModel(requireLogin(state));
     case "einsatzliste":
-      return einsatzlisteModel(state);
+      return einsatzlisteModel(state, feuerwehrname);
     case "truppAnsicht":
       return truppAnsichtModel(selectedTrupp(state));
     case "truppMenue":
@@ -461,10 +465,10 @@ function truppHeader(trupp: Trupp): string {
   return `Trupp ${formatTruppnummer(trupp.truppnummer)} ${EINSATZSTATUS_HEADERS[trupp.einsatzstatus]}`;
 }
 
-function einsatzlisteModel(state: State): ScreenModel {
+function einsatzlisteModel(state: State, feuerwehrname: string): ScreenModel {
   return {
     layout: "einsatzliste",
-    feuerwehrname: FEUERWEHRNAME,
+    feuerwehrname,
     batteriefach: `${BATTERIEFACH}-`,
     batterySign: "+",
     batteriefuellstand: BATTERIEKAPAZITAET_PROZENT / 100,

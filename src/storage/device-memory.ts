@@ -1,3 +1,4 @@
+import { FACTORY_FEUERWEHRNAME, isValidFeuerwehrname } from "../core/index";
 import type { Einsatzprotokoll } from "../core/index";
 import { DEFAULT_VEHICLES, isValidVehicle } from "../world/index";
 import type { Vehicle, Vehicles } from "../world/index";
@@ -11,6 +12,7 @@ import {
 
 /** What the Checkbox's non-volatile memory keeps until a factory reset. */
 export interface DeviceMemory {
+  readonly feuerwehrname: string;
   readonly vehicles: Vehicles;
   /** Whether the Trainee has confirmed the first-launch dialog. */
   readonly firstLaunchDone: boolean;
@@ -21,6 +23,7 @@ export interface DeviceMemory {
 
 /** The device memory as it leaves the factory, and after a factory reset. */
 export const FACTORY_DEVICE_MEMORY: DeviceMemory = {
+  feuerwehrname: FACTORY_FEUERWEHRNAME,
   vehicles: DEFAULT_VEHICLES,
   firstLaunchDone: false,
   muted: false,
@@ -33,7 +36,7 @@ const DEVICE_MEMORY_KEY = `${KEY_PREFIX}device-memory`;
 
 // Raise on any change to the stored shape: older data is then wiped, never migrated (decided in
 // "Decide what survives a page reload").
-const DEVICE_MEMORY_VERSION = 1;
+const DEVICE_MEMORY_VERSION = 2;
 
 /**
  * Reads the device memory. Stored data the simulator can no longer read is wiped in full,
@@ -85,8 +88,10 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     return null;
   }
   const vehicles = parseVehicles(value.vehicles);
-  const { firstLaunchDone, muted, einsatzprotokolle } = value;
+  const { feuerwehrname, firstLaunchDone, muted, einsatzprotokolle } = value;
   if (
+    typeof feuerwehrname !== "string" ||
+    !isValidFeuerwehrname(feuerwehrname) ||
     vehicles === null ||
     typeof firstLaunchDone !== "boolean" ||
     typeof muted !== "boolean" ||
@@ -95,7 +100,13 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
   ) {
     return null;
   }
-  return { vehicles, firstLaunchDone, muted, einsatzprotokolle };
+  return {
+    feuerwehrname,
+    vehicles,
+    firstLaunchDone,
+    muted,
+    einsatzprotokolle,
+  };
 }
 
 function parseVehicles(value: unknown): Vehicles | null {

@@ -36,9 +36,9 @@ export function App() {
     setSpeed,
     stepSpeed,
     togglePause,
-    vehicles,
+    names,
     firstLaunchDone,
-    nameVehicles,
+    setNames,
     muted,
     toggleMute,
     resetToFactory,
@@ -74,10 +74,10 @@ export function App() {
   const tapTally = useCallback(
     (tally: RosterTally | undefined) => {
       if (tally !== undefined) {
-        dispatch(tallyHeld(tally, vehicles));
+        dispatch(tallyHeld(tally, names.vehicles));
       }
     },
-    [dispatch, vehicles],
+    [dispatch, names.vehicles],
   );
   const tapTallyAt = useCallback(
     (rosterIndex: number) => {
@@ -160,18 +160,19 @@ export function App() {
       <main className={styles.stage}>
         <FrontPanel
           state={state}
+          feuerwehrname={names.feuerwehrname}
           dispatch={dispatch}
           onTallyDropped={tapTallyById}
         />
         <TallyRoster
           state={state}
-          vehicles={vehicles}
+          vehicles={names.vehicles}
           onTallyTapped={tapTally}
         />
       </main>
       <Footer />
       {!firstLaunchDone && (
-        <FirstLaunchDialog vehicles={vehicles} onConfirm={nameVehicles} />
+        <FirstLaunchDialog names={names} onConfirm={setNames} />
       )}
       {sessionChoicePending && (
         <SessionChoiceDialog
@@ -181,8 +182,8 @@ export function App() {
       )}
       {settingsOpen && (
         <Settings
-          vehicles={vehicles}
-          onVehiclesNamed={nameVehicles}
+          names={names}
+          onNamed={setNames}
           onFactoryReset={resetToFactory}
           onClose={() => {
             setSettingsOpen(false);

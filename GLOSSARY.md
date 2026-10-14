@@ -26,6 +26,10 @@ _Avoid_: A, B, C, D, E (the manual's figure letters), Abbruchtaste, Transponder-
 The idle time after which the Checkbox switches itself off.
 _Avoid_: auto-off, timeout
 
+**Feuerwehrname**:
+The fire brigade's name the Checkbox shows atop the Startdisplay and the Einsatzliste, `FF-Musterstadt` from the factory; the Trainee sets it in the simulator.
+_Avoid_: Wehrname, brigade name, Organisationsname
+
 ## Screens
 
 **Startdisplay**:

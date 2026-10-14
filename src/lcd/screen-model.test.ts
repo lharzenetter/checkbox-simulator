@@ -48,6 +48,12 @@ describe("S00 Aus", () => {
 });
 
 describe("S01 Startdisplay", () => {
+  it("heads the screen with the Trainee's Feuerwehrname", () => {
+    expect(
+      screenText(screenModel(stateAfter(press("Check")), "FF-Übersee"))[0],
+    ).toBe("FF-Übersee");
+  });
+
   // manual 5.2, Startdisplay figure
   it("reads as in the figure", () => {
     expect(screenText(screenModel(stateAfter(press("Check"))))).toEqual([
@@ -286,6 +292,12 @@ describe("S07 Einsatzliste", () => {
         null,
       ],
     });
+  });
+
+  it("heads the list with the Trainee's Feuerwehrname", () => {
+    expect(screenText(screenModel(einsatzliste(), "FF-Übersee"))[0]).toBe(
+      "FF-Übersee",
+    );
   });
 
   // decided in "Decide what survives a page reload": the Uhrzeit runs on simulated time

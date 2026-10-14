@@ -1,17 +1,17 @@
 import { useState } from "react";
-import type { Vehicles } from "../world/index";
 import { ModalDialog } from "./ModalDialog";
-import { VehicleNamesForm } from "./VehicleNamesForm";
+import { NamesForm } from "./NamesForm";
+import type { Names } from "./use-simulator";
 import styles from "./Settings.module.css";
 
 export function Settings({
-  vehicles,
-  onVehiclesNamed,
+  names,
+  onNamed,
   onFactoryReset,
   onClose,
 }: {
-  vehicles: Vehicles;
-  onVehiclesNamed: (vehicles: Vehicles) => void;
+  names: Names;
+  onNamed: (names: Names) => void;
   onFactoryReset: () => void;
   onClose: () => void;
 }) {
@@ -26,8 +26,8 @@ export function Settings({
         }}
       >
         <p>
-          Die Namen der Fahrzeuge, die Einsatzprotokolle, die Stummschaltung und
-          der laufende Einsatz werden gelöscht.
+          Der Feuerwehrname, die Namen der Fahrzeuge, die Einsatzprotokolle, die
+          Stummschaltung und der laufende Einsatz werden gelöscht.
         </p>
         <div className={styles.actions}>
           <button
@@ -53,18 +53,18 @@ export function Settings({
 
   return (
     <ModalDialog title="Einstellungen" onCancel={onClose}>
-      <VehicleNamesForm
-        initialVehicles={vehicles}
+      <NamesForm
+        initialNames={names}
         submitLabel="Speichern"
         onSubmit={(named) => {
-          onVehiclesNamed(named);
+          onNamed(named);
           onClose();
         }}
       >
         <button type="button" className={styles.secondary} onClick={onClose}>
           Abbrechen
         </button>
-      </VehicleNamesForm>
+      </NamesForm>
       <section className={styles.reset} aria-label="Werkszustand">
         <button
           type="button"

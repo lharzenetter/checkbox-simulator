@@ -1,6 +1,11 @@
 export { abschaltzeitRestMs } from "./abschaltzeit";
 export { assertNever } from "./assert-never";
 export type { Event, Key } from "./event";
+export {
+  FACTORY_FEUERWEHRNAME,
+  FEUERWEHRNAME_MAX_LENGTH,
+  isValidFeuerwehrname,
+} from "./feuerwehrname";
 export { ALARM_BLINK_PHASE_MS, P81_FLASCHENTYP_2_BAR } from "./parameters";
 export {
   ANMELDEAKTIONEN,

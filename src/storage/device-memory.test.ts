@@ -53,6 +53,7 @@ const EINSATZPROTOKOLL: Einsatzprotokoll = {
 };
 
 const CHANGED: DeviceMemory = {
+  feuerwehrname: "FF-Übersee",
   vehicles: [
     { funkrufname: "Florian Musterstadt 1/46-1", kurzname: "HLF 1" },
     { funkrufname: "Florian Musterstadt 1/44-1", kurzname: "LF Süd" },
@@ -74,6 +75,7 @@ describe("the device memory", () => {
   // decided in "Decide the contents of the fixed Tally roster"
   it("starts with the default names and the first launch still to do", () => {
     expect(loadDeviceMemory(new MemoryStorage())).toEqual({
+      feuerwehrname: "FF-Musterstadt",
       vehicles: [
         { funkrufname: "1/43", kurzname: "HLF" },
         { funkrufname: "1/45", kurzname: "LF" },
@@ -85,7 +87,7 @@ describe("the device memory", () => {
   });
 
   // decided in "Decide what survives a page reload"
-  it("keeps the names, the first launch, the mute setting and the Einsatzprotokolle", () => {
+  it("keeps the Feuerwehrname, the names, the first launch, the mute setting and the Einsatzprotokolle", () => {
     const storage = new MemoryStorage();
     saveDeviceMemory(storage, CHANGED);
     expect(loadDeviceMemory(storage)).toEqual(CHANGED);
@@ -97,11 +99,19 @@ describe("incompatible stored data", () => {
   it.each([
     ["is not JSON", "{not json"],
     ["has no version", JSON.stringify({ ...CHANGED })],
-    ["has an old version", JSON.stringify({ version: 0, ...CHANGED })],
+    ["has an old version", JSON.stringify({ version: 1, ...CHANGED })],
+    [
+      "has a Feuerwehrname longer than an LCD line",
+      JSON.stringify({
+        version: 2,
+        ...CHANGED,
+        feuerwehrname: "Freiwillige Feuerwehr Musterstadt",
+      }),
+    ],
     [
       "has a Kurzname longer than 10 characters",
       JSON.stringify({
-        version: 1,
+        version: 2,
         ...CHANGED,
         vehicles: [
           CHANGED.vehicles[0],
@@ -112,7 +122,7 @@ describe("incompatible stored data", () => {
     [
       "has an Einsatzprotokoll with an unknown Einsatzstatus",
       JSON.stringify({
-        version: 1,
+        version: 2,
         ...CHANGED,
         einsatzprotokolle: [{ ...EINSATZPROTOKOLL, einsatzstatus: "pause" }],
       }),
@@ -120,7 +130,7 @@ describe("incompatible stored data", () => {
     [
       "has an Einsatzprotokoll without its Atemschutzträger",
       JSON.stringify({
-        version: 1,
+        version: 2,
         ...CHANGED,
         einsatzprotokolle: [{ ...EINSATZPROTOKOLL, atemschutztraeger: null }],
       }),
@@ -139,7 +149,7 @@ describe("incompatible stored data", () => {
 
   it("keeps compatible data as it is", () => {
     const storage = storageWith({
-      [DEVICE_MEMORY_KEY]: JSON.stringify({ version: 1, ...CHANGED }),
+      [DEVICE_MEMORY_KEY]: JSON.stringify({ version: 2, ...CHANGED }),
     });
     expect(loadDeviceMemory(storage)).toEqual(CHANGED);
   });

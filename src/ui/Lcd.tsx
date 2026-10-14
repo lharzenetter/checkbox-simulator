@@ -12,10 +12,16 @@ import styles from "./Lcd.module.css";
 
 const SCALE = 3;
 
-export function Lcd({ state }: { state: State }) {
+export function Lcd({
+  state,
+  feuerwehrname,
+}: {
+  state: State;
+  feuerwehrname: string;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const paintedRef = useRef<string>(null);
-  const model = screenModel(state);
+  const model = screenModel(state, feuerwehrname);
   const text = screenText(model);
 
   // Every tick yields a new model; repaint only when what the LCD shows has changed.
