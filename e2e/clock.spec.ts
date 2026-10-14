@@ -11,10 +11,16 @@ test("pause and speed up the clock", async ({ page }) => {
   await pause.click();
   await expect(page.getByText("Simulation pausiert")).toBeVisible();
   await expect(page.getByRole("button", { name: "10×" })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: /auflegen/ }).first(),
+  ).toBeDisabled();
   await page.getByRole("button", { name: "Taste Check" }).click();
   await expect(lcd).toHaveAttribute("aria-label", "Display aus");
 
   await play.click();
+  await expect(
+    page.getByRole("button", { name: /auflegen/ }).first(),
+  ).toBeEnabled();
   await page.getByRole("button", { name: "10×" }).click();
   await expect(page.getByRole("button", { name: "10×" })).toHaveAttribute(
     "aria-pressed",

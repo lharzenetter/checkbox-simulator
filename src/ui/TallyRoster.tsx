@@ -2,6 +2,7 @@ import type { DragEvent } from "react";
 import type { State } from "../core/index";
 import { roleCode, rosterTallys, truppHint } from "../world/index";
 import type { Fahrzeug, Fahrzeuge, RosterTally } from "../world/index";
+import { PauseIcon } from "./Icons";
 import { tallyKeyFor } from "./keyboard-bindings";
 import type { TallyKey } from "./keyboard-bindings";
 import styles from "./TallyRoster.module.css";
@@ -12,15 +13,23 @@ export const TALLY_DRAG_TYPE = "application/x-checkbox-tally";
 export function TallyRoster({
   state,
   fahrzeuge,
+  paused,
   onTallyTapped,
 }: {
   state: State;
   fahrzeuge: Fahrzeuge;
+  // The device drops every Tally while paused, so the fobs say so rather than ignore a tap.
+  paused: boolean;
   onTallyTapped: (tally: RosterTally) => void;
 }) {
   const tallys = rosterTallys(fahrzeuge);
   return (
     <section className={styles.roster} aria-label="Atemschutzträger">
+      {paused && (
+        <div className={styles.paused} aria-hidden="true">
+          <PauseIcon />
+        </div>
+      )}
       {fahrzeuge.map((fahrzeug) => (
         <FahrzeugCard
           key={fahrzeug.id}
@@ -28,6 +37,7 @@ export function TallyRoster({
           tallys={tallys.filter((tally) => tally.fahrzeugId === fahrzeug.id)}
           rosterIndexOf={(tally) => tallys.indexOf(tally)}
           state={state}
+          paused={paused}
           onTallyTapped={onTallyTapped}
         />
       ))}
@@ -40,12 +50,14 @@ function FahrzeugCard({
   tallys,
   rosterIndexOf,
   state,
+  paused,
   onTallyTapped,
 }: {
   fahrzeug: Fahrzeug;
   tallys: readonly RosterTally[];
   rosterIndexOf: (tally: RosterTally) => number;
   state: State;
+  paused: boolean;
   onTallyTapped: (tally: RosterTally) => void;
 }) {
   return (
@@ -64,6 +76,7 @@ function FahrzeugCard({
               kurzname={fahrzeug.kurzname}
               shortcut={tallyKeyFor(rosterIndexOf(tally))}
               state={state}
+              paused={paused}
               onTapped={onTallyTapped}
             />
           </li>
@@ -80,12 +93,14 @@ function TallyFob({
   kurzname,
   shortcut,
   state,
+  paused,
   onTapped,
 }: {
   tally: RosterTally;
   kurzname: string;
   shortcut: TallyKey;
   state: State;
+  paused: boolean;
   onTapped: (tally: RosterTally) => void;
 }) {
   const code = roleCode(tally);
@@ -102,7 +117,8 @@ function TallyFob({
         aria-label={`${kurzname} ${code} auflegen`}
         aria-description={hint.text}
         aria-keyshortcuts={shortcut.ariaName}
-        draggable
+        disabled={paused}
+        draggable={!paused}
         onDragStart={(event: DragEvent<HTMLButtonElement>) => {
           event.dataTransfer.setData(TALLY_DRAG_TYPE, tally.tallyId);
           event.dataTransfer.effectAllowed = "copy";

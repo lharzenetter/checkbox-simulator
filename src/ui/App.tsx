@@ -171,6 +171,7 @@ export function App() {
         <TallyRoster
           state={state}
           fahrzeuge={names.fahrzeuge}
+          paused={clock.paused}
           onTallyTapped={tapTally}
         />
       </main>
