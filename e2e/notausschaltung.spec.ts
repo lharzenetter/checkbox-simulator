@@ -30,7 +30,9 @@ test("perform a Notausschaltung with the keyboard", async ({ page }) => {
 
   await page.keyboard.down("d");
   await page.keyboard.down("e");
-  await page.clock.runFor(4_000);
+  // Ticks come once per animation frame, so the hold runs a frame past the Haltezeit before the
+  // keys go up.
+  await page.clock.runFor(4_100);
   await page.keyboard.up("e");
   await page.keyboard.up("d");
   await expect(lcd).toHaveAttribute("aria-label", NOTAUSSCHALTUNG_AUSWAHL);

@@ -19,6 +19,8 @@ test("resume the running session paused after a reload", async ({ page }) => {
   await logInTrupp(page);
   await page.getByRole("button", { name: "10×" }).click();
   await page.clock.runFor(6_000);
+  // Stop the page's time, so the session saved before the reload is the one the LCD shows.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1_000));
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
   const beforeReload = await lcd.getAttribute("aria-label");
 
