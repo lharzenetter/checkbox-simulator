@@ -1,6 +1,10 @@
+/* Header, body and footer stack in a column; only the body scrolls. */
 .dialog {
+  box-sizing: border-box;
   max-width: min(92vw, 34rem);
-  padding: 20px 24px;
+  max-height: 80vh;
+  max-height: 80dvh;
+  padding: 0;
   border: 2px solid #6b7178;
   border-radius: 12px;
   background: #2b2f33;
@@ -10,11 +14,49 @@
     sans-serif;
 }
 
+/* Only while open: a display value on the closed dialog would override its hiding. */
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .dialog::backdrop {
   background: rgb(0 0 0 / 60%);
 }
 
+.title,
+.footer {
+  flex: none;
+  padding: 16px 24px;
+  background: #212427;
+}
+
 .title {
-  margin: 0 0 12px;
+  margin: 0;
+  border-bottom: 1px solid #6b7178;
   font-size: 1.25rem;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+.body > :first-child {
+  margin-top: 0;
+}
+
+.body > :last-child {
+  margin-bottom: 0;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid #6b7178;
 }

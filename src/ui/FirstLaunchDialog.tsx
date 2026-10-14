@@ -17,17 +17,20 @@ export function FirstLaunchDialog({
 }) {
   return (
     <ModalDialog title="Willkommen beim Checkbox-Simulator">
-      <p>
-        Wie heißen deine Feuerwehr und ihre Fahrzeuge? Der Feuerwehrname steht
-        oben auf dem Display der Checkbox, der Funkrufname bei den
-        Atemschutzträgern, der Kurzname auf dem Display. Bis zu vier Fahrzeuge
-        sind möglich. Alles lässt sich später in den Einstellungen ändern.
-      </p>
       <NamesForm
         initialNames={names}
         state={state}
         submitLabel="Übernehmen"
         onSubmit={onConfirm}
+        intro={
+          <p>
+            Wie heißen deine Feuerwehr und ihre Fahrzeuge? Der Feuerwehrname
+            steht oben auf dem Display der Checkbox, der Funkrufname bei den
+            Atemschutzträgern, der Kurzname auf dem Display. Bis zu vier
+            Fahrzeuge sind möglich. Alles lässt sich später in den Einstellungen
+            ändern.
+          </p>
+        }
       />
     </ModalDialog>
   );

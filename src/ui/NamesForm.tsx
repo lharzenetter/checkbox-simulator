@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { ReactNode, SyntheticEvent } from "react";
 import { FEUERWEHRNAME_MAX_LENGTH, isValidFeuerwehrname } from "../core/index";
 import type { State } from "../core/index";
@@ -14,9 +14,12 @@ import {
   removeFahrzeug,
 } from "../world/index";
 import type { Fahrzeug, RemovalBlocker } from "../world/index";
+import { ModalBody, ModalFooter } from "./ModalDialog";
 import type { Names } from "./use-simulator";
 import styles from "./NamesForm.module.css";
 
+// The body and footer of a dialog. The submit button sits in the footer, outside the scrolling
+// form, and joins it through its `form` attribute.
 // Decided in "Let the Trainee add and remove Fahrzeuge", point 5: nothing applies before the
 // submit button, so adding and removing need no confirmation.
 export function NamesForm({
@@ -24,6 +27,8 @@ export function NamesForm({
   state,
   submitLabel,
   onSubmit,
+  intro,
+  appendix,
   children,
 }: {
   initialNames: Names;
@@ -31,6 +36,10 @@ export function NamesForm({
   state: State;
   submitLabel: string;
   onSubmit: (names: Names) => void;
+  // Content above the fields.
+  intro?: ReactNode;
+  // Content below the fields.
+  appendix?: ReactNode;
   // Further buttons next to the submit button.
   children?: ReactNode;
 }) {
@@ -40,6 +49,7 @@ export function NamesForm({
   const [fahrzeuge, setFahrzeuge] = useState(initialNames.fahrzeuge);
   const feuerwehrnameValid = isValidFeuerwehrname(feuerwehrname);
   const allValid = feuerwehrnameValid && isValidRoster(fahrzeuge);
+  const formId = useId();
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -49,66 +59,80 @@ export function NamesForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <label className={styles.field}>
-        Feuerwehrname
-        <input
-          className={styles.input}
-          value={feuerwehrname}
-          required
-          maxLength={FEUERWEHRNAME_MAX_LENGTH}
-          onChange={(event) => {
-            setFeuerwehrname(event.target.value);
-          }}
-        />
-      </label>
-      {!feuerwehrnameValid && (
-        <p className={styles.problem} role="alert">
-          Bitte einen Feuerwehrnamen mit höchstens {FEUERWEHRNAME_MAX_LENGTH}{" "}
-          Zeichen angeben, die das Display zeigen kann.
-        </p>
-      )}
-      {fahrzeuge.map((fahrzeug, index) => (
-        <FahrzeugFields
-          key={fahrzeug.id}
-          legend={`Fahrzeug ${String(index + 1)}`}
-          fahrzeug={fahrzeug}
-          duplicateKurzname={hasDuplicateKurzname(fahrzeuge, fahrzeug)}
-          removalBlocker={removalBlocker(state, fahrzeuge, fahrzeug.id)}
-          onChange={(changed) => {
-            setFahrzeuge((current) =>
-              current.map((candidate) =>
-                candidate.id === changed.id ? changed : candidate,
-              ),
-            );
-          }}
-          onRemove={() => {
-            setFahrzeuge((current) => removeFahrzeug(current, fahrzeug.id));
-          }}
-        />
-      ))}
-      <div className={styles.actions}>
+    <>
+      <ModalBody>
+        {intro}
+        <form id={formId} className={styles.form} onSubmit={handleSubmit}>
+          <label className={styles.field}>
+            Feuerwehrname
+            <input
+              className={styles.input}
+              value={feuerwehrname}
+              required
+              maxLength={FEUERWEHRNAME_MAX_LENGTH}
+              onChange={(event) => {
+                setFeuerwehrname(event.target.value);
+              }}
+            />
+          </label>
+          {!feuerwehrnameValid && (
+            <p className={styles.problem} role="alert">
+              Bitte einen Feuerwehrnamen mit höchstens{" "}
+              {FEUERWEHRNAME_MAX_LENGTH} Zeichen angeben, die das Display zeigen
+              kann.
+            </p>
+          )}
+          {fahrzeuge.map((fahrzeug, index) => (
+            <FahrzeugFields
+              key={fahrzeug.id}
+              legend={`Fahrzeug ${String(index + 1)}`}
+              fahrzeug={fahrzeug}
+              duplicateKurzname={hasDuplicateKurzname(fahrzeuge, fahrzeug)}
+              removalBlocker={removalBlocker(state, fahrzeuge, fahrzeug.id)}
+              onChange={(changed) => {
+                setFahrzeuge((current) =>
+                  current.map((candidate) =>
+                    candidate.id === changed.id ? changed : candidate,
+                  ),
+                );
+              }}
+              onRemove={() => {
+                setFahrzeuge((current) => removeFahrzeug(current, fahrzeug.id));
+              }}
+            />
+          ))}
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              disabled={!canAddFahrzeug(fahrzeuge)}
+              onClick={() => {
+                setFahrzeuge(addFahrzeug);
+              }}
+            >
+              Fahrzeug hinzufügen
+            </button>
+            {!canAddFahrzeug(fahrzeuge) && (
+              <p className={styles.note}>
+                Höchstens {MAX_FAHRZEUGE} Fahrzeuge.
+              </p>
+            )}
+          </div>
+        </form>
+        {appendix}
+      </ModalBody>
+      <ModalFooter>
         <button
-          type="button"
-          className={styles.secondaryButton}
-          disabled={!canAddFahrzeug(fahrzeuge)}
-          onClick={() => {
-            setFahrzeuge(addFahrzeug);
-          }}
+          type="submit"
+          form={formId}
+          className={styles.button}
+          disabled={!allValid}
         >
-          Fahrzeug hinzufügen
-        </button>
-        {!canAddFahrzeug(fahrzeuge) && (
-          <p className={styles.note}>Höchstens {MAX_FAHRZEUGE} Fahrzeuge.</p>
-        )}
-      </div>
-      <div className={styles.actions}>
-        <button type="submit" className={styles.button} disabled={!allValid}>
           {submitLabel}
         </button>
         {children}
-      </div>
-    </form>
+      </ModalFooter>
+    </>
   );
 }
 

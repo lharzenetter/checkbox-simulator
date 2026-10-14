@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { State } from "../core/index";
-import { ModalDialog } from "./ModalDialog";
+import { ModalBody, ModalDialog, ModalFooter } from "./ModalDialog";
 import { NamesForm } from "./NamesForm";
 import type { Names } from "./use-simulator";
 import styles from "./Settings.module.css";
@@ -28,11 +28,13 @@ export function Settings({
           setConfirmingReset(false);
         }}
       >
-        <p>
-          Der Feuerwehrname, die Fahrzeuge, die Einsatzprotokolle, die
-          Stummschaltung und der laufende Einsatz werden gelöscht.
-        </p>
-        <div className={styles.actions}>
+        <ModalBody>
+          <p>
+            Der Feuerwehrname, die Fahrzeuge, die Einsatzprotokolle, die
+            Stummschaltung und der laufende Einsatz werden gelöscht.
+          </p>
+        </ModalBody>
+        <ModalFooter>
           <button
             type="button"
             className={styles.danger}
@@ -49,7 +51,7 @@ export function Settings({
           >
             Abbrechen
           </button>
-        </div>
+        </ModalFooter>
       </ModalDialog>
     );
   }
@@ -64,22 +66,24 @@ export function Settings({
           onNamed(named);
           onClose();
         }}
+        appendix={
+          <section className={styles.reset} aria-label="Werkszustand">
+            <button
+              type="button"
+              className={styles.danger}
+              onClick={() => {
+                setConfirmingReset(true);
+              }}
+            >
+              Auf Werkszustand zurücksetzen
+            </button>
+          </section>
+        }
       >
         <button type="button" className={styles.secondary} onClick={onClose}>
           Abbrechen
         </button>
       </NamesForm>
-      <section className={styles.reset} aria-label="Werkszustand">
-        <button
-          type="button"
-          className={styles.danger}
-          onClick={() => {
-            setConfirmingReset(true);
-          }}
-        >
-          Auf Werkszustand zurücksetzen
-        </button>
-      </section>
     </ModalDialog>
   );
 }
