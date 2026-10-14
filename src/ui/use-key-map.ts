@@ -9,12 +9,13 @@ import {
 } from "./keyboard-bindings";
 
 // A control outside the front panel keeps Enter and Space, so the side controls stay
-// usable from the keyboard.
+// usable from the keyboard. A Tally fob that a click left focused does not: the Trainee goes
+// straight on with the device keys.
 function focusedControlKeeps(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
     target.matches("button, input, select, textarea, a[href]") &&
-    target.closest("[data-front-panel]") === null
+    target.closest("[data-front-panel], [data-tally-fob]") === null
   );
 }
 

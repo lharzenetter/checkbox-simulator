@@ -71,10 +71,9 @@
   cursor: grabbing;
 }
 
-.fob:focus-visible {
-  border-radius: 12px;
-  outline: 3px solid #6ea8fe;
-  outline-offset: 2px;
+/* Tab never reaches a fob, so a focus ring would only ever mark the last one clicked. */
+.fob:focus {
+  outline: none;
 }
 
 .shape {

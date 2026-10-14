@@ -37,6 +37,17 @@ test("leave Space to a focused control outside the front panel", async ({
   );
 });
 
+test("give Enter to the device after a Tally is clicked", async ({ page }) => {
+  await page.clock.install();
+  await openSimulator(page);
+  const lcd = page.getByRole("img");
+
+  await page.getByRole("button", { name: "HLF AT-F auflegen" }).click();
+  await expect(lcd).toHaveAttribute("aria-label", /^Neuen Trupp anmelden:/);
+  await page.keyboard.press("Enter");
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 {3}30 min/);
+});
+
 test("press a focused front-panel key's binding only once", async ({
   page,
 }) => {

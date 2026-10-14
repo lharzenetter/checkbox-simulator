@@ -90,6 +90,9 @@ function TallyFob({
         type="button"
         className={styles.fob}
         data-hint={hint.kind}
+        data-tally-fob
+        // The number keys tap the fobs, so Tab skips them.
+        tabIndex={-1}
         aria-label={`${kurzname} ${code} auflegen`}
         aria-description={hint.text}
         aria-keyshortcuts={shortcut}
