@@ -2,7 +2,7 @@
 
 The simulator keeps two stores in browser storage.
 
-- **Device memory** mirrors the Checkbox's non-volatile memory and is kept until a factory reset. It holds the Funkrufnamen and Kurznamen, the first-launch-done flag, the persisted mute setting ([Decide how alarms are presented](0013-decide-how-alarms-are-presented.md)) and an **Einsatzprotokoll ring buffer of 100**, where the oldest is overwritten (manual p. 15, p. 32). An Einsatzprotokoll is written at every logoff and Notausschaltung (p. 31), even though no screen shows them yet.
+- **Device memory** mirrors the Checkbox's non-volatile memory and is kept until a factory reset. It holds the Funkrufnamen and Kurznamen, the first-launch-done flag, the persisted mute setting ([Decide how alarms are presented](0013-decide-how-alarms-are-presented.md)) and an **Einsatzprotokoll ring buffer of 100**, where the oldest is overwritten (manual p. 15, p. 32). An Einsatzprotokoll is written at every logoff and Notausschaltung (p. 31). Device memory also holds the **Einsatznummer** counter, so a number is never reused, not even after "verwerfen" ([Show the Einsatzprotokolle on the LCD](0016-show-the-einsatzprotokolle-on-the-lcd.md)).
 - **The running session** is the device core's state (Trupps, Restzeiten, pending Alarms, current screen), saved continuously.
 
 **On load with a saved session**, the Trainee is asked "fortsetzen / verwerfen?":

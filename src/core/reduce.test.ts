@@ -102,19 +102,60 @@ describe("the Abschaltzeit", () => {
 });
 
 describe("the SERVICE menu", () => {
+  function service(): State {
+    return run(poweredOn(), press("OK"));
+  }
+
   // manual 5.2
   it("returns to the Startdisplay on X", () => {
-    expect(run(poweredOn(), press("OK"), press("X")).screen).toBe(
-      "startdisplay",
-    );
+    expect(run(service(), press("X")).screen).toBe("startdisplay");
+  });
+
+  // manual 5.10 step 3
+  it("opens with the bar on Einsatzprotokoll", () => {
+    expect(service().serviceAktion).toBe("einsatzprotokoll");
+  });
+
+  // manual 5.10 step 3
+  it("moves the bar down and up", () => {
+    const down = run(service(), press("Down"), press("Down"));
+    expect(down.serviceAktion).toBe("kontrast");
+    expect(run(down, press("Up")).serviceAktion).toBe("zeitDatumEinstellen");
+  });
+
+  // ASSUMPTION: every choice screen wraps ("Show the Einsatzprotokolle on the LCD")
+  it("wraps the bar from the last item to the first and back", () => {
+    const last = run(service(), press("Up"));
+    expect(last.serviceAktion).toBe("testprogramm");
+    expect(run(last, press("Down")).serviceAktion).toBe("einsatzprotokoll");
+  });
+
+  // manual 5.10 step 4
+  it("opens the Einsatzprotokoll screen on OK on Einsatzprotokoll", () => {
+    expect(run(service(), press("OK")).screen).toBe("einsatzprotokoll");
   });
 
   // decided in "Draw the simulator's scope"
-  it.each<Key>(["Up", "Down", "OK", "Check"])(
-    "keeps every item inert on %s",
-    (key) => {
-      const service = run(poweredOn(), press("OK"));
-      expect(reduce(service, press(key))).toBe(service);
-    },
-  );
+  it.each([1, 2, 3])("keeps item %i inert on OK", (downs) => {
+    const state = run(
+      service(),
+      ...Array.from({ length: downs }, () => press("Down")),
+    );
+    expect(reduce(state, press("OK"))).toBe(state);
+  });
+
+  // manual p. 17
+  it("ignores Check and Tallys", () => {
+    const state = service();
+    expect(reduce(state, press("Check"))).toBe(state);
+    expect(
+      reduce(state, { type: "tallyHeld", tallyId: "a1", name: "HLF AT-F" }),
+    ).toBe(state);
+  });
+
+  // decided in "Show the Einsatzprotokolle on the LCD"
+  it("does not time out", () => {
+    const state = service();
+    expect(run(state, tickAfter(state, 60 * 60_000)).screen).toBe("service");
+  });
 });

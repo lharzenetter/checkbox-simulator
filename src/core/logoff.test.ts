@@ -163,13 +163,29 @@ describe("leaving ABMELDEN", () => {
 
 // timing-and-alarm-rules §12.7; verification scenario V17
 describe.each([
-  { einsatzstatus: "anmarsch", truppInStatus: truppInAnmarsch },
-  { einsatzstatus: "einsatzzielErreicht", truppInStatus: truppAtEinsatzziel },
-  { einsatzstatus: "rueckmarsch", truppInStatus: truppInRueckmarsch },
-  { einsatzstatus: "bereitschaft", truppInStatus: truppInBereitschaft },
+  {
+    einsatzstatus: "anmarsch",
+    truppInStatus: truppInAnmarsch,
+    davonAktivMs: 4 * 60_000,
+  },
+  {
+    einsatzstatus: "einsatzzielErreicht",
+    truppInStatus: truppAtEinsatzziel,
+    davonAktivMs: 4 * 60_000,
+  },
+  {
+    einsatzstatus: "rueckmarsch",
+    truppInStatus: truppInRueckmarsch,
+    davonAktivMs: 4 * 60_000,
+  },
+  {
+    einsatzstatus: "bereitschaft",
+    truppInStatus: truppInBereitschaft,
+    davonAktivMs: 0,
+  },
 ])(
   "logging off a Trupp in $einsatzstatus",
-  ({ einsatzstatus, truppInStatus }) => {
+  ({ einsatzstatus, truppInStatus, davonAktivMs }) => {
     function loggedOff(): State {
       const running = truppInStatus();
       // before the first Alarmgrenze and Bereitschaft Alarm, so no Alarm takes over from ABMELDEN
@@ -195,6 +211,7 @@ describe.each([
     it("records an Einsatzprotokoll with the Einsatzstatus at logoff", () => {
       expect(loggedOff().einsatzprotokolle).toEqual([
         {
+          einsatznummer: 1,
           truppnummer: 1,
           einsatzzeitMs: 30 * 60_000,
           atemschutztraeger: [A1, A2],
@@ -202,6 +219,8 @@ describe.each([
           sicherheitstrupp: false,
           loggedInAtMs: SESSION_START.now,
           loggedOffAtMs: SESSION_START.now + 4 * 60_000,
+          davonAktivMs,
+          notausschaltung: false,
         },
       ]);
     });
@@ -292,11 +311,60 @@ describe("the Einsatzprotokolle", () => {
   });
 
   // decided in "Decide what survives a page reload": they are device memory, kept across sessions
-  it("carries the device memory's Einsatzprotokolle into a new session", () => {
+  it("carries the device memory's Einsatzprotokolle and Einsatznummer into a new session", () => {
     const previousSession = logInAndOff(createInitialState(SESSION_START));
     const kept = previousSession.einsatzprotokolle;
-    const state = logInAndOff(createInitialState(SESSION_START, kept));
+    const state = logInAndOff(
+      createInitialState(SESSION_START, {
+        einsatzprotokolle: kept,
+        nextEinsatznummer: previousSession.nextEinsatznummer,
+      }),
+    );
     expect(state.einsatzprotokolle).toHaveLength(2);
     expect(state.einsatzprotokolle[0]).toEqual(kept[0]);
+    expect(state.einsatzprotokolle[1]?.einsatznummer).toBe(2);
+  });
+
+  // ASSUMPTION: one Einsatznummer per Einsatzprotokoll ("Show the Einsatzprotokolle on the LCD")
+  it("numbers them in the order they are written", () => {
+    const state = logInAndOff(logInAndOff(createInitialState(SESSION_START)));
+    expect(
+      state.einsatzprotokolle.map((protokoll) => protokoll.einsatznummer),
+    ).toEqual([1, 2]);
+  });
+
+  it("keeps counting after the oldest are overwritten, never reusing an Einsatznummer", () => {
+    let state = createInitialState(SESSION_START);
+    for (let einsatz = 0; einsatz < 101; einsatz++) {
+      state = logInAndOff(state);
+    }
+    expect(state.einsatzprotokolle[0]?.einsatznummer).toBe(2);
+    expect(state.einsatzprotokolle[99]?.einsatznummer).toBe(101);
+    expect(state.nextEinsatznummer).toBe(102);
+  });
+
+  // ASSUMPTION: `davon aktiv` is `t_run` ("Show the Einsatzprotokolle on the LCD")
+  it("records as davon aktiv only the time spent outside Bereitschaft", () => {
+    const anmarsch = truppInAnmarsch();
+    const bereitschaft = run(
+      anmarsch,
+      tickAfter(anmarsch, 3 * 60_000),
+      press("OK"),
+      press("OK"),
+      press("Down"),
+      press("OK"),
+    );
+    expect(bereitschaft.trupps[0]?.einsatzstatus).toBe("bereitschaft");
+    const state = run(
+      bereitschaft,
+      tickAfter(bereitschaft, 2 * 60_000),
+      hold(A1),
+      hold(A2),
+      press("OK"),
+    );
+    expect(state.einsatzprotokolle[0]?.davonAktivMs).toBe(3 * 60_000);
+    expect(state.einsatzprotokolle[0]?.loggedOffAtMs).toBe(
+      SESSION_START.now + 5 * 60_000,
+    );
   });
 });

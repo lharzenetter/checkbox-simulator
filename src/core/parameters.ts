@@ -18,6 +18,10 @@ export const NOTAUSSCHALTUNG_HALTEZEIT_MS = 4_000;
 // The Einsatzprotokoll memory has no parameter number either: manual p. 15, p. 32.
 export const EINSATZPROTOKOLL_CAPACITY = 100;
 
+// Nor do S16's lines: the figure's two-person Einsatzprotokoll exactly fills the screen with its
+// 15 lines, rules included (manual 5.10).
+export const EINSATZPROTOKOLL_SCREEN_LINES = 15;
+
 // manual 9.1; defaults from timing-and-alarm-rules §9.
 export const P01_EINSATZZEIT_1_MS = 30 * 60_000;
 export const P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 2;

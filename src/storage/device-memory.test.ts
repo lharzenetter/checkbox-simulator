@@ -40,6 +40,7 @@ class MemoryStorage implements Storage {
 }
 
 const EINSATZPROTOKOLL: Einsatzprotokoll = {
+  einsatznummer: 321,
   truppnummer: 1,
   einsatzzeitMs: 30 * 60_000,
   atemschutztraeger: [
@@ -50,6 +51,8 @@ const EINSATZPROTOKOLL: Einsatzprotokoll = {
   sicherheitstrupp: false,
   loggedInAtMs: 1_000_000,
   loggedOffAtMs: 2_000_000,
+  davonAktivMs: 600_000,
+  notausschaltung: true,
 };
 
 const CHANGED: DeviceMemory = {
@@ -62,11 +65,12 @@ const CHANGED: DeviceMemory = {
   firstLaunchDone: true,
   muted: true,
   einsatzprotokolle: [EINSATZPROTOKOLL],
+  nextEinsatznummer: 322,
 };
 
 // The current version's stored form of CHANGED, with these fields replaced.
 function stored(fields: Readonly<Record<string, unknown>>): string {
-  return JSON.stringify({ version: 2, ...CHANGED, ...fields });
+  return JSON.stringify({ version: 3, ...CHANGED, ...fields });
 }
 
 function storageWith(items: Readonly<Record<string, string>>): Storage {
@@ -89,6 +93,7 @@ describe("the device memory", () => {
       firstLaunchDone: false,
       muted: false,
       einsatzprotokolle: [],
+      nextEinsatznummer: 1,
     });
   });
 
@@ -100,7 +105,7 @@ describe("the device memory", () => {
     expect(loadDeviceMemory(storage).fahrzeuge).toEqual(CHANGED.fahrzeuge);
   });
 
-  it("keeps the Feuerwehrname, the names, the first launch, the mute setting and the Einsatzprotokolle", () => {
+  it("keeps the Feuerwehrname, the names, the first launch, the mute setting, the Einsatzprotokolle and the Einsatznummer", () => {
     const storage = new MemoryStorage();
     saveDeviceMemory(storage, CHANGED);
     expect(loadDeviceMemory(storage)).toEqual(CHANGED);
@@ -114,9 +119,45 @@ describe("incompatible stored data", () => {
     ["has no version", JSON.stringify({ ...CHANGED })],
     ["has an old version", JSON.stringify({ version: 1, ...CHANGED })],
     [
-      "has a Feuerwehrname longer than an LCD line",
+      "has version 2, without the Einsatznummer",
       JSON.stringify({
         version: 2,
+        ...CHANGED,
+        nextEinsatznummer: undefined,
+        einsatzprotokolle: [
+          {
+            ...EINSATZPROTOKOLL,
+            einsatznummer: undefined,
+            davonAktivMs: undefined,
+            notausschaltung: undefined,
+          },
+        ],
+      }),
+    ],
+    ["has no Einsatznummer", stored({ nextEinsatznummer: undefined })],
+    ["has an Einsatznummer below 1", stored({ nextEinsatznummer: 0 })],
+    [
+      "has an Einsatzprotokoll without its Einsatznummer",
+      stored({
+        einsatzprotokolle: [{ ...EINSATZPROTOKOLL, einsatznummer: undefined }],
+      }),
+    ],
+    [
+      "has an Einsatzprotokoll with a fractional davon aktiv",
+      stored({
+        einsatzprotokolle: [{ ...EINSATZPROTOKOLL, davonAktivMs: 1.5 }],
+      }),
+    ],
+    [
+      "has an Einsatzprotokoll whose Notausschaltung flag is no boolean",
+      stored({
+        einsatzprotokolle: [{ ...EINSATZPROTOKOLL, notausschaltung: "ja" }],
+      }),
+    ],
+    [
+      "has a Feuerwehrname longer than an LCD line",
+      JSON.stringify({
+        version: 3,
         ...CHANGED,
         feuerwehrname: "Freiwillige Feuerwehr Musterstadt",
       }),
@@ -169,7 +210,7 @@ describe("incompatible stored data", () => {
     [
       "has an Einsatzprotokoll with an unknown Einsatzstatus",
       JSON.stringify({
-        version: 2,
+        version: 3,
         ...CHANGED,
         einsatzprotokolle: [{ ...EINSATZPROTOKOLL, einsatzstatus: "pause" }],
       }),
@@ -177,7 +218,7 @@ describe("incompatible stored data", () => {
     [
       "has an Einsatzprotokoll without its Atemschutzträger",
       JSON.stringify({
-        version: 2,
+        version: 3,
         ...CHANGED,
         einsatzprotokolle: [{ ...EINSATZPROTOKOLL, atemschutztraeger: null }],
       }),
@@ -196,7 +237,7 @@ describe("incompatible stored data", () => {
 
   it("keeps compatible data as it is", () => {
     const storage = storageWith({
-      [DEVICE_MEMORY_KEY]: JSON.stringify({ version: 2, ...CHANGED }),
+      [DEVICE_MEMORY_KEY]: JSON.stringify({ version: 3, ...CHANGED }),
     });
     expect(loadDeviceMemory(storage)).toEqual(CHANGED);
   });

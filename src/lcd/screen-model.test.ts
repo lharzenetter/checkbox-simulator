@@ -4,8 +4,9 @@ import {
   P81_FLASCHENTYP_2_BAR,
   reduce,
 } from "../core/index";
-import type { Event, Key, State } from "../core/index";
+import type { Einsatzprotokoll, Event, Key, State } from "../core/index";
 import { screenModel, screenText } from "./screen-model";
+import type { ScreenModel } from "./screen-model";
 
 // 12.04.17 11:11:00, the Uhrzeit in the Startdisplay figure (manual 5.2).
 const FIGURE_UHRZEIT = Date.UTC(2017, 3, 12, 11, 11, 0);
@@ -95,6 +96,192 @@ describe("S02 SERVICE", () => {
       "Testprogramm",
     ]);
     expect(model).toMatchObject({ layout: "service", selectedIndex: 0 });
+  });
+
+  // manual 5.10 step 3
+  it.each([1, 2, 3])("moves the bar to item %i", (downs) => {
+    const model = screenModel(
+      stateAfter(
+        press("Check"),
+        press("OK"),
+        ...Array.from({ length: downs }, () => press("Down")),
+      ),
+    );
+    expect(model).toMatchObject({ layout: "service", selectedIndex: downs });
+  });
+});
+
+describe("S16 Einsatzprotokoll", () => {
+  // 01.01.14 15:30:00, the login in the Einsatzprotokoll figure (manual 5.10).
+  const FIGURE_LOGIN = Date.UTC(2014, 0, 1, 15, 30, 0);
+
+  function einsatzprotokoll(
+    einsatznummer: number,
+    names: readonly string[],
+    notausschaltung = false,
+  ): Einsatzprotokoll {
+    return {
+      einsatznummer,
+      truppnummer: 1,
+      einsatzzeitMs: 30 * 60_000,
+      atemschutztraeger: names.map((name, index) => ({
+        tallyId: String(index),
+        name,
+      })),
+      einsatzstatus: "rueckmarsch",
+      sicherheitstrupp: false,
+      loggedInAtMs: FIGURE_LOGIN,
+      loggedOffAtMs: FIGURE_LOGIN + 15 * 60_000,
+      davonAktivMs: 10 * 60_000,
+      notausschaltung,
+    };
+  }
+
+  function einsatzprotokollScreen(
+    einsatzprotokolle: readonly Einsatzprotokoll[],
+    ...events: readonly Event[]
+  ): ScreenModel {
+    return screenModel(
+      [press("Check"), press("OK"), press("OK"), ...events].reduce(
+        reduce,
+        createInitialState(
+          { now: FIGURE_UHRZEIT, realNow: 0 },
+          { einsatzprotokolle, nextEinsatznummer: 1_000 },
+        ),
+      ),
+    );
+  }
+
+  // The figure transcribes its rules as a line of `─`.
+  function asFigure(model: ScreenModel): readonly string[] {
+    if (model.layout !== "einsatzprotokoll") {
+      throw new Error(`Expected S16, got ${model.layout}`);
+    }
+    return model.lines.map((line) =>
+      line.kind === "rule" ? "─".repeat(21) : line.text,
+    );
+  }
+
+  const RULE = "─".repeat(21);
+
+  // manual 5.10, S16 figure
+  it("shows a two-person Einsatzprotokoll as in the figure", () => {
+    const model = einsatzprotokollScreen([
+      einsatzprotokoll(321, ["MUSTERMANN M", "MUSTERMANN E"]),
+    ]);
+    expect(asFigure(model)).toEqual([
+      "Einsatzprotokoll",
+      RULE,
+      " Einsatz Nr:    00321",
+      "     Datum:  01.01.14",
+      "TruppNr/EZT:   01/030",
+      RULE,
+      "Einsatzkräfte:",
+      "MUSTERMANN M",
+      "MUSTERMANN E",
+      RULE,
+      "Einsatz von: 15:30:00",
+      "        bis: 15:45:00",
+      "davon aktiv: 00:10:00",
+      RULE,
+      "Protokoll Ende",
+    ]);
+  });
+
+  it("shows a six-person Einsatzprotokoll scrolled part-way", () => {
+    const model = einsatzprotokollScreen(
+      [einsatzprotokoll(7, ["A", "B", "C", "D", "E", "F"])],
+      press("Down"),
+      press("Down"),
+    );
+    expect(asFigure(model)).toEqual([
+      " Einsatz Nr:    00007",
+      "     Datum:  01.01.14",
+      "TruppNr/EZT:   01/030",
+      RULE,
+      "Einsatzkräfte:",
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      RULE,
+      "Einsatz von: 15:30:00",
+      "        bis: 15:45:00",
+      "davon aktiv: 00:10:00",
+    ]);
+  });
+
+  it("shows a window spanning two Einsatzprotokolle", () => {
+    const model = einsatzprotokollScreen(
+      [
+        einsatzprotokoll(1, ["ALT A", "ALT B"]),
+        einsatzprotokoll(2, ["NEU A", "NEU B"]),
+      ],
+      ...Array.from({ length: 10 }, () => press("Down")),
+    );
+    expect(asFigure(model)).toEqual([
+      "Einsatz von: 15:30:00",
+      "        bis: 15:45:00",
+      "davon aktiv: 00:10:00",
+      RULE,
+      "Protokoll Ende",
+      "Einsatzprotokoll",
+      RULE,
+      " Einsatz Nr:    00001",
+      "     Datum:  01.01.14",
+      "TruppNr/EZT:   01/030",
+      RULE,
+      "Einsatzkräfte:",
+      "ALT A",
+      "ALT B",
+      RULE,
+    ]);
+  });
+
+  // ASSUMPTION: the Notausschaltung line ("Show the Einsatzprotokolle on the LCD"); manual p. 31
+  it("shows Notausschaltung before Protokoll Ende for a Trupp a Notausschaltung ended", () => {
+    const model = einsatzprotokollScreen(
+      [einsatzprotokoll(1, ["A", "B"], true)],
+      press("Down"),
+    );
+    expect(asFigure(model).slice(-3)).toEqual([
+      RULE,
+      "Notausschaltung",
+      "Protokoll Ende",
+    ]);
+  });
+
+  it("shows a 20 min Einsatzzeit as `020`", () => {
+    const model = einsatzprotokollScreen([
+      {
+        ...einsatzprotokoll(1, ["A", "B"]),
+        truppnummer: 6,
+        einsatzzeitMs: 20 * 60_000,
+      },
+    ]);
+    expect(asFigure(model)[4]).toBe("TruppNr/EZT:   06/020");
+  });
+
+  // ASSUMPTION: `Kein Protokoll` ("Show the Einsatzprotokolle on the LCD")
+  it("shows its title and Kein Protokoll with no Einsatzprotokoll stored", () => {
+    const model = einsatzprotokollScreen([]);
+    expect(asFigure(model)).toEqual([
+      "Einsatzprotokoll",
+      RULE,
+      "Kein Protokoll",
+    ]);
+    expect(screenText(model)).toEqual(["Einsatzprotokoll", "Kein Protokoll"]);
+  });
+
+  it("reads its text lines without the rules", () => {
+    const model = einsatzprotokollScreen([einsatzprotokoll(1, ["A", "B"])]);
+    expect(screenText(model).slice(0, 3)).toEqual([
+      "Einsatzprotokoll",
+      "Einsatz Nr: 00001",
+      "Datum: 01.01.14",
+    ]);
   });
 });
 

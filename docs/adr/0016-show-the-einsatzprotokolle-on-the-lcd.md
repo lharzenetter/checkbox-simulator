@@ -1,0 +1,14 @@
+# Show the Einsatzprotokolle on the LCD
+
+SERVICE → `Einsatzprotokoll` shows the stored Einsatzprotokolle on S16, as on the real Checkbox (manual 5.10). This amends [Draw the simulator's scope](0002-draw-the-simulators-scope.md): `Einsatzprotokoll` is the SERVICE menu's first live item. The other drawn items stay inert, and the hidden items `NAME lesen/schreiben` and `Feuerwehrname ändern` stay out (gap G8 stays open).
+
+1. **SERVICE navigation.** Up and Down move the bar over the four drawn items and wrap, like every other choice screen. OK on `Einsatzprotokoll` opens S16; OK on any other item does nothing. X returns to the Startdisplay, whose Abschaltzeit starts afresh. A Tally on Check is ignored on SERVICE and on S16 (manual p. 17). Neither screen times out.
+2. **One Einsatznummer per Einsatzprotokoll.** The Checkbox numbers each Einsatzprotokoll as it writes it, starting at `00001`, so every Trupp ended by `-> alle Trupps` gets its own number. The counter lives in device memory: it keeps counting after the 100-record memory starts overwriting, survives a reload and "verwerfen", and only a factory reset restarts it.
+3. **`davon aktiv` is `t_run`**, the time the Trupp spent outside Bereitschaft ([timing and alarm rules](../research/timing-and-alarm-rules.md)). The manual does not define it; this is the reading that makes it differ from `von`–`bis`.
+4. **One continuous strip.** S16 shows the Einsatzprotokolle newest first, each laid out as in the manual's figure and ending in `Protokoll Ende`. Up and Down scroll the strip line by line, so scrolling past one record brings the next older one into view; the title scrolls with its record. Scrolling stops at the top of the newest record and when the oldest record's `Protokoll Ende` reaches the bottom line. The window is as high as a two-person record, which fills the screen exactly as in the figure. S16 opens at the top of the newest record every time it is entered, and X returns to SERVICE. This is the user's reading of "Blättern" (5.10 step 5).
+5. **`Kein Protokoll`.** With no Einsatzprotokoll stored, S16 shows its title and `Kein Protokoll`, and does not scroll.
+6. **The `Notausschaltung` line.** An Einsatzprotokoll written by a Notausschaltung, by either choice, has an extra `Notausschaltung` line before `Protokoll Ende` (manual p. 31: "Die Notausschaltung wird im Einsatzprotokoll gespeichert").
+
+The Einsatzstatus at logoff and the Sicherheitstrupp flag stay in each Einsatzprotokoll but are not shown. The stored device memory and the running session change shape, so per [Decide what survives a page reload](0007-decide-what-survives-a-page-reload.md) older data and the running session are wiped, never migrated.
+
+Decided in [Show the Einsatzprotokolle on the LCD](https://github.com/lharzenetter/checkbox-simulator/issues/45).

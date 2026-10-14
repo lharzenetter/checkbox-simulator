@@ -1,5 +1,7 @@
 export { abschaltzeitRestMs } from "./abschaltzeit";
 export { assertNever } from "./assert-never";
+export { einsatzprotokollWindow } from "./einsatzprotokoll-strip";
+export type { EinsatzprotokollLine } from "./einsatzprotokoll-strip";
 export type { Event, Key } from "./event";
 export {
   FACTORY_FEUERWEHRNAME,
@@ -12,6 +14,7 @@ export {
   EINSATZZEITEN_MS,
   NOTAUSSCHALTUNG_AKTIONEN,
   reduce,
+  SERVICE_AKTIONEN,
 } from "./reduce";
 export {
   computeRestzeitMs,
@@ -30,7 +33,7 @@ export {
   truppMenueAktionen,
   truppOfTally,
 } from "./selectors";
-export { createInitialState } from "./state";
+export { createInitialState, FACTORY_STORED_EINSATZPROTOKOLLE } from "./state";
 export type {
   Logoff,
   Anmeldeaktion,
@@ -41,7 +44,9 @@ export type {
   Einsatzprotokoll,
   Einsatzstatus,
   Screen,
+  ServiceAktion,
   State,
+  StoredEinsatzprotokolle,
   Trupp,
   TruppMenue,
   TruppMenueAktion,

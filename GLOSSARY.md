@@ -168,6 +168,10 @@ _Avoid_: emergency stop, Not-Aus
 The stored record of one Trupp's monitored Einsatz, kept on the Checkbox after logoff.
 _Avoid_: log, protocol, report
 
+**Einsatznummer**:
+The running number the Checkbox gives each Einsatzprotokoll as it is written, never reused; the LCD shows `Einsatz Nr:`.
+_Avoid_: Protokollnummer, protocol id
+
 ## Simulation
 
 **Trainee**:

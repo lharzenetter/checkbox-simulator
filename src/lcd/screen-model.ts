@@ -4,6 +4,7 @@ import {
   ANMELDEAKTIONEN,
   assertNever,
   computeRestzeitMs,
+  einsatzprotokollWindow,
   EINSATZZEITEN_MS,
   estimateFlaschendruckBar,
   FACTORY_FEUERWEHRNAME,
@@ -13,6 +14,7 @@ import {
   rueckmarschzeitMs,
   rueckzugsdruckBar,
   selectedTrupp,
+  SERVICE_AKTIONEN,
   truppLoggingOff,
   truppMenueAktionen,
 } from "../core/index";
@@ -20,8 +22,10 @@ import type {
   Anmeldeaktion,
   Login,
   Atemschutztraeger,
+  EinsatzprotokollLine,
   Einsatzstatus,
   NotausschaltungAktion,
+  ServiceAktion,
   State,
   Trupp,
   TruppMenue,
@@ -59,6 +63,12 @@ export interface AbmeldenRow {
   readonly marked: boolean;
 }
 
+/** A line of S16: a text line, the centred title, or a rule across the screen. */
+export type EinsatzprotokollRow =
+  | { readonly kind: "title"; readonly text: string }
+  | { readonly kind: "text"; readonly text: string }
+  | { readonly kind: "rule" };
+
 /** What the LCD shows, per screen layout, with every value already formatted for display. */
 export type ScreenModel =
   | { readonly layout: "aus" }
@@ -79,6 +89,10 @@ export type ScreenModel =
       readonly title: string;
       readonly items: readonly string[];
       readonly selectedIndex: number;
+    }
+  | {
+      readonly layout: "einsatzprotokoll";
+      readonly lines: readonly EinsatzprotokollRow[];
     }
   | {
       readonly layout: "einsatzzeitWaehlen";
@@ -190,12 +204,12 @@ const BATTERIEKAPAZITAET_PROZENT = 88;
 
 // Only the four items the figure draws; the rest stay open with gap G8, as decided in
 // "Draw the simulator's scope".
-const SERVICE_ITEMS = [
-  "Einsatzprotokoll",
-  "Zeit/Datum einstellen",
-  "Kontrast",
-  "Testprogramm",
-] as const;
+const SERVICE_ITEMS: Readonly<Record<ServiceAktion, string>> = {
+  einsatzprotokoll: "Einsatzprotokoll",
+  zeitDatumEinstellen: "Zeit/Datum einstellen",
+  kontrast: "Kontrast",
+  testprogramm: "Testprogramm",
+};
 
 // manual 5.3 step 5; the line's wording is decided in "Define the key-by-screen navigation model"
 const LANGZEITEINSATZ_ITEM = "Langzeiteinsatz? OK";
@@ -253,12 +267,9 @@ export function screenModel(
         abschaltzeitzeile: `sonst Ende in  > ${formatAbschaltzeit(abschaltzeitRestMs(state) ?? 0)}`,
       };
     case "service":
-      return {
-        layout: "service",
-        title: "SERVICE",
-        items: SERVICE_ITEMS,
-        selectedIndex: 0,
-      };
+      return serviceModel(state);
+    case "einsatzprotokoll":
+      return einsatzprotokollModel(state);
     case "einsatzzeitWaehlen":
       return einsatzzeitWaehlenModel(requireLogin(state));
     case "anmeldefenster":
@@ -295,6 +306,83 @@ export function screenModel(
     default:
       return assertNever(state.screen);
   }
+}
+
+// manual 5.2, SERVICE figure
+function serviceModel(state: State): ScreenModel {
+  if (state.serviceAktion === null) {
+    throw new Error(`The ${state.screen} screen has no SERVICE item`);
+  }
+  return {
+    layout: "service",
+    title: "SERVICE",
+    items: SERVICE_AKTIONEN.map((aktion) => SERVICE_ITEMS[aktion]),
+    selectedIndex: SERVICE_AKTIONEN.indexOf(state.serviceAktion),
+  };
+}
+
+// manual 5.10, S16 figure
+const EINSATZPROTOKOLL_TITLE: EinsatzprotokollRow = {
+  kind: "title",
+  text: "Einsatzprotokoll",
+};
+
+// ASSUMPTION: `Kein Protokoll` under the title when nothing is stored ("Show the
+// Einsatzprotokolle on the LCD").
+function einsatzprotokollModel(state: State): ScreenModel {
+  const window = einsatzprotokollWindow(state);
+  return {
+    layout: "einsatzprotokoll",
+    lines:
+      window.length === 0
+        ? [
+            EINSATZPROTOKOLL_TITLE,
+            { kind: "rule" },
+            { kind: "text", text: "Kein Protokoll" },
+          ]
+        : window.map(einsatzprotokollRow),
+  };
+}
+
+// manual 5.10, S16 figure; the time lines lose the figure's leading space to fit 21 columns.
+// ASSUMPTION: the Notausschaltung line ("Show the Einsatzprotokolle on the LCD").
+function einsatzprotokollRow(line: EinsatzprotokollLine): EinsatzprotokollRow {
+  switch (line.kind) {
+    case "title":
+      return EINSATZPROTOKOLL_TITLE;
+    case "rule":
+      return { kind: "rule" };
+    case "einsatznummer":
+      return text(
+        ` Einsatz Nr:    ${String(line.einsatznummer).padStart(5, "0")}`,
+      );
+    case "datum":
+      return text(`     Datum:  ${formatDatum(line.loggedInAtMs)}`);
+    case "truppnummerEinsatzzeit":
+      return text(
+        `TruppNr/EZT:   ${formatTruppnummer(line.truppnummer)}/${formatMinutes(line.einsatzzeitMs).padStart(3, "0")}`,
+      );
+    case "einsatzkraefte":
+      return text("Einsatzkräfte:");
+    case "atemschutztraeger":
+      return text(line.name);
+    case "einsatzVon":
+      return text(`Einsatz von: ${formatUhrzeit(line.loggedInAtMs)}`);
+    case "bis":
+      return text(`        bis: ${formatUhrzeit(line.loggedOffAtMs)}`);
+    case "davonAktiv":
+      return text(`davon aktiv: ${formatDavonAktiv(line.davonAktivMs)}`);
+    case "notausschaltung":
+      return text("Notausschaltung");
+    case "protokollEnde":
+      return text("Protokoll Ende");
+    default:
+      return assertNever(line);
+  }
+}
+
+function text(content: string): EinsatzprotokollRow {
+  return { kind: "text", text: content };
 }
 
 function einsatzzeitWaehlenModel(login: Login): ScreenModel {
@@ -598,6 +686,10 @@ export function screenText(model: ScreenModel): readonly string[] {
       ];
     case "service":
       return [model.title, ...model.items];
+    case "einsatzprotokoll":
+      return model.lines.flatMap((line) =>
+        line.kind === "rule" ? [] : [line.text.trim().replace(/ {2,}/g, " ")],
+      );
     case "einsatzzeitWaehlen":
       return [
         model.title,
@@ -741,6 +833,18 @@ function formatDatum(uhrzeitMs: number): string {
 function formatUhrzeit(uhrzeitMs: number): string {
   const date = new Date(uhrzeitMs);
   return [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]
+    .map(twoDigits)
+    .join(":");
+}
+
+// Whole seconds rounded down: `davon aktiv` counts time worked, not time left as the Restzeit does.
+function formatDavonAktiv(durationMs: number): string {
+  const seconds = Math.floor(durationMs / 1000);
+  return [
+    Math.floor(seconds / 3600),
+    Math.floor(seconds / 60) % 60,
+    seconds % 60,
+  ]
     .map(twoDigits)
     .join(":");
 }

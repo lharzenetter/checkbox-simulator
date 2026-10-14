@@ -1,4 +1,8 @@
-import { FACTORY_FEUERWEHRNAME, isValidFeuerwehrname } from "../core/index";
+import {
+  FACTORY_FEUERWEHRNAME,
+  FACTORY_STORED_EINSATZPROTOKOLLE,
+  isValidFeuerwehrname,
+} from "../core/index";
 import type { Einsatzprotokoll } from "../core/index";
 import { DEFAULT_FAHRZEUGE, isValidRoster } from "../world/index";
 import type { Fahrzeug, Fahrzeuge } from "../world/index";
@@ -19,6 +23,8 @@ export interface DeviceMemory {
   readonly muted: boolean;
   /** Oldest first, as the device core keeps them. */
   readonly einsatzprotokolle: readonly Einsatzprotokoll[];
+  /** The Einsatznummer the next Einsatzprotokoll gets. */
+  readonly nextEinsatznummer: number;
 }
 
 /** The device memory as it leaves the factory, and after a factory reset. */
@@ -27,7 +33,7 @@ export const FACTORY_DEVICE_MEMORY: DeviceMemory = {
   fahrzeuge: DEFAULT_FAHRZEUGE,
   firstLaunchDone: false,
   muted: false,
-  einsatzprotokolle: [],
+  ...FACTORY_STORED_EINSATZPROTOKOLLE,
 };
 
 // Every key the simulator stores starts with this prefix, so a wipe can find the session too.
@@ -36,7 +42,7 @@ const DEVICE_MEMORY_KEY = `${KEY_PREFIX}device-memory`;
 
 // Raise on any change to the stored shape: older data is then wiped, never migrated (decided in
 // "Decide what survives a page reload").
-const DEVICE_MEMORY_VERSION = 2;
+const DEVICE_MEMORY_VERSION = 3;
 
 /**
  * Reads the device memory. Stored data the simulator can no longer read is wiped in full,
@@ -88,7 +94,13 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     return null;
   }
   const fahrzeuge = parseFahrzeuge(value.fahrzeuge);
-  const { feuerwehrname, firstLaunchDone, muted, einsatzprotokolle } = value;
+  const {
+    feuerwehrname,
+    firstLaunchDone,
+    muted,
+    einsatzprotokolle,
+    nextEinsatznummer,
+  } = value;
   if (
     typeof feuerwehrname !== "string" ||
     !isValidFeuerwehrname(feuerwehrname) ||
@@ -96,7 +108,10 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     typeof firstLaunchDone !== "boolean" ||
     typeof muted !== "boolean" ||
     !Array.isArray(einsatzprotokolle) ||
-    !einsatzprotokolle.every(isEinsatzprotokoll)
+    !einsatzprotokolle.every(isEinsatzprotokoll) ||
+    typeof nextEinsatznummer !== "number" ||
+    !Number.isInteger(nextEinsatznummer) ||
+    nextEinsatznummer < 1
   ) {
     return null;
   }
@@ -106,6 +121,7 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     firstLaunchDone,
     muted,
     einsatzprotokolle,
+    nextEinsatznummer,
   };
 }
 
@@ -135,6 +151,7 @@ function isFahrzeug(value: unknown): value is Fahrzeug {
 function isEinsatzprotokoll(value: unknown): value is Einsatzprotokoll {
   return (
     isRecord(value) &&
+    Number.isInteger(value.einsatznummer) &&
     Number.isInteger(value.truppnummer) &&
     Number.isInteger(value.einsatzzeitMs) &&
     Array.isArray(value.atemschutztraeger) &&
@@ -142,6 +159,8 @@ function isEinsatzprotokoll(value: unknown): value is Einsatzprotokoll {
     isEinsatzstatus(value.einsatzstatus) &&
     typeof value.sicherheitstrupp === "boolean" &&
     Number.isInteger(value.loggedInAtMs) &&
-    Number.isInteger(value.loggedOffAtMs)
+    Number.isInteger(value.loggedOffAtMs) &&
+    Number.isInteger(value.davonAktivMs) &&
+    typeof value.notausschaltung === "boolean"
   );
 }

@@ -3,6 +3,8 @@ export type Screen =
   | "aus"
   | "startdisplay"
   | "service"
+  /** S16, the stored Einsatzprotokolle opened from SERVICE. */
+  | "einsatzprotokoll"
   | "einsatzzeitWaehlen"
   | "anmeldefenster"
   | "anfangsdruckEditor"
@@ -58,8 +60,9 @@ export interface Trupp {
   readonly loggedInAtMs: number;
 }
 
-/** The record of one Trupp's Einsatz, written at logoff. */
+/** The record of one Trupp's Einsatz, written at logoff and at a Notausschaltung. */
 export interface Einsatzprotokoll {
+  readonly einsatznummer: number;
   readonly truppnummer: number;
   readonly einsatzzeitMs: number;
   readonly atemschutztraeger: readonly Atemschutztraeger[];
@@ -68,7 +71,15 @@ export interface Einsatzprotokoll {
   readonly sicherheitstrupp: boolean;
   readonly loggedInAtMs: number;
   readonly loggedOffAtMs: number;
+  /** `davon aktiv`: the Trupp's `t_run` at logoff, Bereitschaft excluded. */
+  readonly davonAktivMs: number;
+  /** Whether a Notausschaltung ended the Trupp. */
+  readonly notausschaltung: boolean;
 }
+
+/** The SERVICE menu's items as drawn, top to bottom. */
+export type ServiceAktion =
+  "einsatzprotokoll" | "zeitDatumEinstellen" | "kontrast" | "testprogramm";
 
 /** The Anmeldefenster's choices, top to bottom. */
 export type Anmeldeaktion =
@@ -155,7 +166,26 @@ export interface State {
   readonly notausschaltungHeldSinceRealMs: number | null;
   /** The choice under the cursor on S14, and the one S15 confirms; `null` on every other screen. */
   readonly notausschaltung: NotausschaltungAktion | null;
+  /** The SERVICE item under the bar, kept while S16 is open; `null` on every other screen. */
+  readonly serviceAktion: ServiceAktion | null;
+  /** The Einsatzprotokoll strip's line at the top of S16; 0 on every other screen. */
+  readonly einsatzprotokollFirstLine: number;
+  /** The Einsatznummer the next Einsatzprotokoll gets; device memory, never reused. */
+  readonly nextEinsatznummer: number;
 }
+
+/** What the Checkbox's non-volatile memory brings into a new session. */
+export interface StoredEinsatzprotokolle {
+  /** Oldest first. */
+  readonly einsatzprotokolle: readonly Einsatzprotokoll[];
+  readonly nextEinsatznummer: number;
+}
+
+/** The device memory as it leaves the factory: no Einsatzprotokoll, and numbering from 1. */
+export const FACTORY_STORED_EINSATZPROTOKOLLE: StoredEinsatzprotokolle = {
+  einsatzprotokolle: [],
+  nextEinsatznummer: 1,
+};
 
 /**
  * The two clocks every `tick` carries, in integer milliseconds.
@@ -170,12 +200,15 @@ export interface Clocks {
 }
 
 /**
- * The Checkbox as it is when a new session begins: switched off, with the Einsatzprotokolle its
- * device memory kept from earlier sessions.
+ * The Checkbox as it is when a new session begins: switched off, with the Einsatzprotokolle and
+ * the Einsatznummer its device memory kept from earlier sessions.
  */
 export function createInitialState(
   { now, realNow }: Clocks,
-  einsatzprotokolle: readonly Einsatzprotokoll[] = [],
+  {
+    einsatzprotokolle,
+    nextEinsatznummer,
+  }: StoredEinsatzprotokolle = FACTORY_STORED_EINSATZPROTOKOLLE,
 ): State {
   return {
     screen: "aus",
@@ -194,5 +227,8 @@ export function createInitialState(
     notausschaltungKeysHeld: [],
     notausschaltungHeldSinceRealMs: null,
     notausschaltung: null,
+    serviceAktion: null,
+    einsatzprotokollFirstLine: 0,
+    nextEinsatznummer,
   };
 }

@@ -42,6 +42,7 @@ class MemoryStorage implements Storage {
 }
 
 const EINSATZPROTOKOLL: Einsatzprotokoll = {
+  einsatznummer: 7,
   truppnummer: 1,
   einsatzzeitMs: 30 * 60_000,
   atemschutztraeger: [
@@ -52,12 +53,15 @@ const EINSATZPROTOKOLL: Einsatzprotokoll = {
   sicherheitstrupp: false,
   loggedInAtMs: 1_000_000,
   loggedOffAtMs: 2_000_000,
+  davonAktivMs: 600_000,
+  notausschaltung: false,
 };
 
 const DEVICE_MEMORY: DeviceMemory = {
   ...FACTORY_DEVICE_MEMORY,
   firstLaunchDone: true,
   einsatzprotokolle: [EINSATZPROTOKOLL],
+  nextEinsatznummer: 8,
 };
 
 const TRUPP: Trupp = {
@@ -80,9 +84,7 @@ const TRUPP: Trupp = {
 
 // Every part of the state filled in, as it is with an Alarm pending over a half-done login.
 const MID_EINSATZ: State = {
-  ...createInitialState({ now: 5_000_000, realNow: 90_000 }, [
-    EINSATZPROTOKOLL,
-  ]),
+  ...createInitialState({ now: 5_000_000, realNow: 90_000 }, DEVICE_MEMORY),
   screen: "alarm",
   screenEnteredRealMs: 80_000,
   idleSinceRealMs: 85_000,
@@ -145,10 +147,30 @@ describe("the running session", () => {
   });
 
   it("comes back as a freshly started session", () => {
-    const started = createInitialState({ now: 5_000_000, realNow: 90_000 }, [
-      EINSATZPROTOKOLL,
-    ]);
+    const started = createInitialState(
+      { now: 5_000_000, realNow: 90_000 },
+      DEVICE_MEMORY,
+    );
     expect(loadStores(savedStorage(started)).session).toEqual(started);
+  });
+
+  // decided in "Decide what survives a page reload": the session is the core's state as it was
+  it("comes back on the Einsatzprotokoll screen where it was scrolled to", () => {
+    const einsatzprotokollScreen: State = {
+      ...createInitialState({ now: 5_000_000, realNow: 90_000 }, DEVICE_MEMORY),
+      screen: "einsatzprotokoll",
+      serviceAktion: "einsatzprotokoll",
+      einsatzprotokollFirstLine: 3,
+    };
+    expect(loadStores(savedStorage(einsatzprotokollScreen)).session).toEqual(
+      einsatzprotokollScreen,
+    );
+  });
+
+  // decided in "Decide what survives a page reload": the Einsatznummer is device memory
+  it("takes its Einsatznummer from the device memory", () => {
+    const storage = savedStorage({ ...MID_EINSATZ, nextEinsatznummer: 3 });
+    expect(loadStores(storage).session?.nextEinsatznummer).toBe(8);
   });
 });
 
@@ -167,9 +189,10 @@ describe("discarding the running session", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 1,
+      version: 2,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
+      nextEinsatznummer: undefined,
       ...changes,
     });
   }
@@ -178,7 +201,7 @@ describe("incompatible stored session data", () => {
   it.each([
     ["is not JSON", "{not json"],
     ["has no version", sessionJson({ version: undefined })],
-    ["has an old version", sessionJson({ version: 0 })],
+    ["has an old version", sessionJson({ version: 1 })],
     ["has an unknown screen", sessionJson({ screen: "pause" })],
     ["lacks a field", sessionJson({ pendingAlarms: undefined })],
     [
@@ -220,6 +243,19 @@ describe("incompatible stored session data", () => {
     [
       "shows the Anmeldefenster without a login",
       sessionJson({ screen: "anmeldefenster", login: null }),
+    ],
+    ["has an unknown SERVICE item", sessionJson({ serviceAktion: "drucken" })],
+    [
+      "has a negative Einsatzprotokoll scroll position",
+      sessionJson({ einsatzprotokollFirstLine: -1 }),
+    ],
+    [
+      "shows SERVICE without an item under the bar",
+      sessionJson({ screen: "service", serviceAktion: null }),
+    ],
+    [
+      "shows the Einsatzprotokoll screen without an item under the bar",
+      sessionJson({ screen: "einsatzprotokoll", serviceAktion: null }),
     ],
     [
       "shows the Trupp-Menü without a Trupp selected",

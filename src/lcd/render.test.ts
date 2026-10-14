@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, reduce } from "../core/index";
-import type { Einsatzstatus, Event, Key } from "../core/index";
+import type {
+  Einsatzprotokoll,
+  Einsatzstatus,
+  Event,
+  Key,
+} from "../core/index";
 import type { Framebuffer } from "./framebuffer";
 import { LCD_HEIGHT, LCD_WIDTH, renderScreen } from "./render";
 import { screenModel } from "./screen-model";
@@ -64,6 +69,69 @@ describe("the LCD framebuffer", () => {
     expect(
       toAscii(framebufferAfter(press("Check"), press("OK"))),
     ).toMatchSnapshot();
+  });
+
+  // manual 5.10, S16 figure
+  describe("S16 Einsatzprotokoll", () => {
+    // 01.01.14 15:30:00, the login in the Einsatzprotokoll figure.
+    const FIGURE_LOGIN = Date.UTC(2014, 0, 1, 15, 30, 0);
+
+    function einsatzprotokollAfter(
+      names: readonly (readonly string[])[],
+      ...events: readonly Event[]
+    ): Framebuffer {
+      const einsatzprotokolle: readonly Einsatzprotokoll[] = names.map(
+        (trupp, index) => ({
+          einsatznummer: 321 + index,
+          truppnummer: 1,
+          einsatzzeitMs: 30 * 60_000,
+          atemschutztraeger: trupp.map((name) => ({ tallyId: name, name })),
+          einsatzstatus: "rueckmarsch",
+          sicherheitstrupp: false,
+          loggedInAtMs: FIGURE_LOGIN,
+          loggedOffAtMs: FIGURE_LOGIN + 15 * 60_000,
+          davonAktivMs: 10 * 60_000,
+          notausschaltung: false,
+        }),
+      );
+      const state = [
+        press("Check"),
+        press("OK"),
+        press("OK"),
+        ...events,
+      ].reduce(
+        reduce,
+        createInitialState(
+          { now: FIGURE_UHRZEIT, realNow: 0 },
+          { einsatzprotokolle, nextEinsatznummer: 1_000 },
+        ),
+      );
+      return renderScreen(screenModel(state));
+    }
+
+    it("draws a two-person Einsatzprotokoll", () => {
+      expect(
+        toAscii(einsatzprotokollAfter([["MUSTERMANN M", "MUSTERMANN E"]])),
+      ).toMatchSnapshot();
+    });
+
+    it("draws a window scrolled into the next older Einsatzprotokoll", () => {
+      expect(
+        toAscii(
+          einsatzprotokollAfter(
+            [
+              ["MUSTERMANN M", "MUSTERMANN E"],
+              ["MUSTERMANN M", "MUSTERMANN E"],
+            ],
+            ...Array.from({ length: 10 }, () => press("Down")),
+          ),
+        ),
+      ).toMatchSnapshot();
+    });
+
+    it("draws Kein Protokoll", () => {
+      expect(toAscii(einsatzprotokollAfter([]))).toMatchSnapshot();
+    });
   });
 
   // manual 5.3, login figure

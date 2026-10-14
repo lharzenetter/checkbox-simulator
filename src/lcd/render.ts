@@ -36,6 +36,9 @@ export function renderScreen(model: ScreenModel): Framebuffer {
     case "service":
       drawService(framebuffer, model);
       break;
+    case "einsatzprotokoll":
+      drawEinsatzprotokoll(framebuffer, model);
+      break;
     case "einsatzzeitWaehlen":
       drawMenuScreen(
         framebuffer,
@@ -116,6 +119,33 @@ function drawService(
       fillRect(framebuffer, 0, y - 1, textWidth(item) + 3, LINE_PITCH);
     }
     drawText(framebuffer, item, 1, y, { inverse: selected });
+  });
+}
+
+// The S16 figure's 15 lines, rules included, fill the screen (manual 5.10), so they sit on a
+// tighter pitch than other screens: a glyph's descender row touches the line below.
+const EINSATZPROTOKOLL_LINE_PITCH = 8;
+const EINSATZPROTOKOLL_TOP = 4;
+
+function drawEinsatzprotokoll(
+  framebuffer: Framebuffer,
+  model: Extract<ScreenModel, { layout: "einsatzprotokoll" }>,
+): void {
+  model.lines.forEach((line, index) => {
+    const y = EINSATZPROTOKOLL_TOP + index * EINSATZPROTOKOLL_LINE_PITCH;
+    switch (line.kind) {
+      case "title":
+        drawCenteredText(framebuffer, line.text, y);
+        break;
+      case "text":
+        drawText(framebuffer, line.text, 1, y);
+        break;
+      case "rule":
+        fillRect(framebuffer, 0, y + 3, LCD_WIDTH, 1);
+        break;
+      default:
+        assertNever(line);
+    }
   });
 }
 

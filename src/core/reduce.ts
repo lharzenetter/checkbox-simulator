@@ -1,6 +1,7 @@
 import { abschaltzeitRestMs } from "./abschaltzeit";
 import { checkAlarms } from "./alarm";
 import { assertNever } from "./assert-never";
+import { lastEinsatzprotokollFirstLine } from "./einsatzprotokoll-strip";
 import type { Event, Key } from "./event";
 import {
   EINSATZPROTOKOLL_CAPACITY,
@@ -36,6 +37,7 @@ import type {
   Login,
   NotausschaltungAktion,
   Screen,
+  ServiceAktion,
   State,
   Trupp,
   TruppMenue,
@@ -71,9 +73,16 @@ function handleKeyPress(state: State, key: Key): State {
     case "aus":
       return key === "Check" ? enterScreen(state, "startdisplay") : state;
     case "startdisplay":
-      return key === "OK" ? enterScreen(state, "service") : state;
+      return key === "OK"
+        ? enterScreen(
+            { ...state, serviceAktion: firstOf(SERVICE_AKTIONEN) },
+            "service",
+          )
+        : state;
     case "service":
-      return key === "X" ? enterScreen(state, "startdisplay") : state;
+      return handleServiceKey(state, key);
+    case "einsatzprotokoll":
+      return handleEinsatzprotokollKey(state, key);
     case "einsatzzeitWaehlen":
       return handleEinsatzzeitWaehlenKey(state, key);
     case "anmeldefenster":
@@ -103,6 +112,76 @@ function handleKeyPress(state: State, key: Key): State {
   }
 }
 
+/** The SERVICE menu's items as drawn, top to bottom. */
+export const SERVICE_AKTIONEN: readonly ServiceAktion[] = [
+  "einsatzprotokoll",
+  "zeitDatumEinstellen",
+  "kontrast",
+  "testprogramm",
+];
+
+// manual 5.2, 5.10 steps 3–4; decided in "Show the Einsatzprotokolle on the LCD": only
+// `Einsatzprotokoll` is live
+function handleServiceKey(state: State, key: Key): State {
+  const aktion = requireServiceAktion(state);
+  switch (key) {
+    case "Up":
+    case "Down":
+      return {
+        ...state,
+        serviceAktion: moveCursor(SERVICE_AKTIONEN, aktion, key),
+      };
+    case "OK":
+      return aktion === "einsatzprotokoll"
+        ? enterScreen(
+            { ...state, einsatzprotokollFirstLine: 0 },
+            "einsatzprotokoll",
+          )
+        : state;
+    case "X":
+      return enterScreen({ ...state, serviceAktion: null }, "startdisplay");
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+// manual 5.10 steps 5–6.
+// ASSUMPTION: Up and Down scroll the strip line by line, as far as its ends ("Show the
+// Einsatzprotokolle on the LCD").
+function handleEinsatzprotokollKey(state: State, key: Key): State {
+  switch (key) {
+    case "Up":
+    case "Down":
+      return scrollEinsatzprotokolle(state, key === "Down" ? 1 : -1);
+    case "X":
+      return enterScreen({ ...state, einsatzprotokollFirstLine: 0 }, "service");
+    case "OK":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+function scrollEinsatzprotokolle(state: State, step: 1 | -1): State {
+  const einsatzprotokollFirstLine = Math.min(
+    Math.max(state.einsatzprotokollFirstLine + step, 0),
+    lastEinsatzprotokollFirstLine(state),
+  );
+  return einsatzprotokollFirstLine === state.einsatzprotokollFirstLine
+    ? state
+    : { ...state, einsatzprotokollFirstLine };
+}
+
+function requireServiceAktion(state: State): ServiceAktion {
+  if (state.serviceAktion === null) {
+    throw new Error(`The ${state.screen} screen has no SERVICE item`);
+  }
+  return state.serviceAktion;
+}
+
 // manual 5.9 steps 4–5: OK ends the Trupp(s), any other key cancels
 function handleNotausschaltungBestaetigungKey(state: State, key: Key): State {
   if (key !== "OK") {
@@ -112,7 +191,9 @@ function handleNotausschaltungBestaetigungKey(state: State, key: Key): State {
     requireNotausschaltung(state) === "alleTrupps"
       ? state.trupps
       : [selectedTrupp(state)];
-  return leaveNotausschaltung(endTrupps(state, ended));
+  return leaveNotausschaltung(
+    endTrupps(state, ended, { notausschaltung: true }),
+  );
 }
 
 /** The choices of Notausschaltung – Auswahl, top to bottom. */
@@ -830,6 +911,7 @@ function handleTallyHeld(
     case "abmelden":
       return markAtemschutztraeger(state, atemschutztraeger.tallyId);
     case "service":
+    case "einsatzprotokoll":
     case "einsatzzeitWaehlen":
     case "anfangsdruckEditor":
     case "flaschendruckAendern":
@@ -931,27 +1013,25 @@ function isEveryoneIn(trupp: Trupp, logoff: Logoff): boolean {
 // manual 5.8 step 4; timing-and-alarm-rules §12.7
 function logOff(state: State): State {
   return enterScreen(
-    { ...endTrupps(state, [truppLoggingOff(state)]), logoff: null },
+    {
+      ...endTrupps(state, [truppLoggingOff(state)], { notausschaltung: false }),
+      logoff: null,
+    },
     "einsatzliste",
   );
 }
 
-// manual p. 31: a logoff and a Notausschaltung each write an Einsatzprotokoll
-function endTrupps(state: State, ended: readonly Trupp[]): State {
+// manual p. 31: a logoff and a Notausschaltung each write an Einsatzprotokoll.
+// ASSUMPTION: each gets its own Einsatznummer, and `davon aktiv` is `t_run` ("Show the
+// Einsatzprotokolle on the LCD").
+function endTrupps(
+  state: State,
+  ended: readonly Trupp[],
+  { notausschaltung }: { readonly notausschaltung: boolean },
+): State {
   const trupps = state.trupps.filter((trupp) => !ended.includes(trupp));
-  return {
-    ...state,
-    trupps,
-    selectedTruppnummer: selectionAfterEnding(state, trupps),
-    einsatzprotokolle: [
-      ...state.einsatzprotokolle,
-      ...ended.map((trupp) => einsatzprotokoll(state, trupp)),
-    ].slice(-EINSATZPROTOKOLL_CAPACITY),
-  };
-}
-
-function einsatzprotokoll(state: State, trupp: Trupp): Einsatzprotokoll {
-  return {
+  const written = ended.map((trupp, index): Einsatzprotokoll => ({
+    einsatznummer: state.nextEinsatznummer + index,
     truppnummer: trupp.truppnummer,
     einsatzzeitMs: trupp.einsatzzeitMs,
     atemschutztraeger: trupp.atemschutztraeger,
@@ -959,6 +1039,17 @@ function einsatzprotokoll(state: State, trupp: Trupp): Einsatzprotokoll {
     sicherheitstrupp: trupp.sicherheitstrupp,
     loggedInAtMs: trupp.loggedInAtMs,
     loggedOffAtMs: state.now,
+    davonAktivMs: trupp.runningTimeMs,
+    notausschaltung,
+  }));
+  return {
+    ...state,
+    trupps,
+    selectedTruppnummer: selectionAfterEnding(state, trupps),
+    einsatzprotokolle: [...state.einsatzprotokolle, ...written].slice(
+      -EINSATZPROTOKOLL_CAPACITY,
+    ),
+    nextEinsatznummer: state.nextEinsatznummer + written.length,
   };
 }
 

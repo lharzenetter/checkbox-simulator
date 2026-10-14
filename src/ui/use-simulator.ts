@@ -111,7 +111,7 @@ export function useSimulator(): {
       savedSession ??
       createInitialState(
         readClocks(startedClock, performance.now()),
-        deviceMemory.einsatzprotokolle,
+        deviceMemory,
       ),
   );
 
@@ -124,8 +124,16 @@ export function useSimulator(): {
       firstLaunchDone,
       muted,
       einsatzprotokolle: state.einsatzprotokolle,
+      nextEinsatznummer: state.nextEinsatznummer,
     });
-  }, [storage, names, firstLaunchDone, muted, state.einsatzprotokolle]);
+  }, [
+    storage,
+    names,
+    firstLaunchDone,
+    muted,
+    state.einsatzprotokolle,
+    state.nextEinsatznummer,
+  ]);
 
   // Until the Trainee chooses, the saved session stays as it was, so another reload asks again.
   useEffect(() => {

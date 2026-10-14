@@ -4,6 +4,7 @@ import type {
   Logoff,
   NotausschaltungAktion,
   Screen,
+  ServiceAktion,
   State,
   Trupp,
   TruppMenue,
@@ -32,13 +33,14 @@ const SESSION_KEY = `${KEY_PREFIX}session`;
 
 // Raise on any change to the core's state: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 1;
+const SESSION_VERSION = 2;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
   aus: true,
   startdisplay: true,
   service: true,
+  einsatzprotokoll: true,
   einsatzzeitWaehlen: true,
   anmeldefenster: true,
   anfangsdruckEditor: true,
@@ -82,6 +84,12 @@ const OPENS_FLASCHENDRUCK_EDITOR: Readonly<Record<TruppMenueAktion, boolean>> =
     flaschendruckAendern: true,
     attributeEintragen: false,
   };
+const SERVICE_AKTIONEN: Readonly<Record<ServiceAktion, true>> = {
+  einsatzprotokoll: true,
+  zeitDatumEinstellen: true,
+  kontrast: true,
+  testprogramm: true,
+};
 const NOTAUSSCHALTUNG_KEYS: Readonly<Record<"X" | "Check", true>> = {
   X: true,
   Check: true,
@@ -106,8 +114,8 @@ export function loadStores(storage: Storage): Stores {
 }
 
 /**
- * Writes the running session, replacing the one saved before. Its Einsatzprotokolle are left
- * out: they are device memory, saved with {@link saveDeviceMemory}.
+ * Writes the running session, replacing the one saved before. Its Einsatzprotokolle and
+ * Einsatznummer are left out: they are device memory, saved with {@link saveDeviceMemory}.
  */
 export function saveSession(storage: Storage, session: State): void {
   tryWrite(() => {
@@ -117,6 +125,7 @@ export function saveSession(storage: Storage, session: State): void {
         version: SESSION_VERSION,
         ...session,
         einsatzprotokolle: undefined,
+        nextEinsatznummer: undefined,
       }),
     );
   });
@@ -131,7 +140,7 @@ export function discardSession(storage: Storage): void {
 
 function parseSession(
   stored: string,
-  { einsatzprotokolle }: DeviceMemory,
+  { einsatzprotokolle, nextEinsatznummer }: DeviceMemory,
 ): State | null {
   let value: unknown;
   try {
@@ -158,6 +167,8 @@ function parseSession(
     notausschaltungKeysHeld,
     notausschaltungHeldSinceRealMs,
     notausschaltung,
+    serviceAktion,
+    einsatzprotokollFirstLine,
   } = value;
   if (
     !isMemberOf(SCREENS, screen) ||
@@ -182,7 +193,10 @@ function parseSession(
     !(
       notausschaltung === null ||
       isMemberOf(NOTAUSSCHALTUNG_AKTIONEN, notausschaltung)
-    )
+    ) ||
+    !(serviceAktion === null || isMemberOf(SERVICE_AKTIONEN, serviceAktion)) ||
+    !isInteger(einsatzprotokollFirstLine) ||
+    einsatzprotokollFirstLine < 0
   ) {
     return null;
   }
@@ -203,6 +217,9 @@ function parseSession(
     notausschaltungKeysHeld,
     notausschaltungHeldSinceRealMs,
     notausschaltung,
+    serviceAktion,
+    einsatzprotokollFirstLine,
+    nextEinsatznummer,
   };
   return isConsistent(session) ? session : null;
 }
@@ -227,9 +244,11 @@ function hasScreenSubState(state: State): boolean {
   switch (state.screen) {
     case "aus":
     case "startdisplay":
-    case "service":
     case "einsatzliste":
       return true;
+    case "service":
+    case "einsatzprotokoll":
+      return state.serviceAktion !== null;
     case "einsatzzeitWaehlen":
     case "anmeldefenster":
     case "anfangsdruckEditor":

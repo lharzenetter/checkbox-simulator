@@ -240,6 +240,7 @@ describe("S15 Notausschaltung – Bestätigung", () => {
     expect(state.selectedTruppnummer).toBe(1);
     expect(state.einsatzprotokolle).toEqual([
       {
+        einsatznummer: 1,
         truppnummer: 2,
         einsatzzeitMs: 30 * 60_000,
         atemschutztraeger: [B1, B2],
@@ -247,6 +248,8 @@ describe("S15 Notausschaltung – Bestätigung", () => {
         sicherheitstrupp: false,
         loggedInAtMs: SESSION_START.now,
         loggedOffAtMs: SESSION_START.now + 4_000,
+        davonAktivMs: 0,
+        notausschaltung: true,
       },
     ]);
   });
@@ -259,8 +262,17 @@ describe("S15 Notausschaltung – Bestätigung", () => {
     expect(state.trupps).toEqual([]);
     expect(state.selectedTruppnummer).toBeNull();
     expect(
-      state.einsatzprotokolle.map((protokoll) => protokoll.truppnummer),
-    ).toEqual([1, 2]);
+      state.einsatzprotokolle.map(
+        ({ truppnummer, einsatznummer, notausschaltung }) => ({
+          truppnummer,
+          einsatznummer,
+          notausschaltung,
+        }),
+      ),
+    ).toEqual([
+      { truppnummer: 1, einsatznummer: 1, notausschaltung: true },
+      { truppnummer: 2, einsatznummer: 2, notausschaltung: true },
+    ]);
   });
 
   // manual p. 34: the empty Einsatzliste then switches off after the Abschaltzeit

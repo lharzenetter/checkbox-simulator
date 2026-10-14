@@ -8,7 +8,7 @@ Deliberately **left out**, so nobody adds them back by accident:
 - **Refused logins** (G26 expired or not an Atemschutzträger, parameter [55], screen X8). Every Tally in the Roster logs in.
 - **Einsatzzeit #2 (60 min) and #4 (240 min)**, and with them the Prozentmodus ([45]–[48]). Only #1 (30 min) and #3 (20 min) are simulated, for a normal Pressluftatmer.
 - **Behaviour the fixed defaults make unreachable:** Rückzugsalarmmodus off and [73] = 0. The rules stay recorded in the [timing and alarm rules](../research/timing-and-alarm-rules.md) (§9.3) for a later Workbench or trainer mode.
-- **The SERVICE menu.** The Startdisplay's OK opens S02 as drawn, but every item is inert. Gaps G8 and G12 stay open for a later effort.
+- **The SERVICE menu**, except `Einsatzprotokoll`. The Startdisplay's OK opens S02 as drawn, and `Einsatzprotokoll` opens S16 ([Show the Einsatzprotokolle on the LCD](0016-show-the-einsatzprotokolle-on-the-lcd.md)), but every other item is inert. Gaps G8 and G12 stay open for a later effort.
 - **Batteries and power:** the battery compartments, the low-battery Alarms (X1, X9), failover and the power-off after batteries run out. The battery line on the LCD is drawn as a static display.
 - **Pre-V04 variants** (Seriell 30158, USB 30160) and **non-German UI**.
 - **Trainer and scripted-scenario modes**, and the **Einsatzstelle world model** (zones, a Flaschendruck per Atemschutzträger, radio reports). The Trainee makes up the radio reports. The device/world seam is kept open for these.
