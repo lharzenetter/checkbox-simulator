@@ -8,13 +8,19 @@ import { FirstLaunchDialog } from "./FirstLaunchDialog";
 import { Footer } from "./Footer";
 import { FrontPanel } from "./FrontPanel";
 import { IconButton } from "./IconButton";
-import { KeyboardIcon, SettingsIcon } from "./Icons";
+import {
+  KeyboardIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  SettingsIcon,
+} from "./Icons";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import type { ClockAction } from "./keyboard-bindings";
 import { MuteToggle } from "./MuteToggle";
 import { SessionChoiceDialog } from "./SessionChoiceDialog";
 import { Settings } from "./Settings";
 import { TallyRoster } from "./TallyRoster";
+import { useFullscreen } from "./use-fullscreen";
 import { useKeyMap } from "./use-key-map";
 import { useSiren } from "./use-siren";
 import { useSimulator } from "./use-simulator";
@@ -42,6 +48,11 @@ export function App() {
   } = useSimulator();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const {
+    supported: fullscreenSupported,
+    fullscreen,
+    toggleFullscreen,
+  } = useFullscreen();
   // decided in "Decide how alarms are presented", points 7 and 8: pause and mute silence only
   // the siren
   useSiren({
@@ -134,6 +145,16 @@ export function App() {
           >
             <KeyboardIcon />
           </IconButton>
+          {fullscreenSupported && (
+            <IconButton
+              label="Vollbild"
+              tooltip={fullscreen ? "Vollbild beenden" : "Vollbild"}
+              pressed={fullscreen}
+              onClick={toggleFullscreen}
+            >
+              {fullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+            </IconButton>
+          )}
         </div>
       </header>
       <main className={styles.stage}>
