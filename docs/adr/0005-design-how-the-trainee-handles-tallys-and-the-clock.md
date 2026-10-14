@@ -9,3 +9,5 @@ The single Trainee plays every Atemschutzträger and also controls time. The con
 - **Clock:** pause plus the speed presets 1×, 2×, 5× and 10×. There is no skipping ahead and no "jump to the next Alarm": an Einsatz lasts at most about 30 min. On the keyboard, `→` and `←` step to the next preset up or down, stopping at 10× and 1× and doing nothing while paused, and `p` pauses and resumes.
 
 Decided in [Design how the Trainee handles Transponders and the clock](https://github.com/lharzenetter/checkbox-simulator/issues/6) (renamed here to the device's wording, see [Reconcile the glossary with the LCD's on-screen wording](0003-reconcile-the-glossary-with-the-lcds-on-screen-wording.md)).
+
+The Roster size and the Tally shortcuts were later changed by [Let the Trainee add and remove Fahrzeuge](0015-let-the-trainee-add-and-remove-fahrzeuge.md).

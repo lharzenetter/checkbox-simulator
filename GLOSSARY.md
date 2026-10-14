@@ -71,7 +71,7 @@ The two-digit number (01–06) the Checkbox gives a Trupp at login; the LCD show
 _Avoid_: Trupp-ID, slot
 
 **Angriffstrupp** / **Wassertrupp**:
-The two Trupp roles of a vehicle's crew; in the simulator's roster each vehicle has one of each.
+The two Trupp roles of a Fahrzeug's crew; in the Roster each Fahrzeug has one of each.
 _Avoid_: attack team, water team
 
 **Truppführer** / **Truppmann**:
@@ -79,11 +79,11 @@ The two positions within a Trupp of two: the leader and the second member.
 _Avoid_: leader, member
 
 **Funkrufname**:
-A vehicle's radio call sign, e.g. "Florian Musterstadt 1/46-1"; the Trainee sets one per vehicle, together with the Kurzname the LCD shows for it.
+A Fahrzeug's radio call sign, e.g. "Florian Musterstadt 1/46-1"; the Trainee sets one per Fahrzeug, together with the Kurzname the LCD shows for it.
 _Avoid_: call sign, Fahrzeugname
 
 **Kurzname**:
-A vehicle's short name of at most 10 characters, e.g. "HLF"; with a role code it forms the name the LCD shows for a Tally, e.g. `HLF AT-F`.
+A Fahrzeug's short name of at most 10 characters, unique within the Roster, e.g. "HLF"; with a role code it forms the name the LCD shows for a Tally, e.g. `HLF AT-F`.
 _Avoid_: short name, Fahrzeugkürzel
 
 **Sicherheitstrupp**:
@@ -174,6 +174,10 @@ _Avoid_: log, protocol, report
 The single person using the simulator, who both operates the Checkbox and plays every Atemschutzträger.
 _Avoid_: user, operator, player
 
+**Fahrzeug**:
+A vehicle of the Roster, named by its Funkrufname and Kurzname, whose crew carries the Tallys of one Angriffstrupp and one Wassertrupp.
+_Avoid_: car, vehicle, Auto
+
 **Roster**:
-The fixed set of eight virtual Tallys: two vehicles × (Angriffstrupp + Wassertrupp) × (Truppführer + Truppmann).
+The virtual Tallys the Trainee taps in: one to four Fahrzeuge, each × (Angriffstrupp + Wassertrupp) × (Truppführer + Truppmann).
 _Avoid_: Personalliste, crew list

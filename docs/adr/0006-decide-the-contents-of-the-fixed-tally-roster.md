@@ -18,3 +18,5 @@ The Roster holds **8 Tallys**: 2 vehicles × (Angriffstrupp + Wassertrupp) × (T
 - **No refused-login edge cases.** Every Tally belongs to a valid Atemschutzträger ([Draw the simulator's scope](0002-draw-the-simulators-scope.md)).
 
 Decided in [Decide the contents of the fixed Transponder roster](https://github.com/lharzenetter/checkbox-simulator/issues/7) (renamed here to the device's wording).
+
+The Roster size and the Tally shortcuts were later changed by [Let the Trainee add and remove Fahrzeuge](0015-let-the-trainee-add-and-remove-fahrzeuge.md).
