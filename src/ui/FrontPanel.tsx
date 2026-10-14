@@ -94,8 +94,9 @@ export function FrontPanel({
 
 // Keys act on pointer-down like a physical key and are held until that pointer lifts or slides
 // off, so two fingers can hold X and Check together for the Notausschaltung. A click with `detail === 0`
-// comes from the keyboard (Enter or Space on a focused key), so the key stays operable without a
-// pointer; it is pressed and released at once.
+// comes from assistive technology, so the key stays operable without a pointer; it is pressed
+// and released at once. A key never takes focus, neither from Tab nor from a press: the keyboard
+// bindings already press it, and a focused key would only show a stray focus ring.
 // Dropping a dragged Tally on a key taps it there; only Check accepts one, decided in "Design
 // how the Trainee handles Tallys and the clock".
 function DeviceKey({
@@ -151,6 +152,10 @@ function DeviceKey({
       className={`${styles.key ?? ""} ${className ?? ""}`}
       aria-label={`Taste ${keyName}`}
       aria-keyshortcuts={keyShortcutsFor(keyName)}
+      tabIndex={-1}
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}

@@ -48,14 +48,14 @@ test("give Enter to the device after a Tally is clicked", async ({ page }) => {
   await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 {3}30 min/);
 });
 
-test("press a focused front-panel key's binding only once", async ({
-  page,
-}) => {
+test("leave a clicked front-panel key unfocused", async ({ page }) => {
   await page.clock.install();
   await openSimulator(page);
   const lcd = page.getByRole("img");
+  const check = page.getByRole("button", { name: "Taste Check" });
 
-  await page.getByRole("button", { name: "Taste Check" }).click();
+  await check.click();
+  await expect(check).not.toBeFocused();
   await page.keyboard.press("Enter");
   await expect(lcd).toHaveAttribute("aria-label", /^SERVICE\nEinsatzprotokoll/);
 });
