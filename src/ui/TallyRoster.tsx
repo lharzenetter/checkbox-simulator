@@ -3,6 +3,7 @@ import type { State } from "../core/index";
 import { roleCode, rosterTallys, truppHint } from "../world/index";
 import type { Fahrzeug, Fahrzeuge, RosterTally } from "../world/index";
 import { tallyKeyFor } from "./keyboard-bindings";
+import type { TallyKey } from "./keyboard-bindings";
 import styles from "./TallyRoster.module.css";
 
 /** The drag data type that carries a Roster Tally's id onto Check. */
@@ -83,7 +84,7 @@ function TallyFob({
 }: {
   tally: RosterTally;
   kurzname: string;
-  shortcut: { label: string; ariaName: string };
+  shortcut: TallyKey;
   state: State;
   onTapped: (tally: RosterTally) => void;
 }) {

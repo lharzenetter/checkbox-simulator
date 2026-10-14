@@ -280,6 +280,7 @@ describe("a Fahrzeug's names", () => {
       false,
     );
     expect(isValidRoster(renamed(four, ["1/43", "HLF €"]))).toBe(false);
+    expect(isValidRoster([{ ...named("1/43", "HLF"), id: "a" }])).toBe(false);
   });
 
   // decided in "Let the Trainee add and remove Fahrzeuge", point 7

@@ -157,9 +157,8 @@ export function clockActionFor(eventKey: string): ClockAction | undefined {
 }
 
 /**
- * The Roster index of the Tally whose number key this is: `1`–`8` for the Fahrzeuge in
- * positions 1–2, Shift + `1`–`8` for positions 3–4. Decided in "Let the Trainee add and remove
- * Fahrzeuge", point 4.
+ * The Roster index of the Tally whose number key this is. Decided in "Let the Trainee add and
+ * remove Fahrzeuge", point 4.
  */
 export function tallyIndexFor(event: {
   key: string;
@@ -178,11 +177,14 @@ export function tallyIndexFor(event: {
   return (event.shiftKey ? TALLY_KEY_COUNT : 0) + number - 1;
 }
 
-/** The number key that taps the Roster Tally at this index, for its fob and aria-keyshortcuts. */
-export function tallyKeyFor(rosterIndex: number): {
-  label: string;
-  ariaName: string;
-} {
+/** A Tally's number key, as its fob shows it and as aria-keyshortcuts names it. */
+export interface TallyKey {
+  readonly label: string;
+  readonly ariaName: string;
+}
+
+/** The number key that taps the Roster Tally at this index. */
+export function tallyKeyFor(rosterIndex: number): TallyKey {
   const digit = String((rosterIndex % TALLY_KEY_COUNT) + 1);
   return rosterIndex < TALLY_KEY_COUNT
     ? { label: digit, ariaName: digit }

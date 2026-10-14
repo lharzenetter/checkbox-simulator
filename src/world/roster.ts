@@ -126,6 +126,9 @@ export function addFahrzeug(fahrzeuge: Fahrzeuge): Fahrzeuge {
     throw new Error("Every prefill's Kurzname is taken");
   }
   // One above the highest id in use, so a new Fahrzeug never takes a present Fahrzeug's Tallys.
+  // ASSUMPTION: a removed Fahrzeug's id may come back; it was not in use, and Einsatzprotokolle
+  // keep their own copy of the LCD name, so nothing refers to it any more. Decided while
+  // implementing #44.
   const id = String(
     Math.max(0, ...fahrzeuge.map((fahrzeug) => Number(fahrzeug.id))) + 1,
   );
@@ -186,10 +189,11 @@ export function hasDuplicateKurzname(
 
 /**
  * Whether the Roster can be kept: one to {@link MAX_FAHRZEUGE} valid Fahrzeuge, each with its
- * own identity and Kurzname.
+ * own identity (a positive whole number) and Kurzname.
  */
 export function isValidRoster(fahrzeuge: Fahrzeuge): boolean {
   return (
+    fahrzeuge.every((fahrzeug) => /^[1-9][0-9]*$/.test(fahrzeug.id)) &&
     fahrzeuge.length >= 1 &&
     fahrzeuge.length <= MAX_FAHRZEUGE &&
     new Set(fahrzeuge.map((fahrzeug) => fahrzeug.id)).size ===
