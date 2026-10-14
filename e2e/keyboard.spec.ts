@@ -64,6 +64,12 @@ test("list the keybindings in the Tastenkürzel dialog", async ({ page }) => {
   await expect(
     dialog.getByRole("row", { name: /^Tally antippen/ }),
   ).toContainText("1–8");
+  await expect(dialog.getByRole("row", { name: /^Schneller/ })).toContainText(
+    "→",
+  );
+  await expect(
+    dialog.getByRole("row", { name: /^Pause \/ Weiter/ }),
+  ).toContainText("P");
 
   await page.keyboard.press("e");
   await page.keyboard.press("Escape");
@@ -72,4 +78,33 @@ test("list the keybindings in the Tastenkürzel dialog", async ({ page }) => {
     "aria-label",
     "Display aus",
   );
+});
+
+test("steer the clock with the left and right arrows and P", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await openSimulator(page);
+  const speed = (label: string) => page.getByRole("button", { name: label });
+
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await expect(speed("10×")).toHaveAttribute("aria-pressed", "true");
+
+  await page.keyboard.press("ArrowLeft");
+  await expect(speed("5×")).toHaveAttribute("aria-pressed", "true");
+
+  await page.keyboard.press("p");
+  await expect(page.getByText("Simulation pausiert")).toBeVisible();
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("p");
+  await expect(page.getByText("Simulation pausiert")).toBeHidden();
+  await expect(speed("5×")).toHaveAttribute("aria-pressed", "true");
+
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await expect(speed("1×")).toHaveAttribute("aria-pressed", "true");
 });

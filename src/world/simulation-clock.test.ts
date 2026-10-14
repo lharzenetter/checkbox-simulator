@@ -9,6 +9,7 @@ import {
   resumeSimulationClock,
   setClockSpeed,
   startSimulationClock,
+  stepClockSpeed,
 } from "./index";
 import type { SimulationClock, Speed } from "./index";
 
@@ -214,4 +215,46 @@ describe("display timings under the speed control and pause", () => {
   it.todo(
     "silences the siren and holds the LED while paused, resuming both on play",
   );
+});
+
+function runningAt(speed: Speed): SimulationClock {
+  return setClockSpeed(
+    startSimulationClock({ realNow: 0, uhrzeit: 0 }),
+    speed,
+    0,
+  );
+}
+
+// decided in "Design how the Trainee handles Tallys and the clock"
+describe("stepping the simulation speed", () => {
+  it.each<[Speed, Speed]>([
+    [1, 2],
+    [2, 5],
+    [5, 10],
+  ])("speeds %d× up to %d×", (from, to) => {
+    expect(stepClockSpeed(runningAt(from), "faster", 1_000).speed).toBe(to);
+  });
+
+  it.each<[Speed, Speed]>([
+    [10, 5],
+    [5, 2],
+    [2, 1],
+  ])("slows %d× down to %d×", (from, to) => {
+    expect(stepClockSpeed(runningAt(from), "slower", 1_000).speed).toBe(to);
+  });
+
+  it("stops at 10× and at 1×", () => {
+    expect(stepClockSpeed(runningAt(10), "faster", 1_000).speed).toBe(10);
+    expect(stepClockSpeed(runningAt(1), "slower", 1_000).speed).toBe(1);
+  });
+
+  it("keeps the simulated time already run when the speed changes", () => {
+    const stepped = stepClockSpeed(runningAt(2), "faster", 1_000);
+    expect(stepped).toEqual(setClockSpeed(runningAt(2), 5, 1_000));
+  });
+
+  it("leaves the speed alone while paused", () => {
+    const paused = pauseClock(runningAt(2), 1_000);
+    expect(stepClockSpeed(paused, "faster", 2_000)).toBe(paused);
+  });
 });

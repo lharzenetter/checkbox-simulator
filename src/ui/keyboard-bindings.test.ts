@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Key } from "../core/index";
 import {
+  clockActionFor,
   deviceKeyBindingFor,
   keyShortcutsFor,
   tallyIndexFor,
@@ -49,5 +50,15 @@ describe("keyboard bindings", () => {
   it("names each device key's shortcuts for aria-keyshortcuts", () => {
     expect(keyShortcutsFor("X")).toBe("Escape D");
     expect(keyShortcutsFor("Check")).toBe("Space E");
+  });
+
+  it.each([
+    ["ArrowRight", "faster"],
+    ["ArrowLeft", "slower"],
+    ["p", "togglePause"],
+    ["P", "togglePause"],
+  ])("steers the clock with %j", (eventKey, action) => {
+    expect(clockActionFor(eventKey)).toBe(action);
+    expect(deviceKeyBindingFor(eventKey)).toBeUndefined();
   });
 });

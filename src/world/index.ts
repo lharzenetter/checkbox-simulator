@@ -17,5 +17,6 @@ export {
   setClockSpeed,
   SPEEDS,
   startSimulationClock,
+  stepClockSpeed,
 } from "./simulation-clock";
 export type { SimulationClock, Speed } from "./simulation-clock";

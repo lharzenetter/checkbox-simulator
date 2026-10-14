@@ -1,4 +1,8 @@
-import { DEVICE_KEY_BINDINGS, TALLY_KEY_COUNT } from "./keyboard-bindings";
+import {
+  CLOCK_KEY_BINDINGS,
+  DEVICE_KEY_BINDINGS,
+  TALLY_KEY_COUNT,
+} from "./keyboard-bindings";
 import { ModalDialog } from "./ModalDialog";
 import styles from "./KeyboardShortcuts.module.css";
 
@@ -33,6 +37,24 @@ export function KeyboardShortcuts({ onClose }: { onClose: () => void }) {
               <kbd className={styles.kbd}>{TALLY_KEY_COUNT}</kbd>
             </td>
           </tr>
+        </tbody>
+      </table>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th scope="col">Zeitsteuerung</th>
+            <th scope="col">Tastatur</th>
+          </tr>
+        </thead>
+        <tbody>
+          {CLOCK_KEY_BINDINGS.map((binding) => (
+            <tr key={binding.action}>
+              <th scope="row">{binding.label}</th>
+              <td>
+                <kbd className={styles.kbd}>{binding.keyboardKey.label}</kbd>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
       <button type="button" className={styles.close} onClick={onClose}>

@@ -116,3 +116,20 @@ function reanchor(clock: SimulationClock, realNow: number): SimulationClock {
 export function acceptsDeviceKeys(clock: SimulationClock): boolean {
   return !clock.paused;
 }
+
+/**
+ * Moves to the next of the {@link SPEEDS} up or down, staying put at either end and while paused.
+ * Decided in "Design how the Trainee handles Tallys and the clock".
+ */
+export function stepClockSpeed(
+  clock: SimulationClock,
+  direction: "faster" | "slower",
+  realNow: number,
+): SimulationClock {
+  const next =
+    SPEEDS[SPEEDS.indexOf(clock.speed) + (direction === "faster" ? 1 : -1)];
+  if (clock.paused || next === undefined) {
+    return clock;
+  }
+  return setClockSpeed(clock, next, realNow);
+}

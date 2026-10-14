@@ -15,6 +15,7 @@ import {
   readClocks,
   resumeSimulationClock,
   setClockSpeed,
+  stepClockSpeed,
   startSimulationClock,
 } from "../world/index";
 import type { SimulationClock, Speed, Vehicles } from "../world/index";
@@ -54,6 +55,8 @@ export function useSimulator(): {
   readonly pause: () => void;
   readonly play: () => void;
   readonly setSpeed: (speed: Speed) => void;
+  readonly stepSpeed: (direction: "faster" | "slower") => void;
+  readonly togglePause: () => void;
   readonly vehicles: Vehicles;
   readonly firstLaunchDone: boolean;
   // Keeps the vehicles' names and marks the first launch done.
@@ -170,6 +173,21 @@ export function useSimulator(): {
     },
     [updateClock],
   );
+  const stepSpeed = useCallback(
+    (direction: "faster" | "slower") => {
+      updateClock((current, realNow) =>
+        stepClockSpeed(current, direction, realNow),
+      );
+    },
+    [updateClock],
+  );
+  const togglePause = useCallback(() => {
+    updateClock((current, realNow) =>
+      current.paused
+        ? playClock(current, realNow)
+        : pauseClock(current, realNow),
+    );
+  }, [updateClock]);
 
   const nameVehicles = useCallback((named: Vehicles) => {
     setVehicles(named);
@@ -205,6 +223,8 @@ export function useSimulator(): {
     pause,
     play,
     setSpeed,
+    stepSpeed,
+    togglePause,
     vehicles,
     firstLaunchDone,
     nameVehicles,

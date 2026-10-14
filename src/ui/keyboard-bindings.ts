@@ -1,8 +1,8 @@
 import type { Key } from "../core/index";
 
-// The keyboard bindings for the device keys and the Roster Tallys, decided in "Design how the
-// Trainee handles Tallys and the clock". The key map, the front panel's aria-keyshortcuts and
-// the Tastenkürzel dialog all read from here.
+// The keyboard bindings for the device keys, the clock and the Roster Tallys, decided in "Design
+// how the Trainee handles Tallys and the clock". The key map, the aria-keyshortcuts and the
+// Tastenkürzel dialog all read from here.
 
 interface KeyboardKey {
   // KeyboardEvent.key, lower-cased.
@@ -92,6 +92,42 @@ export const DEVICE_KEY_BINDINGS: readonly DeviceKeyBinding[] = [
   },
 ];
 
+export type ClockAction = "faster" | "slower" | "togglePause";
+
+interface ClockKeyBinding {
+  readonly action: ClockAction;
+  readonly label: string;
+  readonly keyboardKey: KeyboardKey;
+}
+
+export const CLOCK_KEY_BINDINGS: readonly ClockKeyBinding[] = [
+  {
+    action: "faster",
+    label: "Schneller",
+    keyboardKey: {
+      eventKey: "arrowright",
+      ariaName: "ArrowRight",
+      label: "→",
+      yieldsToFocusedControl: false,
+    },
+  },
+  {
+    action: "slower",
+    label: "Langsamer",
+    keyboardKey: {
+      eventKey: "arrowleft",
+      ariaName: "ArrowLeft",
+      label: "←",
+      yieldsToFocusedControl: false,
+    },
+  },
+  {
+    action: "togglePause",
+    label: "Pause / Weiter",
+    keyboardKey: letter("p"),
+  },
+];
+
 export const TALLY_KEY_COUNT = 8;
 
 export function deviceKeyBindingFor(
@@ -112,12 +148,26 @@ export function deviceKeyBindingFor(
   return undefined;
 }
 
+export function clockActionFor(eventKey: string): ClockAction | undefined {
+  const normalised = eventKey.toLowerCase();
+  return CLOCK_KEY_BINDINGS.find(
+    (binding) => binding.keyboardKey.eventKey === normalised,
+  )?.action;
+}
+
 /** The Roster index of the Tally whose number key this is. */
 export function tallyIndexFor(eventKey: string): number | undefined {
   const number = Number(eventKey);
   return /^[1-9]$/.test(eventKey) && number <= TALLY_KEY_COUNT
     ? number - 1
     : undefined;
+}
+
+export function clockKeyShortcutFor(action: ClockAction): string {
+  return (
+    CLOCK_KEY_BINDINGS.find((binding) => binding.action === action)?.keyboardKey
+      .ariaName ?? ""
+  );
 }
 
 export function keyShortcutsFor(key: Key): string {

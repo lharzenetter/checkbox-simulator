@@ -7,6 +7,7 @@ import { ClockControls } from "./ClockControls";
 import { FirstLaunchDialog } from "./FirstLaunchDialog";
 import { FrontPanel } from "./FrontPanel";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
+import type { ClockAction } from "./keyboard-bindings";
 import { MuteToggle } from "./MuteToggle";
 import { SessionChoiceDialog } from "./SessionChoiceDialog";
 import { Settings } from "./Settings";
@@ -24,6 +25,8 @@ export function App() {
     pause,
     play,
     setSpeed,
+    stepSpeed,
+    togglePause,
     vehicles,
     firstLaunchDone,
     nameVehicles,
@@ -74,6 +77,16 @@ export function App() {
     },
     [tapTally],
   );
+  const steerClock = useCallback(
+    (action: ClockAction) => {
+      if (action === "togglePause") {
+        togglePause();
+      } else {
+        stepSpeed(action);
+      }
+    },
+    [stepSpeed, togglePause],
+  );
   useKeyMap({
     enabled:
       firstLaunchDone &&
@@ -83,6 +96,7 @@ export function App() {
     onKeyPressed: pressKey,
     onKeyReleased: releaseKey,
     onTallyKeyPressed: tapTallyAt,
+    onClockKeyPressed: steerClock,
   });
 
   return (

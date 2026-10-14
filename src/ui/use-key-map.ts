@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import type { Key } from "../core/index";
+import type { ClockAction } from "./keyboard-bindings";
 import {
+  clockActionFor,
   DEVICE_KEY_BINDINGS,
   deviceKeyBindingFor,
   tallyIndexFor,
@@ -21,6 +23,7 @@ export function useKeyMap({
   onKeyPressed,
   onKeyReleased,
   onTallyKeyPressed,
+  onClockKeyPressed,
 }: {
   // Off while a dialog is open, so typing a name presses no device key.
   enabled: boolean;
@@ -29,6 +32,7 @@ export function useKeyMap({
   onKeyReleased: (key: Key) => void;
   /** Called with the Roster index of the Tally whose number key was pressed. */
   onTallyKeyPressed: (rosterIndex: number) => void;
+  onClockKeyPressed: (action: ClockAction) => void;
 }): void {
   useEffect(() => {
     // A window that loses focus, or a key map switched off, never sees the key-up, so every key
@@ -48,6 +52,7 @@ export function useKeyMap({
       }
       const binding = deviceKeyBindingFor(event.key);
       const rosterIndex = tallyIndexFor(event.key);
+      const clockAction = clockActionFor(event.key);
       if (binding !== undefined) {
         if (
           binding.yieldsToFocusedControl &&
@@ -60,6 +65,9 @@ export function useKeyMap({
       } else if (rosterIndex !== undefined) {
         event.preventDefault();
         onTallyKeyPressed(rosterIndex);
+      } else if (clockAction !== undefined) {
+        event.preventDefault();
+        onClockKeyPressed(clockAction);
       }
     }
     function handleKeyUp(event: KeyboardEvent): void {
@@ -84,5 +92,11 @@ export function useKeyMap({
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", releaseAll);
     };
-  }, [enabled, onKeyPressed, onKeyReleased, onTallyKeyPressed]);
+  }, [
+    enabled,
+    onKeyPressed,
+    onKeyReleased,
+    onTallyKeyPressed,
+    onClockKeyPressed,
+  ]);
 }
