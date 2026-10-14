@@ -1,7 +1,7 @@
 import type { DragEvent } from "react";
 import type { State } from "../core/index";
-import { ROSTER, roleCode, truppHint } from "../world/index";
-import type { RosterTally, Vehicle, Vehicles } from "../world/index";
+import { roleCode, rosterTallys, truppHint } from "../world/index";
+import type { Fahrzeug, Fahrzeuge, RosterTally } from "../world/index";
 import { tallyKeyFor } from "./keyboard-bindings";
 import styles from "./TallyRoster.module.css";
 
@@ -10,21 +10,22 @@ export const TALLY_DRAG_TYPE = "application/x-checkbox-tally";
 
 export function TallyRoster({
   state,
-  vehicles,
+  fahrzeuge,
   onTallyTapped,
 }: {
   state: State;
-  vehicles: Vehicles;
+  fahrzeuge: Fahrzeuge;
   onTallyTapped: (tally: RosterTally) => void;
 }) {
+  const tallys = rosterTallys(fahrzeuge);
   return (
     <section className={styles.roster} aria-label="Atemschutzträger">
-      {vehicles.map((vehicle, vehicleIndex) => (
-        <VehicleCard
-          // The Roster's vehicles never move, so their position is their identity.
-          key={vehicleIndex}
-          vehicle={vehicle}
-          tallys={ROSTER.filter((tally) => tally.vehicleIndex === vehicleIndex)}
+      {fahrzeuge.map((fahrzeug) => (
+        <FahrzeugCard
+          key={fahrzeug.id}
+          fahrzeug={fahrzeug}
+          tallys={tallys.filter((tally) => tally.fahrzeugId === fahrzeug.id)}
+          rosterIndexOf={(tally) => tallys.indexOf(tally)}
           state={state}
           onTallyTapped={onTallyTapped}
         />
@@ -33,23 +34,25 @@ export function TallyRoster({
   );
 }
 
-function VehicleCard({
-  vehicle,
+function FahrzeugCard({
+  fahrzeug,
   tallys,
+  rosterIndexOf,
   state,
   onTallyTapped,
 }: {
-  vehicle: Vehicle;
+  fahrzeug: Fahrzeug;
   tallys: readonly RosterTally[];
+  rosterIndexOf: (tally: RosterTally) => number;
   state: State;
   onTallyTapped: (tally: RosterTally) => void;
 }) {
   return (
-    <section className={styles.vehicle} aria-label={vehicle.kurzname}>
+    <section className={styles.fahrzeug} aria-label={fahrzeug.kurzname}>
       <h2 className={styles.heading}>
-        <span className={styles.kurzname}>{vehicle.kurzname}</span>
-        {vehicle.funkrufname !== vehicle.kurzname && (
-          <span className={styles.funkrufname}>{vehicle.funkrufname}</span>
+        <span className={styles.kurzname}>{fahrzeug.kurzname}</span>
+        {fahrzeug.funkrufname !== fahrzeug.kurzname && (
+          <span className={styles.funkrufname}>{fahrzeug.funkrufname}</span>
         )}
       </h2>
       <ol className={styles.fobs}>
@@ -57,7 +60,8 @@ function VehicleCard({
           <li key={tally.tallyId} className={styles.slot}>
             <TallyFob
               tally={tally}
-              kurzname={vehicle.kurzname}
+              kurzname={fahrzeug.kurzname}
+              shortcut={tallyKeyFor(rosterIndexOf(tally))}
               state={state}
               onTapped={onTallyTapped}
             />
@@ -73,16 +77,17 @@ function VehicleCard({
 function TallyFob({
   tally,
   kurzname,
+  shortcut,
   state,
   onTapped,
 }: {
   tally: RosterTally;
   kurzname: string;
+  shortcut: { label: string; ariaName: string };
   state: State;
   onTapped: (tally: RosterTally) => void;
 }) {
   const code = roleCode(tally);
-  const shortcut = tallyKeyFor(ROSTER.indexOf(tally));
   const hint = truppHint(state, tally);
   return (
     <>
@@ -95,7 +100,7 @@ function TallyFob({
         tabIndex={-1}
         aria-label={`${kurzname} ${code} auflegen`}
         aria-description={hint.text}
-        aria-keyshortcuts={shortcut}
+        aria-keyshortcuts={shortcut.ariaName}
         draggable
         onDragStart={(event: DragEvent<HTMLButtonElement>) => {
           event.dataTransfer.setData(TALLY_DRAG_TYPE, tally.tallyId);
@@ -116,7 +121,7 @@ function TallyFob({
             {code}
           </text>
         </svg>
-        <kbd className={styles.shortcut}>{shortcut}</kbd>
+        <kbd className={styles.shortcut}>{shortcut.label}</kbd>
       </button>
       <span className={styles.hint} data-hint={hint.kind} aria-hidden="true">
         {hint.text}

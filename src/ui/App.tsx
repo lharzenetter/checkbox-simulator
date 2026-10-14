@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { alarmCycleMs, isAlarmSounding } from "../core/index";
 import type { Key } from "../core/index";
-import { ROSTER, tallyHeld } from "../world/index";
+import { rosterTallys, tallyHeld } from "../world/index";
 import type { RosterTally } from "../world/index";
 import { ClockControls } from "./ClockControls";
 import { FirstLaunchDialog } from "./FirstLaunchDialog";
@@ -74,22 +74,26 @@ export function App() {
   const tapTally = useCallback(
     (tally: RosterTally | undefined) => {
       if (tally !== undefined) {
-        dispatch(tallyHeld(tally, names.vehicles));
+        dispatch(tallyHeld(tally, names.fahrzeuge));
       }
     },
-    [dispatch, names.vehicles],
+    [dispatch, names.fahrzeuge],
   );
   const tapTallyAt = useCallback(
     (rosterIndex: number) => {
-      tapTally(ROSTER[rosterIndex]);
+      tapTally(rosterTallys(names.fahrzeuge)[rosterIndex]);
     },
-    [tapTally],
+    [tapTally, names.fahrzeuge],
   );
   const tapTallyById = useCallback(
     (tallyId: string) => {
-      tapTally(ROSTER.find((tally) => tally.tallyId === tallyId));
+      tapTally(
+        rosterTallys(names.fahrzeuge).find(
+          (tally) => tally.tallyId === tallyId,
+        ),
+      );
     },
-    [tapTally],
+    [tapTally, names.fahrzeuge],
   );
   const steerClock = useCallback(
     (action: ClockAction) => {
@@ -166,13 +170,13 @@ export function App() {
         />
         <TallyRoster
           state={state}
-          vehicles={names.vehicles}
+          fahrzeuge={names.fahrzeuge}
           onTallyTapped={tapTally}
         />
       </main>
       <Footer />
       {!firstLaunchDone && (
-        <FirstLaunchDialog names={names} onConfirm={setNames} />
+        <FirstLaunchDialog names={names} state={state} onConfirm={setNames} />
       )}
       {sessionChoicePending && (
         <SessionChoiceDialog
@@ -183,6 +187,7 @@ export function App() {
       {settingsOpen && (
         <Settings
           names={names}
+          state={state}
           onNamed={setNames}
           onFactoryReset={resetToFactory}
           onClose={() => {

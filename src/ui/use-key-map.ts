@@ -52,7 +52,7 @@ export function useKeyMap({
         return;
       }
       const binding = deviceKeyBindingFor(event.key);
-      const rosterIndex = tallyIndexFor(event.key);
+      const rosterIndex = tallyIndexFor(event);
       const clockAction = clockActionFor(event.key);
       if (binding !== undefined) {
         if (

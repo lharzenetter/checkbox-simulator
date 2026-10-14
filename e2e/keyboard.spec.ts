@@ -73,8 +73,11 @@ test("list the keybindings in the Tastenkürzel dialog", async ({ page }) => {
     "Leertaste oder E",
   );
   await expect(
-    dialog.getByRole("row", { name: /^Tally antippen/ }),
+    dialog.getByRole("row", { name: /^Tally antippen, Fahrzeug 1–2/ }),
   ).toContainText("1–8");
+  await expect(
+    dialog.getByRole("row", { name: /^Tally antippen, Fahrzeug 3–4/ }),
+  ).toContainText("⇧ + 1–8");
   await expect(dialog.getByRole("row", { name: /^Schneller/ })).toContainText(
     "→",
   );

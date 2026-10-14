@@ -31,8 +31,16 @@ export function KeyboardShortcuts({ onClose }: { onClose: () => void }) {
             </tr>
           ))}
           <tr>
-            <th scope="row">Tally antippen</th>
+            <th scope="row">Tally antippen, Fahrzeug 1–2</th>
             <td>
+              <kbd className={styles.kbd}>1</kbd>–
+              <kbd className={styles.kbd}>{TALLY_KEY_COUNT}</kbd>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Tally antippen, Fahrzeug 3–4</th>
+            <td>
+              <kbd className={styles.kbd}>⇧</kbd> +{" "}
               <kbd className={styles.kbd}>1</kbd>–
               <kbd className={styles.kbd}>{TALLY_KEY_COUNT}</kbd>
             </td>

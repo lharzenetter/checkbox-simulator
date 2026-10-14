@@ -18,7 +18,7 @@ import {
   stepClockSpeed,
   startSimulationClock,
 } from "../world/index";
-import type { SimulationClock, Speed, Vehicles } from "../world/index";
+import type { Fahrzeuge, SimulationClock, Speed } from "../world/index";
 
 // The core's Uhrzeit is local wall-clock time counted as if it were UTC (see `Clocks`).
 function localTimeOfDay(): number {
@@ -48,10 +48,10 @@ function browserStorage(): Storage {
   }
 }
 
-/** The names the Trainee sets: the Feuerwehrname on the LCD and the two vehicles. */
+/** The names the Trainee sets: the Feuerwehrname on the LCD and the Fahrzeuge. */
 export interface Names {
   readonly feuerwehrname: string;
-  readonly vehicles: Vehicles;
+  readonly fahrzeuge: Fahrzeuge;
 }
 
 export function useSimulator(): {
@@ -87,7 +87,7 @@ export function useSimulator(): {
   const persisting = useRef(true);
   const [names, setNamesState] = useState<Names>({
     feuerwehrname: deviceMemory.feuerwehrname,
-    vehicles: deviceMemory.vehicles,
+    fahrzeuge: deviceMemory.fahrzeuge,
   });
   const [firstLaunchDone, setFirstLaunchDone] = useState(
     deviceMemory.firstLaunchDone,

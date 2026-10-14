@@ -1,13 +1,27 @@
 export {
-  DEFAULT_VEHICLES,
-  isValidVehicle,
+  addFahrzeug,
+  canAddFahrzeug,
+  DEFAULT_FAHRZEUGE,
+  hasDuplicateKurzname,
+  isValidFahrzeug,
+  isValidRoster,
   KURZNAME_MAX_LENGTH,
-  ROSTER,
+  MAX_FAHRZEUGE,
+  removalBlocker,
+  removeFahrzeug,
   roleCode,
+  rosterTallys,
   tallyHeld,
   truppHint,
 } from "./roster";
-export type { RosterTally, Role, TruppHint, Vehicle, Vehicles } from "./roster";
+export type {
+  Fahrzeug,
+  Fahrzeuge,
+  RemovalBlocker,
+  RosterTally,
+  Role,
+  TruppHint,
+} from "./roster";
 export {
   acceptsDeviceKeys,
   pauseClock,

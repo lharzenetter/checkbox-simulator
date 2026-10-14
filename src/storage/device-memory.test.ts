@@ -54,14 +54,20 @@ const EINSATZPROTOKOLL: Einsatzprotokoll = {
 
 const CHANGED: DeviceMemory = {
   feuerwehrname: "FF-Übersee",
-  vehicles: [
-    { funkrufname: "Florian Musterstadt 1/46-1", kurzname: "HLF 1" },
-    { funkrufname: "Florian Musterstadt 1/44-1", kurzname: "LF Süd" },
+  fahrzeuge: [
+    { id: "2", funkrufname: "Florian Musterstadt 1/44-1", kurzname: "LF Süd" },
+    { id: "3", funkrufname: "1/33", kurzname: "DLK" },
+    { id: "4", funkrufname: "Florian Musterstadt 1/46-1", kurzname: "HLF 1" },
   ],
   firstLaunchDone: true,
   muted: true,
   einsatzprotokolle: [EINSATZPROTOKOLL],
 };
+
+// The current version's stored form of CHANGED, with these fields replaced.
+function stored(fields: Readonly<Record<string, unknown>>): string {
+  return JSON.stringify({ version: 2, ...CHANGED, ...fields });
+}
 
 function storageWith(items: Readonly<Record<string, string>>): Storage {
   const storage = new MemoryStorage();
@@ -76,9 +82,9 @@ describe("the device memory", () => {
   it("starts with the default names and the first launch still to do", () => {
     expect(loadDeviceMemory(new MemoryStorage())).toEqual({
       feuerwehrname: "FF-Musterstadt",
-      vehicles: [
-        { funkrufname: "1/43", kurzname: "HLF" },
-        { funkrufname: "1/45", kurzname: "LF" },
+      fahrzeuge: [
+        { id: "1", funkrufname: "1/43", kurzname: "HLF" },
+        { id: "2", funkrufname: "1/45", kurzname: "LF" },
       ],
       firstLaunchDone: false,
       muted: false,
@@ -87,6 +93,13 @@ describe("the device memory", () => {
   });
 
   // decided in "Decide what survives a page reload"
+  // decided in "Let the Trainee add and remove Fahrzeuge", point 3
+  it("keeps the Fahrzeuge with their identity", () => {
+    const storage = new MemoryStorage();
+    saveDeviceMemory(storage, CHANGED);
+    expect(loadDeviceMemory(storage).fahrzeuge).toEqual(CHANGED.fahrzeuge);
+  });
+
   it("keeps the Feuerwehrname, the names, the first launch, the mute setting and the Einsatzprotokolle", () => {
     const storage = new MemoryStorage();
     saveDeviceMemory(storage, CHANGED);
@@ -110,12 +123,46 @@ describe("incompatible stored data", () => {
     ],
     [
       "has a Kurzname longer than 10 characters",
-      JSON.stringify({
-        version: 2,
-        ...CHANGED,
+      stored({
+        fahrzeuge: [
+          ...CHANGED.fahrzeuge.slice(1),
+          { id: "5", funkrufname: "LF", kurzname: "LF Süd-Ost 2" },
+        ],
+      }),
+    ],
+    [
+      "has the vehicles of the old shape",
+      stored({
+        fahrzeuge: undefined,
         vehicles: [
-          CHANGED.vehicles[0],
-          { funkrufname: "LF", kurzname: "LF Süd-Ost 2" },
+          { funkrufname: "1/43", kurzname: "HLF" },
+          { funkrufname: "1/45", kurzname: "LF" },
+        ],
+      }),
+    ],
+    ["has no Fahrzeug", stored({ fahrzeuge: [] })],
+    [
+      "has five Fahrzeuge",
+      stored({
+        fahrzeuge: [
+          ...CHANGED.fahrzeuge,
+          { id: "5", funkrufname: "1/23", kurzname: "TLF" },
+          { id: "6", funkrufname: "1/11", kurzname: "ELW" },
+        ],
+      }),
+    ],
+    [
+      "has a Fahrzeug without its identity",
+      stored({
+        fahrzeuge: [{ funkrufname: "1/43", kurzname: "HLF" }],
+      }),
+    ],
+    [
+      "has two Fahrzeuge with the same Kurzname",
+      stored({
+        fahrzeuge: [
+          { id: "1", funkrufname: "1/43", kurzname: "HLF" },
+          { id: "2", funkrufname: "1/45", kurzname: "hlf" },
         ],
       }),
     ],

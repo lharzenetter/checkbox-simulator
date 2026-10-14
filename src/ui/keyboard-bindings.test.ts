@@ -8,6 +8,14 @@ import {
   tallyKeyFor,
 } from "./keyboard-bindings";
 
+function numberKey(key: string, code: string) {
+  return { key, code, shiftKey: false };
+}
+
+function shifted(key: string, code: string) {
+  return { key, code, shiftKey: true };
+}
+
 describe("keyboard bindings", () => {
   it.each<[string, Key]>([
     ["ArrowUp", "Up"],
@@ -41,16 +49,28 @@ describe("keyboard bindings", () => {
     expect(deviceKeyBindingFor("f")).toBeUndefined();
   });
 
-  it("taps the Roster Tallys with the number keys 1 to 8", () => {
-    expect(tallyIndexFor("1")).toBe(0);
-    expect(tallyIndexFor("8")).toBe(7);
-    expect(tallyIndexFor("9")).toBeUndefined();
-    expect(tallyIndexFor("0")).toBeUndefined();
+  // decided in "Let the Trainee add and remove Fahrzeuge", point 4
+  it("taps the Tallys of the Fahrzeuge in positions 1 and 2 with the number keys 1 to 8", () => {
+    expect(tallyIndexFor(numberKey("1", "Digit1"))).toBe(0);
+    expect(tallyIndexFor(numberKey("8", "Digit8"))).toBe(7);
+    expect(tallyIndexFor(numberKey("9", "Digit9"))).toBeUndefined();
+    expect(tallyIndexFor(numberKey("0", "Digit0"))).toBeUndefined();
   });
 
-  it("names each Roster Tally's number key for its fob", () => {
-    expect(tallyKeyFor(0)).toBe("1");
-    expect(tallyKeyFor(7)).toBe("8");
+  // decided in "Let the Trainee add and remove Fahrzeuge", point 4: the physical key, because
+  // Shift changes the character on German layouts
+  it("taps the Tallys of the Fahrzeuge in positions 3 and 4 with Shift and the number keys 1 to 8", () => {
+    expect(tallyIndexFor(shifted("!", "Digit1"))).toBe(8);
+    expect(tallyIndexFor(shifted("(", "Digit8"))).toBe(15);
+    expect(tallyIndexFor(shifted(")", "Digit9"))).toBeUndefined();
+    expect(tallyIndexFor(shifted("!", "KeyQ"))).toBeUndefined();
+  });
+
+  it("names each Roster Tally's number key for its fob and aria-keyshortcuts", () => {
+    expect(tallyKeyFor(0)).toEqual({ label: "1", ariaName: "1" });
+    expect(tallyKeyFor(7)).toEqual({ label: "8", ariaName: "8" });
+    expect(tallyKeyFor(8)).toEqual({ label: "⇧1", ariaName: "Shift+1" });
+    expect(tallyKeyFor(15)).toEqual({ label: "⇧8", ariaName: "Shift+8" });
   });
 
   it("names each device key's shortcuts for aria-keyshortcuts", () => {

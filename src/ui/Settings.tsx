@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { State } from "../core/index";
 import { ModalDialog } from "./ModalDialog";
 import { NamesForm } from "./NamesForm";
 import type { Names } from "./use-simulator";
@@ -6,11 +7,13 @@ import styles from "./Settings.module.css";
 
 export function Settings({
   names,
+  state,
   onNamed,
   onFactoryReset,
   onClose,
 }: {
   names: Names;
+  state: State;
   onNamed: (names: Names) => void;
   onFactoryReset: () => void;
   onClose: () => void;
@@ -26,7 +29,7 @@ export function Settings({
         }}
       >
         <p>
-          Der Feuerwehrname, die Namen der Fahrzeuge, die Einsatzprotokolle, die
+          Der Feuerwehrname, die Fahrzeuge, die Einsatzprotokolle, die
           Stummschaltung und der laufende Einsatz werden gelöscht.
         </p>
         <div className={styles.actions}>
@@ -55,6 +58,7 @@ export function Settings({
     <ModalDialog title="Einstellungen" onCancel={onClose}>
       <NamesForm
         initialNames={names}
+        state={state}
         submitLabel="Speichern"
         onSubmit={(named) => {
           onNamed(named);

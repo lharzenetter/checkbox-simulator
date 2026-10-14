@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-function vehicleField(page: Page, vehicle: string, field: string) {
+function fahrzeugField(page: Page, fahrzeug: string, field: string) {
   return page
-    .getByRole("group", { name: vehicle })
+    .getByRole("group", { name: fahrzeug })
     .getByRole("textbox", { name: field });
 }
 
@@ -13,19 +13,19 @@ async function logInAndOffTrupp(page: Page): Promise<void> {
   }
 }
 
-test("name the vehicles and keep the device memory", async ({ page }) => {
+test("name the Fahrzeuge and keep the device memory", async ({ page }) => {
   await page.goto("./");
   const firstLaunch = page.getByRole("dialog", {
     name: "Willkommen beim Checkbox-Simulator",
   });
-  await expect(vehicleField(page, "Fahrzeug 1", "Funkrufname")).toHaveValue(
+  await expect(fahrzeugField(page, "Fahrzeug 1", "Funkrufname")).toHaveValue(
     "1/43",
   );
-  await expect(vehicleField(page, "Fahrzeug 2", "Kurzname")).toHaveValue("LF");
-  await vehicleField(page, "Fahrzeug 1", "Funkrufname").fill(
+  await expect(fahrzeugField(page, "Fahrzeug 2", "Kurzname")).toHaveValue("LF");
+  await fahrzeugField(page, "Fahrzeug 1", "Funkrufname").fill(
     "Florian Musterstadt 1/46-1",
   );
-  await vehicleField(page, "Fahrzeug 1", "Kurzname").fill("HLF 1");
+  await fahrzeugField(page, "Fahrzeug 1", "Kurzname").fill("HLF 1");
   const feuerwehrname = page.getByRole("textbox", { name: "Feuerwehrname" });
   await expect(feuerwehrname).toHaveValue("FF-Musterstadt");
   await feuerwehrname.fill("FF-Übersee");
@@ -60,7 +60,7 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
   expect(einsatzprotokolle).toHaveLength(1);
 
   await page.getByRole("button", { name: "Einstellungen" }).click();
-  await vehicleField(page, "Fahrzeug 1", "Kurzname").fill("HLF Nord");
+  await fahrzeugField(page, "Fahrzeug 1", "Kurzname").fill("HLF Nord");
   await page
     .getByRole("textbox", { name: "Feuerwehrname" })
     .fill("FF-Nordhafen");
@@ -86,10 +86,12 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: "Zurücksetzen" }).click();
   await expect(firstLaunch).toBeVisible();
-  await expect(vehicleField(page, "Fahrzeug 1", "Funkrufname")).toHaveValue(
+  await expect(fahrzeugField(page, "Fahrzeug 1", "Funkrufname")).toHaveValue(
     "1/43",
   );
-  await expect(vehicleField(page, "Fahrzeug 1", "Kurzname")).toHaveValue("HLF");
+  await expect(fahrzeugField(page, "Fahrzeug 1", "Kurzname")).toHaveValue(
+    "HLF",
+  );
   await expect(
     page.getByRole("textbox", { name: "Feuerwehrname" }),
   ).toHaveValue("FF-Musterstadt");

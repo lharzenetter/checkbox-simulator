@@ -8,19 +8,23 @@ export type Role =
   | "Wassertruppführer"
   | "Wassertruppmann";
 
-/** A vehicle's names: its Funkrufname for the world panel and its Kurzname for the LCD. */
-export interface Vehicle {
+/**
+ * A Fahrzeug of the Roster: its Funkrufname for the world panel, its Kurzname for the LCD, and
+ * the identity it keeps from being added until it is removed.
+ */
+export interface Fahrzeug {
+  readonly id: string;
   readonly funkrufname: string;
   readonly kurzname: string;
 }
 
-/** The Roster's two vehicles, in Roster order. */
-export type Vehicles = readonly [Vehicle, Vehicle];
+/** The Roster's one to four Fahrzeuge, in Roster order. */
+export type Fahrzeuge = readonly Fahrzeug[];
 
-/** One of the Roster's Tallys: the role it stands for on one of the two vehicles. */
+/** One of the Roster's Tallys: the role it stands for on one Fahrzeug. */
 export interface RosterTally {
   readonly tallyId: string;
-  readonly vehicleIndex: 0 | 1;
+  readonly fahrzeugId: string;
   readonly role: Role;
 }
 
@@ -39,11 +43,22 @@ const ROLES: readonly Role[] = [
   "Wassertruppmann",
 ];
 
-/** The vehicles' names until the Trainee changes them. */
-export const DEFAULT_VEHICLES: Vehicles = [
+/** The most Fahrzeuge the Roster holds. Decided in "Let the Trainee add and remove Fahrzeuge". */
+export const MAX_FAHRZEUGE = 4;
+
+// The names a new Fahrzeug is prefilled with, decided in "Let the Trainee add and remove
+// Fahrzeuge", point 6. Four names, so one is always free while fewer than four Fahrzeuge exist.
+const PREFILLS: readonly Omit<Fahrzeug, "id">[] = [
   { funkrufname: "1/43", kurzname: "HLF" },
   { funkrufname: "1/45", kurzname: "LF" },
+  { funkrufname: "1/33", kurzname: "DLK" },
+  { funkrufname: "1/23", kurzname: "TLF" },
 ];
+
+/** The Fahrzeuge until the Trainee changes them. */
+export const DEFAULT_FAHRZEUGE: Fahrzeuge = PREFILLS.slice(0, 2).map(
+  (prefill, index) => ({ id: String(index + 1), ...prefill }),
+);
 
 /**
  * The longest Kurzname, so the longest LCD text (`<Kurzname> AT-F`) fits a line. Decided in
@@ -56,24 +71,32 @@ export const KURZNAME_MAX_LENGTH = 10;
 const KURZNAME_PATTERN = /^[\x20-\x7EÄÖÜäöüß]+$/;
 
 /**
- * The eight Roster Tallys in shortcut order `1`–`8`. Decided in "Decide the contents of the
- * fixed Tally roster".
+ * The Roster Tallys in shortcut order: each Fahrzeug's four Tallys, Fahrzeug by Fahrzeug. A
+ * Tally's id derives from its Fahrzeug's identity, so it survives the removal of another
+ * Fahrzeug.
  */
-export const ROSTER: readonly RosterTally[] = ([0, 1] as const).flatMap(
-  (vehicleIndex) =>
-    ROLES.map((role, roleIndex) => ({
-      tallyId: String(vehicleIndex * ROLES.length + roleIndex + 1),
-      vehicleIndex,
+export function rosterTallys(fahrzeuge: Fahrzeuge): readonly RosterTally[] {
+  return fahrzeuge.flatMap((fahrzeug) =>
+    ROLES.map((role) => ({
+      tallyId: `${fahrzeug.id}/${ROLE_CODES[role]}`,
+      fahrzeugId: fahrzeug.id,
       role,
     })),
-);
+  );
+}
 
 /** The event of tapping a Roster Tally on Check; the Checkbox reads the LCD text stored on it. */
-export function tallyHeld(tally: RosterTally, vehicles: Vehicles): Event {
+export function tallyHeld(tally: RosterTally, fahrzeuge: Fahrzeuge): Event {
+  const fahrzeug = fahrzeuge.find(
+    (candidate) => candidate.id === tally.fahrzeugId,
+  );
+  if (fahrzeug === undefined) {
+    throw new Error(`The Roster has no Fahrzeug ${tally.fahrzeugId}`);
+  }
   return {
     type: "tallyHeld",
     tallyId: tally.tallyId,
-    name: `${vehicles[tally.vehicleIndex].kurzname} ${ROLE_CODES[tally.role]}`,
+    name: `${fahrzeug.kurzname} ${ROLE_CODES[tally.role]}`,
   };
 }
 
@@ -82,19 +105,104 @@ export function roleCode(tally: RosterTally): string {
   return ROLE_CODES[tally.role];
 }
 
+/** Whether the Roster has room for another Fahrzeug. */
+export function canAddFahrzeug(fahrzeuge: Fahrzeuge): boolean {
+  return fahrzeuge.length < MAX_FAHRZEUGE;
+}
+
 /**
- * Whether a vehicle's names can be kept: a Funkrufname that is not blank, and a Kurzname of at
+ * The Roster with a new Fahrzeug appended, prefilled with the first names whose Kurzname is
+ * free. A full Roster is returned unchanged.
+ */
+export function addFahrzeug(fahrzeuge: Fahrzeuge): Fahrzeuge {
+  if (!canAddFahrzeug(fahrzeuge)) {
+    return fahrzeuge;
+  }
+  const taken = new Set(fahrzeuge.map((fahrzeug) => kurznameKey(fahrzeug)));
+  const prefill = PREFILLS.find(
+    (candidate) => !taken.has(kurznameKey(candidate)),
+  );
+  if (prefill === undefined) {
+    throw new Error("Every prefill's Kurzname is taken");
+  }
+  // One above the highest id in use, so a new Fahrzeug never takes a present Fahrzeug's Tallys.
+  const id = String(
+    Math.max(0, ...fahrzeuge.map((fahrzeug) => Number(fahrzeug.id))) + 1,
+  );
+  return [...fahrzeuge, { id, ...prefill }];
+}
+
+/** The Roster without the Fahrzeug of this id. */
+export function removeFahrzeug(fahrzeuge: Fahrzeuge, id: string): Fahrzeuge {
+  return fahrzeuge.filter((fahrzeug) => fahrzeug.id !== id);
+}
+
+/** Why a Fahrzeug cannot be removed: it is the last one, or one of its Tallys is in use. */
+export type RemovalBlocker = "lastFahrzeug" | "inUse";
+
+/** What keeps the Fahrzeug of this id from being removed, if anything. */
+export function removalBlocker(
+  state: State,
+  fahrzeuge: Fahrzeuge,
+  id: string,
+): RemovalBlocker | undefined {
+  if (fahrzeuge.length <= 1) {
+    return "lastFahrzeug";
+  }
+  // Decided in "Let the Trainee add and remove Fahrzeuge", point 2: a logged-in Trupp or the
+  // open Anmeldefenster, not an Einsatzprotokoll.
+  const inUse = rosterTallys(fahrzeuge).some(
+    (tally) =>
+      tally.fahrzeugId === id && truppHint(state, tally).kind !== "notLoggedIn",
+  );
+  return inUse ? "inUse" : undefined;
+}
+
+/**
+ * Whether a Fahrzeug's names can be kept: a Funkrufname that is not blank, and a Kurzname of at
  * most {@link KURZNAME_MAX_LENGTH} characters that the LCD can show.
  */
-export function isValidVehicle(vehicle: Vehicle): boolean {
+export function isValidFahrzeug(fahrzeug: Omit<Fahrzeug, "id">): boolean {
   // ASSUMPTION: neither name may be blank, so every Tally keeps a readable label; decided while
   // implementing #38.
   return (
-    vehicle.funkrufname.trim() !== "" &&
-    vehicle.kurzname.trim() !== "" &&
-    vehicle.kurzname.length <= KURZNAME_MAX_LENGTH &&
-    KURZNAME_PATTERN.test(vehicle.kurzname)
+    fahrzeug.funkrufname.trim() !== "" &&
+    fahrzeug.kurzname.trim() !== "" &&
+    fahrzeug.kurzname.length <= KURZNAME_MAX_LENGTH &&
+    KURZNAME_PATTERN.test(fahrzeug.kurzname)
   );
+}
+
+/** Whether another Fahrzeug of the Roster has this Fahrzeug's Kurzname, trimmed and ignoring case. */
+export function hasDuplicateKurzname(
+  fahrzeuge: Fahrzeuge,
+  fahrzeug: Fahrzeug,
+): boolean {
+  return fahrzeuge.some(
+    (other) =>
+      other.id !== fahrzeug.id && kurznameKey(other) === kurznameKey(fahrzeug),
+  );
+}
+
+/**
+ * Whether the Roster can be kept: one to {@link MAX_FAHRZEUGE} valid Fahrzeuge, each with its
+ * own identity and Kurzname.
+ */
+export function isValidRoster(fahrzeuge: Fahrzeuge): boolean {
+  return (
+    fahrzeuge.length >= 1 &&
+    fahrzeuge.length <= MAX_FAHRZEUGE &&
+    new Set(fahrzeuge.map((fahrzeug) => fahrzeug.id)).size ===
+      fahrzeuge.length &&
+    fahrzeuge.every(
+      (fahrzeug) =>
+        isValidFahrzeug(fahrzeug) && !hasDuplicateKurzname(fahrzeuge, fahrzeug),
+    )
+  );
+}
+
+function kurznameKey(fahrzeug: Pick<Fahrzeug, "kurzname">): string {
+  return fahrzeug.kurzname.trim().toLowerCase();
 }
 
 /** The read-only hint of which Trupp a Roster Tally belongs to, and how its fob shows it. */

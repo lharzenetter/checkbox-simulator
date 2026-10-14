@@ -1,18 +1,34 @@
 import { useState } from "react";
 import type { ReactNode, SyntheticEvent } from "react";
 import { FEUERWEHRNAME_MAX_LENGTH, isValidFeuerwehrname } from "../core/index";
-import { isValidVehicle, KURZNAME_MAX_LENGTH } from "../world/index";
-import type { Vehicle } from "../world/index";
+import type { State } from "../core/index";
+import {
+  addFahrzeug,
+  canAddFahrzeug,
+  hasDuplicateKurzname,
+  isValidFahrzeug,
+  isValidRoster,
+  KURZNAME_MAX_LENGTH,
+  MAX_FAHRZEUGE,
+  removalBlocker,
+  removeFahrzeug,
+} from "../world/index";
+import type { Fahrzeug, RemovalBlocker } from "../world/index";
 import type { Names } from "./use-simulator";
 import styles from "./NamesForm.module.css";
 
+// Decided in "Let the Trainee add and remove Fahrzeuge", point 5: nothing applies before the
+// submit button, so adding and removing need no confirmation.
 export function NamesForm({
   initialNames,
+  state,
   submitLabel,
   onSubmit,
   children,
 }: {
   initialNames: Names;
+  // The running session, which decides whether a Fahrzeug is in use.
+  state: State;
   submitLabel: string;
   onSubmit: (names: Names) => void;
   // Further buttons next to the submit button.
@@ -21,14 +37,14 @@ export function NamesForm({
   const [feuerwehrname, setFeuerwehrname] = useState(
     initialNames.feuerwehrname,
   );
-  const [vehicles, setVehicles] = useState(initialNames.vehicles);
+  const [fahrzeuge, setFahrzeuge] = useState(initialNames.fahrzeuge);
   const feuerwehrnameValid = isValidFeuerwehrname(feuerwehrname);
-  const allValid = feuerwehrnameValid && vehicles.every(isValidVehicle);
+  const allValid = feuerwehrnameValid && isValidRoster(fahrzeuge);
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>): void {
     event.preventDefault();
     if (allValid) {
-      onSubmit({ feuerwehrname, vehicles });
+      onSubmit({ feuerwehrname, fahrzeuge });
     }
   }
 
@@ -52,18 +68,40 @@ export function NamesForm({
           Zeichen angeben, die das Display zeigen kann.
         </p>
       )}
-      {vehicles.map((vehicle, index) => (
-        <VehicleFields
-          key={index}
+      {fahrzeuge.map((fahrzeug, index) => (
+        <FahrzeugFields
+          key={fahrzeug.id}
           legend={`Fahrzeug ${String(index + 1)}`}
-          vehicle={vehicle}
+          fahrzeug={fahrzeug}
+          duplicateKurzname={hasDuplicateKurzname(fahrzeuge, fahrzeug)}
+          removalBlocker={removalBlocker(state, fahrzeuge, fahrzeug.id)}
           onChange={(changed) => {
-            setVehicles((current) =>
-              index === 0 ? [changed, current[1]] : [current[0], changed],
+            setFahrzeuge((current) =>
+              current.map((candidate) =>
+                candidate.id === changed.id ? changed : candidate,
+              ),
             );
+          }}
+          onRemove={() => {
+            setFahrzeuge((current) => removeFahrzeug(current, fahrzeug.id));
           }}
         />
       ))}
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          disabled={!canAddFahrzeug(fahrzeuge)}
+          onClick={() => {
+            setFahrzeuge(addFahrzeug);
+          }}
+        >
+          Fahrzeug hinzufügen
+        </button>
+        {!canAddFahrzeug(fahrzeuge) && (
+          <p className={styles.note}>Höchstens {MAX_FAHRZEUGE} Fahrzeuge.</p>
+        )}
+      </div>
       <div className={styles.actions}>
         <button type="submit" className={styles.button} disabled={!allValid}>
           {submitLabel}
@@ -74,27 +112,39 @@ export function NamesForm({
   );
 }
 
-function VehicleFields({
+const REMOVAL_BLOCKER_NOTES: Readonly<Record<RemovalBlocker, string>> = {
+  lastFahrzeug: "Mindestens ein Fahrzeug muss bleiben.",
+  inUse:
+    "Atemschutzträger dieses Fahrzeugs sind angemeldet oder werden gerade angemeldet.",
+};
+
+function FahrzeugFields({
   legend,
-  vehicle,
+  fahrzeug,
+  duplicateKurzname,
+  removalBlocker,
   onChange,
+  onRemove,
 }: {
   legend: string;
-  vehicle: Vehicle;
-  onChange: (vehicle: Vehicle) => void;
+  fahrzeug: Fahrzeug;
+  duplicateKurzname: boolean;
+  removalBlocker: RemovalBlocker | undefined;
+  onChange: (fahrzeug: Fahrzeug) => void;
+  onRemove: () => void;
 }) {
-  const valid = isValidVehicle(vehicle);
+  const valid = isValidFahrzeug(fahrzeug);
   return (
-    <fieldset className={styles.vehicle}>
+    <fieldset className={styles.fahrzeug}>
       <legend>{legend}</legend>
       <label className={styles.field}>
         Funkrufname
         <input
           className={styles.input}
-          value={vehicle.funkrufname}
+          value={fahrzeug.funkrufname}
           required
           onChange={(event) => {
-            onChange({ ...vehicle, funkrufname: event.target.value });
+            onChange({ ...fahrzeug, funkrufname: event.target.value });
           }}
         />
       </label>
@@ -102,11 +152,12 @@ function VehicleFields({
         Kurzname
         <input
           className={styles.input}
-          value={vehicle.kurzname}
+          value={fahrzeug.kurzname}
           required
           maxLength={KURZNAME_MAX_LENGTH}
+          aria-invalid={!valid || duplicateKurzname}
           onChange={(event) => {
-            onChange({ ...vehicle, kurzname: event.target.value });
+            onChange({ ...fahrzeug, kurzname: event.target.value });
           }}
         />
       </label>
@@ -116,6 +167,24 @@ function VehicleFields({
           {KURZNAME_MAX_LENGTH} Zeichen angeben, die das Display zeigen kann.
         </p>
       )}
+      {valid && duplicateKurzname && (
+        <p className={styles.problem} role="alert">
+          Kurzname bereits vergeben
+        </p>
+      )}
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          disabled={removalBlocker !== undefined}
+          onClick={onRemove}
+        >
+          Fahrzeug entfernen
+        </button>
+        {removalBlocker !== undefined && (
+          <p className={styles.note}>{REMOVAL_BLOCKER_NOTES[removalBlocker]}</p>
+        )}
+      </div>
     </fieldset>
   );
 }

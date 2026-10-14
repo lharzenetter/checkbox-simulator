@@ -1,7 +1,7 @@
 import { FACTORY_FEUERWEHRNAME, isValidFeuerwehrname } from "../core/index";
 import type { Einsatzprotokoll } from "../core/index";
-import { DEFAULT_VEHICLES, isValidVehicle } from "../world/index";
-import type { Vehicle, Vehicles } from "../world/index";
+import { DEFAULT_FAHRZEUGE, isValidRoster } from "../world/index";
+import type { Fahrzeug, Fahrzeuge } from "../world/index";
 import {
   isAtemschutztraeger,
   isEinsatzstatus,
@@ -13,7 +13,7 @@ import {
 /** What the Checkbox's non-volatile memory keeps until a factory reset. */
 export interface DeviceMemory {
   readonly feuerwehrname: string;
-  readonly vehicles: Vehicles;
+  readonly fahrzeuge: Fahrzeuge;
   /** Whether the Trainee has confirmed the first-launch dialog. */
   readonly firstLaunchDone: boolean;
   readonly muted: boolean;
@@ -24,7 +24,7 @@ export interface DeviceMemory {
 /** The device memory as it leaves the factory, and after a factory reset. */
 export const FACTORY_DEVICE_MEMORY: DeviceMemory = {
   feuerwehrname: FACTORY_FEUERWEHRNAME,
-  vehicles: DEFAULT_VEHICLES,
+  fahrzeuge: DEFAULT_FAHRZEUGE,
   firstLaunchDone: false,
   muted: false,
   einsatzprotokolle: [],
@@ -87,12 +87,12 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
   if (!isRecord(value) || value.version !== DEVICE_MEMORY_VERSION) {
     return null;
   }
-  const vehicles = parseVehicles(value.vehicles);
+  const fahrzeuge = parseFahrzeuge(value.fahrzeuge);
   const { feuerwehrname, firstLaunchDone, muted, einsatzprotokolle } = value;
   if (
     typeof feuerwehrname !== "string" ||
     !isValidFeuerwehrname(feuerwehrname) ||
-    vehicles === null ||
+    fahrzeuge === null ||
     typeof firstLaunchDone !== "boolean" ||
     typeof muted !== "boolean" ||
     !Array.isArray(einsatzprotokolle) ||
@@ -102,31 +102,33 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
   }
   return {
     feuerwehrname,
-    vehicles,
+    fahrzeuge,
     firstLaunchDone,
     muted,
     einsatzprotokolle,
   };
 }
 
-function parseVehicles(value: unknown): Vehicles | null {
-  if (!Array.isArray(value) || value.length !== 2) {
+function parseFahrzeuge(value: unknown): Fahrzeuge | null {
+  if (!Array.isArray(value)) {
     return null;
   }
-  const first: unknown = value[0];
-  const second: unknown = value[1];
-  return isVehicle(first) && isVehicle(second) ? [first, second] : null;
+  const fahrzeuge = value.filter(isFahrzeug);
+  return fahrzeuge.length === value.length && isValidRoster(fahrzeuge)
+    ? fahrzeuge.map(({ id, funkrufname, kurzname }) => ({
+        id,
+        funkrufname,
+        kurzname,
+      }))
+    : null;
 }
 
-function isVehicle(value: unknown): value is Vehicle {
+function isFahrzeug(value: unknown): value is Fahrzeug {
   return (
     isRecord(value) &&
+    typeof value.id === "string" &&
     typeof value.funkrufname === "string" &&
-    typeof value.kurzname === "string" &&
-    isValidVehicle({
-      funkrufname: value.funkrufname,
-      kurzname: value.kurzname,
-    })
+    typeof value.kurzname === "string"
   );
 }
 

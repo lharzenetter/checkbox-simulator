@@ -128,6 +128,7 @@ export const CLOCK_KEY_BINDINGS: readonly ClockKeyBinding[] = [
   },
 ];
 
+// The number keys per Shift level: two Fahrzeuge of four Tallys each.
 export const TALLY_KEY_COUNT = 8;
 
 export function deviceKeyBindingFor(
@@ -155,17 +156,37 @@ export function clockActionFor(eventKey: string): ClockAction | undefined {
   )?.action;
 }
 
-/** The Roster index of the Tally whose number key this is. */
-export function tallyIndexFor(eventKey: string): number | undefined {
-  const number = Number(eventKey);
-  return /^[1-9]$/.test(eventKey) && number <= TALLY_KEY_COUNT
-    ? number - 1
-    : undefined;
+/**
+ * The Roster index of the Tally whose number key this is: `1`–`8` for the Fahrzeuge in
+ * positions 1–2, Shift + `1`–`8` for positions 3–4. Decided in "Let the Trainee add and remove
+ * Fahrzeuge", point 4.
+ */
+export function tallyIndexFor(event: {
+  key: string;
+  code: string;
+  shiftKey: boolean;
+}): number | undefined {
+  // Shift changes the character on German layouts, so a shifted digit is read off the
+  // physical key.
+  const digit = event.shiftKey
+    ? /^Digit([1-9])$/.exec(event.code)?.[1]
+    : /^[1-9]$/.exec(event.key)?.[0];
+  const number = Number(digit);
+  if (digit === undefined || number > TALLY_KEY_COUNT) {
+    return undefined;
+  }
+  return (event.shiftKey ? TALLY_KEY_COUNT : 0) + number - 1;
 }
 
-/** The number key that taps the Roster Tally at this index. */
-export function tallyKeyFor(rosterIndex: number): string {
-  return String(rosterIndex + 1);
+/** The number key that taps the Roster Tally at this index, for its fob and aria-keyshortcuts. */
+export function tallyKeyFor(rosterIndex: number): {
+  label: string;
+  ariaName: string;
+} {
+  const digit = String((rosterIndex % TALLY_KEY_COUNT) + 1);
+  return rosterIndex < TALLY_KEY_COUNT
+    ? { label: digit, ariaName: digit }
+    : { label: `⇧${digit}`, ariaName: `Shift+${digit}` };
 }
 
 export function clockKeyShortcutFor(action: ClockAction): string {
