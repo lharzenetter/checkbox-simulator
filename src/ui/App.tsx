@@ -6,6 +6,7 @@ import type { RosterTally } from "../world/index";
 import { ClockControls } from "./ClockControls";
 import { FirstLaunchDialog } from "./FirstLaunchDialog";
 import { FrontPanel } from "./FrontPanel";
+import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { MuteToggle } from "./MuteToggle";
 import { SessionChoiceDialog } from "./SessionChoiceDialog";
 import { Settings } from "./Settings";
@@ -34,6 +35,7 @@ export function App() {
     discardSession,
   } = useSimulator();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // decided in "Decide how alarms are presented", points 7 and 8: pause and mute silence only
   // the siren
   useSiren({
@@ -73,7 +75,11 @@ export function App() {
     [tapTally],
   );
   useKeyMap({
-    enabled: firstLaunchDone && !sessionChoicePending && !settingsOpen,
+    enabled:
+      firstLaunchDone &&
+      !sessionChoicePending &&
+      !settingsOpen &&
+      !shortcutsOpen,
     onKeyPressed: pressKey,
     onKeyReleased: releaseKey,
     onTallyKeyPressed: tapTallyAt,
@@ -91,12 +97,21 @@ export function App() {
         <MuteToggle muted={muted} onToggle={toggleMute} />
         <button
           type="button"
-          className={styles.settings}
+          className={styles.chromeButton}
           onClick={() => {
             setSettingsOpen(true);
           }}
         >
           Einstellungen
+        </button>
+        <button
+          type="button"
+          className={styles.chromeButton}
+          onClick={() => {
+            setShortcutsOpen(true);
+          }}
+        >
+          Tastenkürzel
         </button>
       </div>
       <div className={styles.stage}>
@@ -127,6 +142,13 @@ export function App() {
           onFactoryReset={resetToFactory}
           onClose={() => {
             setSettingsOpen(false);
+          }}
+        />
+      )}
+      {shortcutsOpen && (
+        <KeyboardShortcuts
+          onClose={() => {
+            setShortcutsOpen(false);
           }}
         />
       )}

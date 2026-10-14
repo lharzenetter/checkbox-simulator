@@ -48,3 +48,28 @@ test("press a focused front-panel key's binding only once", async ({
   await page.keyboard.press("Enter");
   await expect(lcd).toHaveAttribute("aria-label", /^SERVICE\nEinsatzprotokoll/);
 });
+
+test("list the keybindings in the Tastenkürzel dialog", async ({ page }) => {
+  await page.clock.install();
+  await openSimulator(page);
+  const dialog = page.getByRole("dialog", { name: "Tastenkürzel" });
+
+  await page.getByRole("button", { name: "Tastenkürzel" }).click();
+  await expect(dialog.getByRole("row", { name: /^X / })).toContainText(
+    "Esc oder D",
+  );
+  await expect(dialog.getByRole("row", { name: /^Check / })).toContainText(
+    "Leertaste oder E",
+  );
+  await expect(
+    dialog.getByRole("row", { name: /^Tally antippen/ }),
+  ).toContainText("1–8");
+
+  await page.keyboard.press("e");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("img")).toHaveAttribute(
+    "aria-label",
+    "Display aus",
+  );
+});

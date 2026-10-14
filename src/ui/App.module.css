@@ -27,7 +27,7 @@
   gap: 16px;
 }
 
-.settings {
+.chromeButton {
   min-height: 40px;
   padding: 8px 14px;
   border: 2px solid #6b7178;
@@ -40,7 +40,7 @@
   cursor: pointer;
 }
 
-.settings:focus-visible {
+.chromeButton:focus-visible {
   outline: 3px solid #6ea8fe;
   outline-offset: 2px;
 }
