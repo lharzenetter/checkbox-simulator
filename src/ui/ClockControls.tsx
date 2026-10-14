@@ -1,5 +1,7 @@
 import { SPEEDS } from "../world/index";
 import type { SimulationClock, Speed } from "../world/index";
+import { IconButton } from "./IconButton";
+import { PauseIcon, PlayIcon } from "./Icons";
 import { clockKeyShortcutFor } from "./keyboard-bindings";
 import styles from "./ClockControls.module.css";
 
@@ -16,14 +18,13 @@ export function ClockControls({
 }) {
   return (
     <section className={styles.controls} aria-label="Zeitsteuerung">
-      <button
-        type="button"
-        className={styles.playPause}
-        aria-keyshortcuts={clockKeyShortcutFor("togglePause")}
+      <IconButton
+        label={clock.paused ? "Weiter" : "Pause"}
+        keyShortcuts={clockKeyShortcutFor("togglePause")}
         onClick={clock.paused ? onPlay : onPause}
       >
-        {clock.paused ? "▶ Weiter" : "❚❚ Pause"}
-      </button>
+        {clock.paused ? <PlayIcon /> : <PauseIcon />}
+      </IconButton>
       <div
         className={styles.speeds}
         role="group"

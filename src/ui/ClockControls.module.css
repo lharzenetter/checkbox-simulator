@@ -1,35 +1,30 @@
 .controls {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 10px;
   color: #e6e6e3;
   font:
-    600 1rem/1.2 system-ui,
+    600 0.9rem/1.2 system-ui,
     sans-serif;
-}
-
-.playPause,
-.speed {
-  min-width: 48px;
-  min-height: 40px;
-  padding: 8px 14px;
-  border: 2px solid #6b7178;
-  border-radius: 8px;
-  background: #3a3f45;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.playPause {
-  min-width: 120px;
 }
 
 .speeds {
   display: flex;
-  gap: 6px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #1f2226;
+}
+
+.speed {
+  min-width: 40px;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 .speed:disabled {
@@ -38,20 +33,20 @@
 }
 
 .speed[aria-pressed="true"] {
-  border-color: #e6e6e3;
   background: #e6e6e3;
-  color: #2b2f33;
+  color: #1f2226;
 }
 
-.playPause:focus-visible,
 .speed:focus-visible {
   outline: 3px solid #6ea8fe;
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .status {
-  flex-basis: 100%;
   margin: 0;
-  text-align: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(240 195 107 / 15%);
   color: #f0c36b;
+  white-space: nowrap;
 }

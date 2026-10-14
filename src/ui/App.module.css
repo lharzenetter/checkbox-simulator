@@ -1,46 +1,67 @@
 .app {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   margin: 0;
-  padding: 16px;
-  box-sizing: border-box;
   background: #2b2f33;
+  color: #e6e6e3;
 }
 
-.stage {
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 24px;
-  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #3f454b;
+  background: rgb(31 34 38 / 92%);
+  backdrop-filter: blur(8px);
+}
+
+.title {
+  margin: 0;
+  font:
+    700 1.05rem/1.2 system-ui,
+    sans-serif;
+  letter-spacing: 0.01em;
 }
 
 .chrome {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
+  gap: 4px;
+}
+
+.stage {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: flex-start;
   justify-content: center;
-  gap: 16px;
+  gap: 32px;
+  padding: 32px 16px;
 }
 
-.chromeButton {
-  min-height: 40px;
-  padding: 8px 14px;
-  border: 2px solid #6b7178;
-  border-radius: 8px;
-  background: #3a3f45;
-  color: #e6e6e3;
-  font:
-    600 1rem/1.2 system-ui,
-    sans-serif;
-  cursor: pointer;
-}
+@media (max-width: 560px) {
+  .titleSuffix {
+    display: none;
+  }
 
-.chromeButton:focus-visible {
-  outline: 3px solid #6ea8fe;
-  outline-offset: 2px;
+  /* The clock controls take a row of their own under the title and the icons. */
+  .clock {
+    display: flex;
+    order: 1;
+    flex-basis: 100%;
+    justify-content: center;
+  }
+
+  .stage {
+    gap: 24px;
+    padding: 16px;
+  }
 }

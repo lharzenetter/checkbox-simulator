@@ -7,9 +7,7 @@ test("log in a Trupp", async ({ page }) => {
   const lcd = page.getByRole("img");
   const roster = page.getByRole("region", { name: "Atemschutzträger" });
 
-  await page
-    .getByRole("button", { name: "HLF · Angriffstruppführer auflegen" })
-    .click();
+  await page.getByRole("button", { name: "HLF AT-F auflegen" }).click();
   await expect(lcd).toHaveAttribute("aria-label", /^Neuen Trupp anmelden:/);
   await expect(lcd).toHaveAttribute("aria-label", /\*HLF AT-F/);
 
@@ -18,8 +16,7 @@ test("log in a Trupp", async ({ page }) => {
 
   await page.keyboard.press("2");
   await roster
-    .getByRole("listitem")
-    .filter({ hasText: "HLF · Wassertruppführer" })
+    .getByRole("button", { name: "HLF WT-F auflegen" })
     .dragTo(page.getByRole("button", { name: "Taste Check" }));
   await expect(lcd).toHaveAttribute(
     "aria-label",

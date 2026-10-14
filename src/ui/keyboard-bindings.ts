@@ -163,6 +163,11 @@ export function tallyIndexFor(eventKey: string): number | undefined {
     : undefined;
 }
 
+/** The number key that taps the Roster Tally at this index. */
+export function tallyKeyFor(rosterIndex: number): string {
+  return String(rosterIndex + 1);
+}
+
 export function clockKeyShortcutFor(action: ClockAction): string {
   return (
     CLOCK_KEY_BINDINGS.find((binding) => binding.action === action)?.keyboardKey

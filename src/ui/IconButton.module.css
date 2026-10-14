@@ -1,0 +1,72 @@
+.button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #e6e6e3;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.button:hover {
+  background: #3a3f45;
+}
+
+.button:focus-visible {
+  outline: 3px solid #6ea8fe;
+  outline-offset: 2px;
+}
+
+/* The muted state is the "Ton aus" indicator (decided in "Decide how alarms are presented",
+   point 7), so it stays loud. */
+.button[aria-pressed="true"] {
+  border-color: #f0c36b;
+  background: rgb(240 195 107 / 15%);
+  color: #f0c36b;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #e6e6e3;
+  color: #1f2226;
+  font:
+    500 0.8rem/1.2 system-ui,
+    sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.button:hover .tooltip,
+.button:focus-visible .tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Buttons at the right edge open their tooltip leftwards, so it never leaves the page. */
+.button:last-child .tooltip {
+  right: 0;
+  left: auto;
+  transform: translateY(-4px);
+}
+
+.button:last-child:hover .tooltip,
+.button:last-child:focus-visible .tooltip {
+  transform: none;
+}

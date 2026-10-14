@@ -3,11 +3,11 @@ export {
   isValidVehicle,
   KURZNAME_MAX_LENGTH,
   ROSTER,
-  rosterLabel,
+  roleCode,
   tallyHeld,
   truppHint,
 } from "./roster";
-export type { RosterTally, Role, Vehicle, Vehicles } from "./roster";
+export type { RosterTally, Role, TruppHint, Vehicle, Vehicles } from "./roster";
 export {
   acceptsDeviceKeys,
   pauseClock,

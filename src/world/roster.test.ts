@@ -5,7 +5,7 @@ import {
   DEFAULT_VEHICLES,
   isValidVehicle,
   ROSTER,
-  rosterLabel,
+  roleCode,
   tallyHeld,
   truppHint,
 } from "./index";
@@ -49,30 +49,25 @@ describe("the Roster", () => {
   });
 
   // decided in "Decide the contents of the fixed Tally roster"
-  it("labels each Tally with its Funkrufname and role", () => {
-    expect(rosterLabel(tally(0), DEFAULT_VEHICLES)).toBe(
-      "HLF · Angriffstruppführer",
-    );
-    expect(rosterLabel(tally(3), DEFAULT_VEHICLES)).toBe(
-      "HLF · Wassertruppmann",
-    );
-    expect(rosterLabel(tally(5), DEFAULT_VEHICLES)).toBe(
-      "LF · Angriffstruppmann",
-    );
-    expect(rosterLabel(tally(6), DEFAULT_VEHICLES)).toBe(
-      "LF · Wassertruppführer",
-    );
+  it("marks each Tally with its role code", () => {
+    expect(ROSTER.map(roleCode)).toEqual([
+      "AT-F",
+      "AT-M",
+      "WT-F",
+      "WT-M",
+      "AT-F",
+      "AT-M",
+      "WT-F",
+      "WT-M",
+    ]);
   });
 
   // decided in "Decide the contents of the fixed Tally roster"
-  it("names each Tally after its vehicle's renamed Funkrufname and Kurzname", () => {
+  it("names each Tally after its vehicle's renamed Kurzname", () => {
     const vehicles: Vehicles = [
       { funkrufname: "Florian Musterstadt 1/46-1", kurzname: "HLF 1" },
       { funkrufname: "Florian Musterstadt 1/44-1", kurzname: "LF Süd" },
     ];
-    expect(rosterLabel(tally(0), vehicles)).toBe(
-      "Florian Musterstadt 1/46-1 · Angriffstruppführer",
-    );
     expect(tallyHeld(tally(0), vehicles)).toEqual({
       type: "tallyHeld",
       tallyId: "1",
@@ -116,12 +111,18 @@ describe("a vehicle's names", () => {
 
 describe("the Trupp hint", () => {
   it("says a Tally is not logged in", () => {
-    expect(truppHint(stateAfter(), tally(0))).toBe("nicht angemeldet");
+    expect(truppHint(stateAfter(), tally(0))).toEqual({
+      kind: "notLoggedIn",
+      text: "nicht angemeldet",
+    });
   });
 
   it("names the Trupp a Tally is joining", () => {
     const state = stateAfter(tap(0));
-    expect(truppHint(state, tally(0))).toBe("Anmeldung Trupp 01");
+    expect(truppHint(state, tally(0))).toEqual({
+      kind: "joining",
+      text: "Anmeldung Trupp 01",
+    });
   });
 
   it("names the Trupp a Tally belongs to", () => {
@@ -132,7 +133,13 @@ describe("the Trupp hint", () => {
       { type: "keyPressed", key: "OK" },
       { type: "keyPressed", key: "OK" },
     );
-    expect(truppHint(state, tally(1))).toBe("Trupp 01");
-    expect(truppHint(state, tally(2))).toBe("nicht angemeldet");
+    expect(truppHint(state, tally(1))).toEqual({
+      kind: "inTrupp",
+      text: "Trupp 01",
+    });
+    expect(truppHint(state, tally(2))).toEqual({
+      kind: "notLoggedIn",
+      text: "nicht angemeldet",
+    });
   });
 });

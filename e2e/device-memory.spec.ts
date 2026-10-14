@@ -19,7 +19,7 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
     name: "Willkommen beim Checkbox-Simulator",
   });
   await expect(vehicleField(page, "Fahrzeug 1", "Funkrufname")).toHaveValue(
-    "HLF",
+    "1/43",
   );
   await expect(vehicleField(page, "Fahrzeug 2", "Kurzname")).toHaveValue("LF");
   await vehicleField(page, "Fahrzeug 1", "Funkrufname").fill(
@@ -40,7 +40,7 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Florian Musterstadt 1/46-1 · Angriffstruppführer auflegen",
+      name: "HLF 1 AT-F auflegen",
     }),
   ).toBeVisible();
   const deviceMemory = await page.evaluate(() =>
@@ -74,7 +74,7 @@ test("name the vehicles and keep the device memory", async ({ page }) => {
   await page.getByRole("button", { name: "Zurücksetzen" }).click();
   await expect(firstLaunch).toBeVisible();
   await expect(vehicleField(page, "Fahrzeug 1", "Funkrufname")).toHaveValue(
-    "HLF",
+    "1/43",
   );
   await expect(vehicleField(page, "Fahrzeug 1", "Kurzname")).toHaveValue("HLF");
 });

@@ -41,8 +41,8 @@ const ROLES: readonly Role[] = [
 
 /** The vehicles' names until the Trainee changes them. */
 export const DEFAULT_VEHICLES: Vehicles = [
-  { funkrufname: "HLF", kurzname: "HLF" },
-  { funkrufname: "LF", kurzname: "LF" },
+  { funkrufname: "1/43", kurzname: "HLF" },
+  { funkrufname: "1/45", kurzname: "LF" },
 ];
 
 /**
@@ -77,9 +77,9 @@ export function tallyHeld(tally: RosterTally, vehicles: Vehicles): Event {
   };
 }
 
-/** How the world panel names a Roster Tally, e.g. "HLF · Angriffstruppführer". */
-export function rosterLabel(tally: RosterTally, vehicles: Vehicles): string {
-  return `${vehicles[tally.vehicleIndex].funkrufname} · ${tally.role}`;
+/** The role code a Roster Tally's fob shows, e.g. `AT-F`. */
+export function roleCode(tally: RosterTally): string {
+  return ROLE_CODES[tally.role];
 }
 
 /**
@@ -97,11 +97,20 @@ export function isValidVehicle(vehicle: Vehicle): boolean {
   );
 }
 
+/** The read-only hint of which Trupp a Roster Tally belongs to, and how its fob shows it. */
+export interface TruppHint {
+  readonly kind: "notLoggedIn" | "joining" | "inTrupp";
+  readonly text: string;
+}
+
 /** The read-only hint of which Trupp a Roster Tally belongs to. */
-export function truppHint(state: State, tally: RosterTally): string {
+export function truppHint(state: State, tally: RosterTally): TruppHint {
   const trupp = truppOfTally(state, tally.tallyId);
   if (trupp !== undefined) {
-    return `Trupp ${formatTruppnummer(trupp.truppnummer)}`;
+    return {
+      kind: "inTrupp",
+      text: `Trupp ${formatTruppnummer(trupp.truppnummer)}`,
+    };
   }
   const login = state.login;
   if (
@@ -109,9 +118,12 @@ export function truppHint(state: State, tally: RosterTally): string {
       (candidate) => candidate.tallyId === tally.tallyId,
     )
   ) {
-    return `Anmeldung Trupp ${formatTruppnummer(login.truppnummer)}`;
+    return {
+      kind: "joining",
+      text: `Anmeldung Trupp ${formatTruppnummer(login.truppnummer)}`,
+    };
   }
-  return "nicht angemeldet";
+  return { kind: "notLoggedIn", text: "nicht angemeldet" };
 }
 
 function formatTruppnummer(truppnummer: number): string {

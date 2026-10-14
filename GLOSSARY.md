@@ -78,6 +78,10 @@ _Avoid_: leader, member
 A vehicle's radio call sign, e.g. "Florian Musterstadt 1/46-1"; the Trainee sets one per vehicle, together with the Kurzname the LCD shows for it.
 _Avoid_: call sign, Fahrzeugname
 
+**Kurzname**:
+A vehicle's short name of at most 10 characters, e.g. "HLF"; with a role code it forms the name the LCD shows for a Tally, e.g. `HLF AT-F`.
+_Avoid_: short name, Fahrzeugkürzel
+
 **Sicherheitstrupp**:
 A Trupp registered as standby rescue team; a flag alongside its Einsatzstatus, not a status of its own. It starts in Bereitschaft and is shown alternating with the text `SICHER`.
 _Avoid_: Sicherungstrupp, rescue team

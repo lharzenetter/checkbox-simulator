@@ -16,9 +16,7 @@ test("log off a Trupp", async ({ page }) => {
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
   await expect(roster).toContainText("Trupp 01");
 
-  await page
-    .getByRole("button", { name: "HLF · Angriffstruppmann auflegen" })
-    .click();
+  await page.getByRole("button", { name: "HLF AT-M auflegen" }).click();
   await expect(lcd).toHaveAttribute(
     "aria-label",
     "Trupp 01 ABMELDEN\n*HLF AT-F\n*HLF AT-M markiert\nOK  =  abmelden\n X  =  nicht abmelden",

@@ -5,6 +5,7 @@ import {
   deviceKeyBindingFor,
   keyShortcutsFor,
   tallyIndexFor,
+  tallyKeyFor,
 } from "./keyboard-bindings";
 
 describe("keyboard bindings", () => {
@@ -45,6 +46,11 @@ describe("keyboard bindings", () => {
     expect(tallyIndexFor("8")).toBe(7);
     expect(tallyIndexFor("9")).toBeUndefined();
     expect(tallyIndexFor("0")).toBeUndefined();
+  });
+
+  it("names each Roster Tally's number key for its fob", () => {
+    expect(tallyKeyFor(0)).toBe("1");
+    expect(tallyKeyFor(7)).toBe("8");
   });
 
   it("names each device key's shortcuts for aria-keyshortcuts", () => {

@@ -6,6 +6,8 @@ import type { RosterTally } from "../world/index";
 import { ClockControls } from "./ClockControls";
 import { FirstLaunchDialog } from "./FirstLaunchDialog";
 import { FrontPanel } from "./FrontPanel";
+import { IconButton } from "./IconButton";
+import { KeyboardIcon, SettingsIcon } from "./Icons";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import type { ClockAction } from "./keyboard-bindings";
 import { MuteToggle } from "./MuteToggle";
@@ -100,35 +102,40 @@ export function App() {
   });
 
   return (
-    <main className={styles.app}>
-      <ClockControls
-        clock={clock}
-        onPause={pause}
-        onPlay={play}
-        onSpeedChosen={setSpeed}
-      />
-      <div className={styles.chrome}>
-        <MuteToggle muted={muted} onToggle={toggleMute} />
-        <button
-          type="button"
-          className={styles.chromeButton}
-          onClick={() => {
-            setSettingsOpen(true);
-          }}
-        >
-          Einstellungen
-        </button>
-        <button
-          type="button"
-          className={styles.chromeButton}
-          onClick={() => {
-            setShortcutsOpen(true);
-          }}
-        >
-          Tastenkürzel
-        </button>
-      </div>
-      <div className={styles.stage}>
+    <div className={styles.app}>
+      <header className={styles.bar}>
+        <h1 className={styles.title}>
+          Checkbox<span className={styles.titleSuffix}>-Simulator</span>
+        </h1>
+        <div className={styles.clock}>
+          <ClockControls
+            clock={clock}
+            onPause={pause}
+            onPlay={play}
+            onSpeedChosen={setSpeed}
+          />
+        </div>
+        <div className={styles.chrome}>
+          <MuteToggle muted={muted} onToggle={toggleMute} />
+          <IconButton
+            label="Einstellungen"
+            onClick={() => {
+              setSettingsOpen(true);
+            }}
+          >
+            <SettingsIcon />
+          </IconButton>
+          <IconButton
+            label="Tastenkürzel"
+            onClick={() => {
+              setShortcutsOpen(true);
+            }}
+          >
+            <KeyboardIcon />
+          </IconButton>
+        </div>
+      </header>
+      <main className={styles.stage}>
         <FrontPanel
           state={state}
           dispatch={dispatch}
@@ -139,7 +146,7 @@ export function App() {
           vehicles={vehicles}
           onTallyTapped={tapTally}
         />
-      </div>
+      </main>
       {!firstLaunchDone && (
         <FirstLaunchDialog vehicles={vehicles} onConfirm={nameVehicles} />
       )}
@@ -166,6 +173,6 @@ export function App() {
           }}
         />
       )}
-    </main>
+    </div>
   );
 }

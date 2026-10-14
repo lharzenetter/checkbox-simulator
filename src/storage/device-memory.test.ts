@@ -75,8 +75,8 @@ describe("the device memory", () => {
   it("starts with the default names and the first launch still to do", () => {
     expect(loadDeviceMemory(new MemoryStorage())).toEqual({
       vehicles: [
-        { funkrufname: "HLF", kurzname: "HLF" },
-        { funkrufname: "LF", kurzname: "LF" },
+        { funkrufname: "1/43", kurzname: "HLF" },
+        { funkrufname: "1/45", kurzname: "LF" },
       ],
       firstLaunchDone: false,
       muted: false,
