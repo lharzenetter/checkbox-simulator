@@ -14,7 +14,7 @@ async function logInAndOffTrupp(page: Page): Promise<void> {
 }
 
 test("name the vehicles and keep the device memory", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("./");
   const firstLaunch = page.getByRole("dialog", {
     name: "Willkommen beim Checkbox-Simulator",
   });
@@ -87,7 +87,7 @@ test("wipe incompatible stored data", async ({ page }) => {
       localStorage.setItem("checkbox-simulator/session", "{}");
     }
   });
-  await page.goto("/");
+  await page.goto("./");
   await expect(
     page.getByRole("dialog", { name: "Willkommen beim Checkbox-Simulator" }),
   ).toBeVisible();

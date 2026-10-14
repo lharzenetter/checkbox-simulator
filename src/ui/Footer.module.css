@@ -1,0 +1,23 @@
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 12px 16px;
+  border-top: 1px solid #3f454b;
+  color: #9aa1a8;
+  font:
+    0.8rem/1.4 system-ui,
+    sans-serif;
+  text-align: center;
+}
+
+.disclaimer,
+.meta {
+  margin: 0;
+}
+
+.link {
+  color: inherit;
+}

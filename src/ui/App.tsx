@@ -5,6 +5,7 @@ import { ROSTER, tallyHeld } from "../world/index";
 import type { RosterTally } from "../world/index";
 import { ClockControls } from "./ClockControls";
 import { FirstLaunchDialog } from "./FirstLaunchDialog";
+import { Footer } from "./Footer";
 import { FrontPanel } from "./FrontPanel";
 import { IconButton } from "./IconButton";
 import { KeyboardIcon, SettingsIcon } from "./Icons";
@@ -147,6 +148,7 @@ export function App() {
           onTallyTapped={tapTally}
         />
       </main>
+      <Footer />
       {!firstLaunchDone && (
         <FirstLaunchDialog vehicles={vehicles} onConfirm={nameVehicles} />
       )}
