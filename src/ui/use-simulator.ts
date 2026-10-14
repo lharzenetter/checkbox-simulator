@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { createInitialState, reduce } from "../core/index";
+import { createInitialState, isAlarmSounding, reduce } from "../core/index";
 import type { Event, State } from "../core/index";
 import {
   discardSession,
@@ -10,6 +10,7 @@ import {
 } from "../storage/index";
 import {
   acceptsDeviceKeys,
+  followAlarmSignal,
   pauseClock,
   playClock,
   readClocks,
@@ -142,10 +143,22 @@ export function useSimulator(): {
     }
   }, [storage, state, sessionChoicePending]);
 
+  // The tick loop reads the signal here, so the clock follows it from the next frame on.
+  const alarmSounding = useRef(isAlarmSounding(state));
+  useEffect(() => {
+    alarmSounding.current = isAlarmSounding(state);
+  }, [state]);
+
   useEffect(() => {
     let frame = requestAnimationFrame(tick);
     function tick(): void {
-      dispatchToCore({ type: "tick", ...readClocks(clock, performance.now()) });
+      const realNow = performance.now();
+      const sounding = alarmSounding.current;
+      // Decided in "Drop the simulation to real time while an Alarm sounds", points 1–3.
+      if (sounding !== clock.heldAtRealTime) {
+        setClock((current) => followAlarmSignal(current, sounding, realNow));
+      }
+      dispatchToCore({ type: "tick", ...readClocks(clock, realNow) });
       frame = requestAnimationFrame(tick);
     }
     return () => {

@@ -24,6 +24,8 @@ export type {
 } from "./roster";
 export {
   acceptsDeviceKeys,
+  acceptsSpeedChange,
+  followAlarmSignal,
   pauseClock,
   playClock,
   readClocks,

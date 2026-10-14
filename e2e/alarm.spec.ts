@@ -41,3 +41,49 @@ test("sound an Alarm at the first Alarmgrenze", async ({ page }) => {
   );
   await expect(led).toHaveAttribute("aria-label", "Alarm-LED aus");
 });
+
+// decided in "Drop the simulation to real time while an Alarm sounds"
+test("drop to real time while an Alarm sounds", async ({ page }) => {
+  await page.clock.install();
+  await openSimulator(page);
+  const lcd = page.getByRole("img");
+  const speeds = page.getByRole("group", { name: "Geschwindigkeit" });
+
+  await page.keyboard.press("1");
+  await page.keyboard.press("c");
+  await page.keyboard.press("2");
+  await page.keyboard.press("c");
+  await page.keyboard.press("c");
+  await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
+
+  // `→` reaches the clock before the Alarm, so its having no effect below is the lock.
+  await speeds.getByRole("button", { name: "5×" }).click();
+  await page.keyboard.press("ArrowRight");
+  await expect(speeds.getByRole("button", { name: "10×" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.clock.runFor(60_000);
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM\n/);
+  await expect(speeds.getByRole("button", { name: "1×" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(speeds.getByRole("button", { name: "10×" })).toBeDisabled();
+  await expect(page.getByText("Echtzeit während Alarm")).toBeVisible();
+
+  await page.keyboard.press("ArrowRight");
+  await expect(speeds.getByRole("button", { name: "1×" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.keyboard.press("c");
+  await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
+  await expect(speeds.getByRole("button", { name: "1×" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(speeds.getByRole("button", { name: "10×" })).toBeEnabled();
+  await expect(page.getByText("Echtzeit während Alarm")).toBeHidden();
+});

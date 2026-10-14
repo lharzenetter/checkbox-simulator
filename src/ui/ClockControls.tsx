@@ -1,4 +1,4 @@
-import { SPEEDS } from "../world/index";
+import { acceptsSpeedChange, SPEEDS } from "../world/index";
 import type { SimulationClock, Speed } from "../world/index";
 import { IconButton } from "./IconButton";
 import { PauseIcon, PlayIcon } from "./Icons";
@@ -37,7 +37,7 @@ export function ClockControls({
             type="button"
             className={styles.speed}
             aria-pressed={clock.speed === speed}
-            disabled={clock.paused}
+            disabled={!acceptsSpeedChange(clock)}
             onClick={() => {
               onSpeedChosen(speed);
             }}
@@ -46,7 +46,13 @@ export function ClockControls({
           </button>
         ))}
       </div>
-      {clock.paused && <p className={styles.status}>Simulation pausiert</p>}
+      {clock.paused ? (
+        <p className={styles.status}>Simulation pausiert</p>
+      ) : (
+        clock.heldAtRealTime && (
+          <p className={styles.status}>Echtzeit während Alarm</p>
+        )
+      )}
     </section>
   );
 }

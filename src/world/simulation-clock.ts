@@ -13,10 +13,12 @@ export type Speed = (typeof SPEEDS)[number];
  * A session's simulated time against real time. `anchor` holds both clocks as they read at the
  * real reading `anchorRealMs`; they run on from there at `speed`, unless `paused` holds them at
  * `anchor`. The two differ because `anchor.realNow` excludes the real time spent paused.
+ * `heldAtRealTime` holds the speed at 1× while the Checkbox's Alarm signal runs.
  */
 export interface SimulationClock {
   readonly speed: Speed;
   readonly paused: boolean;
+  readonly heldAtRealTime: boolean;
   readonly anchorRealMs: number;
   readonly anchor: Clocks;
 }
@@ -37,6 +39,7 @@ export function startSimulationClock({
   return {
     speed: 1,
     paused: false,
+    heldAtRealTime: false,
     anchorRealMs: realStart,
     anchor: { now: uhrzeit, realNow: realStart },
   };
@@ -59,6 +62,7 @@ export function resumeSimulationClock({
   return {
     speed: 1,
     paused: true,
+    heldAtRealTime: false,
     anchorRealMs: Math.round(realNow),
     anchor: clocks,
   };
@@ -76,12 +80,18 @@ export function readClocks(clock: SimulationClock, realNow: number): Clocks {
   };
 }
 
-/** Runs simulated time at `speed` from the real reading `realNow` on. */
+/**
+ * Runs simulated time at `speed` from the real reading `realNow` on, unless the clock is held at
+ * real time.
+ */
 export function setClockSpeed(
   clock: SimulationClock,
   speed: Speed,
   realNow: number,
 ): SimulationClock {
+  if (clock.heldAtRealTime) {
+    return clock;
+  }
   return { ...reanchor(clock, realNow), speed };
 }
 
@@ -118,6 +128,14 @@ export function acceptsDeviceKeys(clock: SimulationClock): boolean {
 }
 
 /**
+ * Whether the Trainee can change the speed: not while paused, nor while held at real time.
+ * Decided in "Drop the simulation to real time while an Alarm sounds".
+ */
+export function acceptsSpeedChange(clock: SimulationClock): boolean {
+  return !clock.paused && !clock.heldAtRealTime;
+}
+
+/**
  * Moves to the next of the {@link SPEEDS} up or down, staying put at either end and while paused.
  * Decided in "Design how the Trainee handles Tallys and the clock".
  */
@@ -128,8 +146,27 @@ export function stepClockSpeed(
 ): SimulationClock {
   const next =
     SPEEDS[SPEEDS.indexOf(clock.speed) + (direction === "faster" ? 1 : -1)];
-  if (clock.paused || next === undefined) {
+  if (!acceptsSpeedChange(clock) || next === undefined) {
     return clock;
   }
   return setClockSpeed(clock, next, realNow);
+}
+
+/**
+ * Follows the Checkbox's Alarm signal at the real reading `realNow`: while `alarmSounding`,
+ * simulated time runs at 1× and the speed cannot change; once it stops, the speed stays at 1×.
+ * Decided in "Drop the simulation to real time while an Alarm sounds".
+ */
+export function followAlarmSignal(
+  clock: SimulationClock,
+  alarmSounding: boolean,
+  realNow: number,
+): SimulationClock {
+  if (alarmSounding === clock.heldAtRealTime) {
+    return clock;
+  }
+  if (!alarmSounding) {
+    return { ...clock, heldAtRealTime: false };
+  }
+  return { ...reanchor(clock, realNow), speed: 1, heldAtRealTime: true };
 }

@@ -3,6 +3,8 @@ import { abschaltzeitRestMs, createInitialState, reduce } from "../core/index";
 import type { Key, State } from "../core/index";
 import {
   acceptsDeviceKeys,
+  acceptsSpeedChange,
+  followAlarmSignal,
   pauseClock,
   playClock,
   readClocks,
@@ -256,5 +258,36 @@ describe("stepping the simulation speed", () => {
   it("leaves the speed alone while paused", () => {
     const paused = pauseClock(runningAt(2), 1_000);
     expect(stepClockSpeed(paused, "faster", 2_000)).toBe(paused);
+  });
+});
+
+// decided in "Drop the simulation to real time while an Alarm sounds"
+describe("the simulation clock while an Alarm sounds", () => {
+  it("drops to 1× when the signal starts, keeping the time already run", () => {
+    const held = followAlarmSignal(runningAt(10), true, 1_000);
+    expect(held.speed).toBe(1);
+    expect(readClocks(held, 2_000)).toEqual({ now: 11_000, realNow: 2_000 });
+  });
+
+  it("keeps 1× while the signal runs, whatever speed is chosen", () => {
+    const held = followAlarmSignal(runningAt(10), true, 1_000);
+    expect(setClockSpeed(held, 10, 2_000).speed).toBe(1);
+    expect(stepClockSpeed(held, "faster", 2_000).speed).toBe(1);
+    expect(acceptsSpeedChange(held)).toBe(false);
+  });
+
+  it("stays at 1× once the signal stops, letting the Trainee choose again", () => {
+    const held = followAlarmSignal(runningAt(10), true, 1_000);
+    const released = followAlarmSignal(held, false, 2_000);
+    expect(released.speed).toBe(1);
+    expect(acceptsSpeedChange(released)).toBe(true);
+    expect(setClockSpeed(released, 5, 3_000).speed).toBe(5);
+  });
+
+  it("is still held at 1× when play resumes during the signal", () => {
+    const held = followAlarmSignal(runningAt(10), true, 1_000);
+    const resumed = playClock(pauseClock(held, 2_000), 5_000);
+    expect(resumed.speed).toBe(1);
+    expect(acceptsSpeedChange(resumed)).toBe(false);
   });
 });

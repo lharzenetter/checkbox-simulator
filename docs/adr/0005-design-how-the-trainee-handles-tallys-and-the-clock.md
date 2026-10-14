@@ -11,3 +11,5 @@ The single Trainee plays every Atemschutzträger and also controls time. The con
 Decided in [Design how the Trainee handles Transponders and the clock](https://github.com/lharzenetter/checkbox-simulator/issues/6) (renamed here to the device's wording, see [Reconcile the glossary with the LCD's on-screen wording](0003-reconcile-the-glossary-with-the-lcds-on-screen-wording.md)).
 
 The Roster size and the Tally shortcuts were later changed by [Let the Trainee add and remove Fahrzeuge](0015-let-the-trainee-add-and-remove-fahrzeuge.md).
+
+The clock was later changed by [Drop the simulation to real time while an Alarm sounds](0017-drop-the-simulation-to-real-time-while-an-alarm-sounds.md).
