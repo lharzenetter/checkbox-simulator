@@ -1,6 +1,7 @@
 import type { DragEvent, PointerEvent, MouseEvent, ReactNode } from "react";
 import { isAlarmLedLit, isAlarmSounding } from "../core/index";
 import type { Event, Key, State } from "../core/index";
+import { keyShortcutsFor } from "./keyboard-bindings";
 import { Lcd } from "./Lcd";
 import { TALLY_DRAG_TYPE } from "./TallyRoster";
 import styles from "./FrontPanel.module.css";
@@ -23,7 +24,11 @@ export function FrontPanel({
   }
 
   return (
-    <section className={styles.housing} aria-label="Checkbox 5+1">
+    <section
+      className={styles.housing}
+      aria-label="Checkbox 5+1"
+      data-front-panel
+    >
       <div className={styles.faceplate}>
         <header className={styles.band}>
           <span
@@ -145,6 +150,7 @@ function DeviceKey({
       type="button"
       className={`${styles.key ?? ""} ${className ?? ""}`}
       aria-label={`Taste ${keyName}`}
+      aria-keyshortcuts={keyShortcutsFor(keyName)}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}

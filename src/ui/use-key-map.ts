@@ -1,27 +1,20 @@
 import { useEffect } from "react";
 import type { Key } from "../core/index";
+import {
+  DEVICE_KEY_BINDINGS,
+  deviceKeyBindingFor,
+  tallyIndexFor,
+} from "./keyboard-bindings";
 
-// The keyboard letters for the device keys and the number keys for the Roster Tallys, decided
-// in "Design how the Trainee handles Tallys and the clock". Every keyboard shortcut goes
-// through this one map.
-const KEYBOARD_KEYS: Readonly<Partial<Record<string, Key>>> = {
-  a: "Up",
-  b: "Down",
-  c: "OK",
-  d: "X",
-  e: "Check",
-};
-
-const TALLY_KEYS: Readonly<Partial<Record<string, number>>> = {
-  "1": 0,
-  "2": 1,
-  "3": 2,
-  "4": 3,
-  "5": 4,
-  "6": 5,
-  "7": 6,
-  "8": 7,
-};
+// A control outside the front panel keeps Enter and Space, so the side controls stay
+// usable from the keyboard.
+function focusedControlKeeps(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.matches("button, input, select, textarea, a[href]") &&
+    target.closest("[data-front-panel]") === null
+  );
+}
 
 export function useKeyMap({
   enabled,
@@ -41,10 +34,8 @@ export function useKeyMap({
     // A window that loses focus, or a key map switched off, never sees the key-up, so every key
     // counts as released.
     function releaseAll(): void {
-      for (const key of Object.values(KEYBOARD_KEYS)) {
-        if (key !== undefined) {
-          onKeyReleased(key);
-        }
+      for (const binding of DEVICE_KEY_BINDINGS) {
+        onKeyReleased(binding.key);
       }
     }
     if (!enabled) {
@@ -55,21 +46,35 @@ export function useKeyMap({
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) {
         return;
       }
-      const key = KEYBOARD_KEYS[event.key.toLowerCase()];
-      const rosterIndex = TALLY_KEYS[event.key];
-      if (key !== undefined) {
+      const binding = deviceKeyBindingFor(event.key);
+      const rosterIndex = tallyIndexFor(event.key);
+      if (binding !== undefined) {
+        if (
+          binding.yieldsToFocusedControl &&
+          focusedControlKeeps(event.target)
+        ) {
+          return;
+        }
         event.preventDefault();
-        onKeyPressed(key);
+        onKeyPressed(binding.key);
       } else if (rosterIndex !== undefined) {
         event.preventDefault();
         onTallyKeyPressed(rosterIndex);
       }
     }
     function handleKeyUp(event: KeyboardEvent): void {
-      const key = KEYBOARD_KEYS[event.key.toLowerCase()];
-      if (key !== undefined) {
-        onKeyReleased(key);
+      const binding = deviceKeyBindingFor(event.key);
+      if (binding === undefined) {
+        return;
       }
+      // Space clicks a focused button on key-up; on a front-panel key that would press it twice.
+      if (
+        !binding.yieldsToFocusedControl ||
+        !focusedControlKeeps(event.target)
+      ) {
+        event.preventDefault();
+      }
+      onKeyReleased(binding.key);
     }
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
