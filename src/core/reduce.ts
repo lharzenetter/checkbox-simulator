@@ -657,6 +657,9 @@ function stepFlaschendruck(
       );
 }
 
+// decided in "Define the key-by-screen navigation model"
+// ASSUMPTION: X keeps the Anfangsdruck as last set, so it is not reset on the way back; the user
+// confirmed only that X returns to the Anmeldefenster.
 function handleAnfangsdruckEditorKey(state: State, key: Key): State {
   const login = requireLogin(state);
   switch (key) {
@@ -669,6 +672,7 @@ function handleAnfangsdruckEditorKey(state: State, key: Key): State {
     case "OK":
       return logIn(state, login);
     case "X":
+      return enterScreen(state, "anmeldefenster");
     case "Check":
       return state;
     default:

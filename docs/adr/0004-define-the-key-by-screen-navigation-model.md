@@ -14,7 +14,7 @@ Amended since: by [Decide when a Daueralarm starts and ends](0011-decide-when-a-
   - X on the choice → the login is discarded, back to the Startdisplay or the Einsatzliste.
   - Tallys on Check are **ignored** here: members join only once the Einsatzzeit is set.
 - **Anmeldefenster (S04):** Tallys on Check add members (up to 6; anyone already in a Trupp is ignored).
-  - `Trupp OK Einsatz`, `Trupp OK Bereitschaft` or `Sicherheitstrupp OK` + OK → **Anfangsdruckerfassung (S06)**, headed `Trupp Nr.: NN`, which has no X → Einsatzliste with the new Trupp selected. With fewer than [07] members, OK starts the login Daueralarm instead.
+  - `Trupp OK Einsatz`, `Trupp OK Bereitschaft` or `Sicherheitstrupp OK` + OK → **Anfangsdruckerfassung (S06)**, headed `Trupp Nr.: NN`. OK → Einsatzliste with the new Trupp selected; X → back to the Anmeldefenster, members kept (corrected by the user from the real device). With fewer than [07] members, OK starts the login Daueralarm instead.
   - **DRUCK-AUSWAHL (S05) is skipped**, because the cylinder type is fixed at 300 bar. There is no Attribute step.
   - `Druck ändern` → the pressure editor titled `Esz-Zeit ändern`; OK or X → back to S04.
   - X → the whole login is thrown away without asking (members discarded, Truppnummer freed).
@@ -26,23 +26,24 @@ Amended since: by [Decide when a Daueralarm starts and ends](0011-decide-when-a-
 - **Trupp-Ansicht (S11):** the graphic, read-only view; the `Ansicht` label marks it as such. OK → Trupp-Menü, X → Einsatzliste, Up and Down do nothing. The [13] timeout → Einsatzliste.
 - **Trupp-Menü (S09):** X → Trupp-Ansicht; the [13] timeout → Einsatzliste. The header word and the items depend on the Einsatzstatus, and the list scrolls past 4 lines:
 
-  | Einsatzstatus | Header | Items |
-  |---|---|---|
-  | Anmarsch | `ANMARSCH` | Trupp -> Einsatz · Trupp -> Bereitschaft · Einsatzziel erreicht · Rückzug antreten · Druck ändern · Attribute eintragen |
-  | Einsatzziel erreicht | `EINSATZ` | Trupp -> Einsatz · Trupp -> Bereitschaft · Rückzug antreten · Druck ändern · Attribute eintragen |
-  | Rückmarsch | `RÜCKMARSCH` | Trupp -> Einsatz · Trupp -> Bereitschaft · Druck ändern · Attribute eintragen |
-  | Bereitschaft | `BEREITSCHAFT` | Trupp -> Einsatz · Trupp -> Bereitschaft · Druck ändern · Attribute eintragen |
+  | Einsatzstatus        | Header         | Items                                                                                                                   |
+  | -------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+  | Anmarsch             | `ANMARSCH`     | Trupp -> Einsatz · Trupp -> Bereitschaft · Einsatzziel erreicht · Rückzug antreten · Druck ändern · Attribute eintragen |
+  | Einsatzziel erreicht | `EINSATZ`      | Trupp -> Einsatz · Trupp -> Bereitschaft · Rückzug antreten · Druck ändern · Attribute eintragen                        |
+  | Rückmarsch           | `RÜCKMARSCH`   | Trupp -> Einsatz · Trupp -> Bereitschaft · Druck ändern · Attribute eintragen                                           |
+  | Bereitschaft         | `BEREITSCHAFT` | Trupp -> Einsatz · Trupp -> Bereitschaft · Druck ändern · Attribute eintragen                                           |
 
   `Attribute eintragen` is shown but does nothing, as on the real device. A Sicherheitstrupp's header follows its Einsatzstatus. `ALARM` and `ABMELDEN` are the headers of their own screens.
+
 - **Pressure editor (S06/S08/S10):** Up and Down change the Flaschendruck in [76] steps.
 
-  | Opened by | Title | OK → | X → |
-  |---|---|---|---|
-  | Druck ändern (Anmeldefenster) | `Esz-Zeit ändern` | Anmeldefenster | Anmeldefenster, unchanged |
-  | Druck ändern (Trupp-Menü) | `Esz-Zeit ändern` (verbatim) | Einsatzliste | Trupp-Menü, unchanged |
-  | Einsatzziel erreicht | `Esz-Ziel erreicht` | Einsatzliste, status changed | Trupp-Menü, status **not** changed |
-  | Rückzug antreten | `Rückzug antreten` | Trupp-Ansicht in `RÜCKMARSCH` | Trupp-Menü, status **not** changed |
-  | Login | `Trupp Nr.: NN` | Einsatzliste, Trupp created | — |
+  | Opened by                     | Title                        | OK →                          | X →                                |
+  | ----------------------------- | ---------------------------- | ----------------------------- | ---------------------------------- |
+  | Druck ändern (Anmeldefenster) | `Esz-Zeit ändern`            | Anmeldefenster                | Anmeldefenster, unchanged          |
+  | Druck ändern (Trupp-Menü)     | `Esz-Zeit ändern` (verbatim) | Einsatzliste                  | Trupp-Menü, unchanged              |
+  | Einsatzziel erreicht          | `Esz-Ziel erreicht`          | Einsatzliste, status changed  | Trupp-Menü, status **not** changed |
+  | Rückzug antreten              | `Rückzug antreten`           | Trupp-Ansicht in `RÜCKMARSCH` | Trupp-Menü, status **not** changed |
+  | Login                         | `Trupp Nr.: NN`              | Einsatzliste, Trupp created   | Anmeldefenster, members kept       |
 
 - **ABMELDEN (S13):** opened by a member's Tally on Check. Further members of that Trupp mark themselves; anyone else is ignored. OK while any member is unmarked starts the logoff Daueralarm. Once all are marked it waits for OK (no auto-logoff) → Einsatzliste. X at any time → Einsatzliste, marks cleared, Trupp unchanged.
 - **Notausschaltung (S14/S15):** inverse bar, cursor on `-> markierten Trupp NN`. `-> zurueck` → Einsatzliste. On the confirmation OK deletes, and any other key cancels → Einsatzliste.
@@ -51,13 +52,13 @@ Amended since: by [Decide when a Daueralarm starts and ends](0011-decide-when-a-
 
 ## Tally on Check
 
-| Where | Whose | Effect |
-|---|---|---|
-| Aus, Startdisplay, Einsatzliste, Trupp-Ansicht, Trupp-Menü | not in a Trupp | starts a login (next free Truppnummer) |
-| same | member of a running Trupp | ABMELDEN for that Trupp, member marked |
-| anywhere | new Atemschutzträger while 6 Trupps run | ignored; logoffs still work |
-| Einsatzzeit wählen | anyone | ignored |
-| Anmeldefenster | already in this or another Trupp | ignored |
-| pressure editors, Notausschaltung, SERVICE, Trupp ALARM | anyone | ignored |
+| Where                                                      | Whose                                   | Effect                                 |
+| ---------------------------------------------------------- | --------------------------------------- | -------------------------------------- |
+| Aus, Startdisplay, Einsatzliste, Trupp-Ansicht, Trupp-Menü | not in a Trupp                          | starts a login (next free Truppnummer) |
+| same                                                       | member of a running Trupp               | ABMELDEN for that Trupp, member marked |
+| anywhere                                                   | new Atemschutzträger while 6 Trupps run | ignored; logoffs still work            |
+| Einsatzzeit wählen                                         | anyone                                  | ignored                                |
+| Anmeldefenster                                             | already in this or another Trupp        | ignored                                |
+| pressure editors, Notausschaltung, SERVICE, Trupp ALARM    | anyone                                  | ignored                                |
 
 Decided in [Define the key-by-screen navigation model](https://github.com/lharzenetter/checkbox-simulator/issues/5).

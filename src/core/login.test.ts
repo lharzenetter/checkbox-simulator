@@ -357,10 +357,17 @@ describe("the Anfangsdruck editor", () => {
     expect(anfangsdruckAfter(...Array<Key>(20).fill("Up"))).toBe(330);
   });
 
-  // decided in "Define the key-by-screen navigation model": S06 has no X
-  it("ignores X", () => {
-    const state = anfangsdruckEditor();
-    expect(reduce(state, press("X"))).toBe(state);
+  // decided in "Define the key-by-screen navigation model"
+  it("returns to the Anmeldefenster on X, keeping the Atemschutzträger", () => {
+    const state = run(anfangsdruckEditor(), press("Down"), press("X"));
+    expect(state.screen).toBe("anmeldefenster");
+    expect(state.trupps).toEqual([]);
+    expect(state.login).toMatchObject({
+      truppnummer: 1,
+      atemschutztraeger: [A1, A2],
+      anmeldeaktion: "truppOkEinsatz",
+      anfangsdruckBar: 295,
+    });
   });
 
   // decided in "Define the key-by-screen navigation model"
