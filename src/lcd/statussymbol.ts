@@ -36,7 +36,15 @@ const HOUSE = [
   "..####################..",
 ];
 
-const ARROW_IN = ["...#..", "######", "...#.."];
+// A larger Trupp's arrow runs from the figure's hand, at the hand's height, as in the legend.
+const ARROW = [
+  ".............#..",
+  ".............##.",
+  "################",
+  ".............##.",
+  ".............#..",
+];
+const ARROW_WIDTH = 16;
 
 const SYMBOL_HEIGHT = HOUSE.length;
 // Figures outside stand on the house's floor line; inside they keep 1 px from the roof top and
@@ -46,7 +54,14 @@ const INSIDE_Y = 2;
 const INSIDE_LEFT = 4;
 const ATEMSCHUTZTRAEGER_WIDTH = 7;
 const ATEMSCHUTZTRAEGER_PITCH = ATEMSCHUTZTRAEGER_WIDTH + 2;
-const ARROW_Y = Math.floor(SYMBOL_HEIGHT / 2);
+const ATEMSCHUTZTRAEGER_HAND_ROW = 4;
+const ARROW_Y =
+  OUTSIDE_Y + ATEMSCHUTZTRAEGER_HAND_ROW - Math.floor(ARROW.length / 2);
+// In Rückmarsch the arrow starts in the middle of the house and its head sits between the house
+// and the figure leaving it, as in the legend.
+const RUECKMARSCH_ARROW_LEFT = 12;
+const RUECKMARSCH_ARROW_GAP =
+  RUECKMARSCH_ARROW_LEFT + ARROW_WIDTH - HOUSE_WIDTH;
 const COUNT_Y = Math.floor((SYMBOL_HEIGHT - GLYPH_HEIGHT) / 2);
 
 /** Draws a Statussymbol whose top-left corner is at (x, y). */
@@ -77,7 +92,7 @@ function drawAnmarsch(
   );
   drawBitmap(framebuffer, HOUSE, left, y);
   if (count > 3) {
-    drawBitmap(framebuffer, ARROW_IN, left + 1, y + ARROW_Y);
+    drawBitmap(framebuffer, ARROW, left, y + ARROW_Y);
   } else if (count > 2) {
     drawCentredInside(framebuffer, left, y);
   } else {
@@ -171,7 +186,7 @@ function drawRueckmarsch(
   const house = drawCount(framebuffer, count, x, y);
   drawBitmap(framebuffer, HOUSE, house, y);
   if (count > 3) {
-    drawBitmap(framebuffer, ARROW_IN, house + HOUSE_WIDTH - 7, y + ARROW_Y);
+    drawBitmap(framebuffer, ARROW, house + RUECKMARSCH_ARROW_LEFT, y + ARROW_Y);
   } else if (count === 2) {
     // The one left inside stands by the right wall, behind the one leaving, as on the device.
     drawBitmap(
@@ -186,9 +201,13 @@ function drawRueckmarsch(
   drawBitmap(
     framebuffer,
     ATEMSCHUTZTRAEGER,
-    house + HOUSE_WIDTH,
+    house + HOUSE_WIDTH + rueckmarschGap(count),
     y + OUTSIDE_Y,
   );
+}
+
+function rueckmarschGap(count: number): number {
+  return count > 3 ? RUECKMARSCH_ARROW_GAP : 0;
 }
 
 function drawInside(
@@ -264,7 +283,12 @@ export function statussymbolWidth(statussymbol: Statussymbol): number {
     case "einsatzzielErreicht":
       return countWidth + HOUSE_WIDTH;
     case "rueckmarsch":
-      return countWidth + HOUSE_WIDTH + ATEMSCHUTZTRAEGER_WIDTH;
+      return (
+        countWidth +
+        HOUSE_WIDTH +
+        rueckmarschGap(count) +
+        ATEMSCHUTZTRAEGER_WIDTH
+      );
     default:
       return assertNever(einsatzstatus);
   }

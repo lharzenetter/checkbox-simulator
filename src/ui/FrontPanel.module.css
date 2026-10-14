@@ -7,7 +7,8 @@
   --key-green: #1f8a3c;
 
   width: min(100%, 620px);
-  padding: 28px 40px;
+  padding: 28px clamp(12px, 4vw, 40px);
+  box-sizing: border-box;
   border-radius: 28px;
   background: linear-gradient(
     160deg,
@@ -19,12 +20,13 @@
 
 .faceplate {
   display: grid;
-  grid-template-columns: 3fr 2fr;
+  /* The keypad keeps its natural width; the LCD takes all the rest. */
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "band band"
     "lcd keypad";
-  gap: 18px 24px;
-  padding: 18px;
+  gap: 18px clamp(10px, 3vw, 24px);
+  padding: clamp(10px, 3vw, 18px);
   border-radius: 12px;
   background: var(--faceplate);
 }
@@ -63,6 +65,7 @@
 
 .lcdWindow {
   grid-area: lcd;
+  align-self: center;
   padding: 8px;
   border: 2px solid #555;
   border-radius: 10px;
