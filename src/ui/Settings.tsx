@@ -9,16 +9,23 @@ export function Settings({
   names,
   state,
   onNamed,
+  truppzuordnungShown,
+  onTruppzuordnungShownChosen,
   onFactoryReset,
   onClose,
 }: {
   names: Names;
   state: State;
   onNamed: (names: Names) => void;
+  truppzuordnungShown: boolean;
+  onTruppzuordnungShownChosen: (shown: boolean) => void;
   onFactoryReset: () => void;
   onClose: () => void;
 }) {
   const [confirmingReset, setConfirmingReset] = useState(false);
+  // Applies on "Speichern" with the names, and is dropped on "Abbrechen".
+  const [truppzuordnungShownDraft, setTruppzuordnungShownDraft] =
+    useState(truppzuordnungShown);
 
   if (confirmingReset) {
     return (
@@ -31,7 +38,8 @@ export function Settings({
         <ModalBody>
           <p>
             Der Feuerwehrname, die Fahrzeuge, die Einsatzprotokolle, die
-            Stummschaltung und der laufende Einsatz werden gelöscht.
+            Stummschaltung, die Truppzuordnung und der laufende Einsatz werden
+            gelöscht.
           </p>
         </ModalBody>
         <ModalFooter>
@@ -64,8 +72,21 @@ export function Settings({
         submitLabel="Speichern"
         onSubmit={(named) => {
           onNamed(named);
+          onTruppzuordnungShownChosen(truppzuordnungShownDraft);
           onClose();
         }}
+        extraFields={
+          <label className={styles.checkbox}>
+            <input
+              type="checkbox"
+              checked={truppzuordnungShownDraft}
+              onChange={(event) => {
+                setTruppzuordnungShownDraft(event.target.checked);
+              }}
+            />
+            Truppzuordnung anzeigen
+          </label>
+        }
         appendix={
           <section className={styles.reset} aria-label="Werkszustand">
             <button

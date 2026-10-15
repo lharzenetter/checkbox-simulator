@@ -1,0 +1,66 @@
+.truppzuordnung {
+  --paper: #f6f2e4;
+  --ruling: #9db4cf;
+  --margin-line: #d77a7a;
+  --ink: #1d2a57;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 250px;
+  margin: 24px 0;
+  padding: 12px 10px 12px 0;
+  box-sizing: border-box;
+  border-radius: 4px 0 0 4px;
+  background: var(--paper);
+  box-shadow: -4px 6px 16px rgb(0 0 0 / 35%);
+  color: var(--ink);
+}
+
+.line {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  min-height: 36px;
+  border-bottom: 1px solid var(--ruling);
+}
+
+.truppnummer {
+  flex: 0 0 28px;
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+  border-right: 2px solid var(--margin-line);
+  font:
+    700 0.95rem/1 system-ui,
+    sans-serif;
+}
+
+.entry {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font:
+    1rem/1.2 system-ui,
+    sans-serif;
+}
+
+.entry:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 560px) {
+  .truppzuordnung {
+    width: 100%;
+    margin: 0;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 35%);
+  }
+}

@@ -47,6 +47,23 @@
   padding: 32px 16px;
 }
 
+/* The Truppzuordnung is fastened to the left side of the housing; where both do not fit side by
+   side it wraps above, so the LCD and keys are never squeezed. */
+.device {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  width: min(100%, 870px);
+}
+
+.frontPanelSlot {
+  display: flex;
+  flex: 1 1 560px;
+  justify-content: center;
+  max-width: 620px;
+}
+
 @media (max-width: 560px) {
   .titleSuffix {
     display: none;
@@ -63,5 +80,14 @@
   .stage {
     gap: 24px;
     padding: 16px;
+  }
+
+  /* On a phone the Truppzuordnung sits above the Checkbox. */
+  .device {
+    gap: 16px;
+  }
+
+  .frontPanelSlot {
+    flex-basis: 100%;
   }
 }

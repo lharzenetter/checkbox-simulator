@@ -28,6 +28,7 @@ export function NamesForm({
   submitLabel,
   onSubmit,
   intro,
+  extraFields,
   appendix,
   children,
 }: {
@@ -38,7 +39,9 @@ export function NamesForm({
   onSubmit: (names: Names) => void;
   // Content above the fields.
   intro?: ReactNode;
-  // Content below the fields.
+  // Further fields, submitted with the names.
+  extraFields?: ReactNode;
+  // Content below the form.
   appendix?: ReactNode;
   // Further buttons next to the submit button.
   children?: ReactNode;
@@ -118,6 +121,7 @@ export function NamesForm({
               </p>
             )}
           </div>
+          {extraFields}
         </form>
         {appendix}
       </ModalBody>

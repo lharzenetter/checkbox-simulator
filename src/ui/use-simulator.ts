@@ -2,12 +2,14 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { createInitialState, isAlarmSounding, reduce } from "../core/index";
 import type { Event, State } from "../core/index";
 import {
+  BLANK_TRUPPZUORDNUNG,
   discardSession,
   loadStores,
   resetToFactory,
   saveDeviceMemory,
   saveSession,
 } from "../storage/index";
+import type { Truppzuordnung } from "../storage/index";
 import {
   acceptsDeviceKeys,
   followAlarmSignal,
@@ -70,6 +72,10 @@ export function useSimulator(): {
   readonly setNames: (names: Names) => void;
   readonly muted: boolean;
   readonly toggleMute: () => void;
+  readonly truppzuordnung: Truppzuordnung;
+  readonly writeTruppzuordnung: (truppnummer: number, entry: string) => void;
+  readonly truppzuordnungShown: boolean;
+  readonly setTruppzuordnungShown: (shown: boolean) => void;
   readonly resetToFactory: () => void;
   // A session saved before the reload waits for "fortsetzen / verwerfen?". The key map is off
   // meanwhile and so releases every key, so keys held when it was saved are not held on play.
@@ -78,7 +84,8 @@ export function useSimulator(): {
   readonly discardSession: () => void;
 } {
   const [storage] = useState(browserStorage);
-  const [{ deviceMemory, session }] = useState(() => loadStores(storage));
+  const [{ deviceMemory, session, truppzuordnung: savedTruppzuordnung }] =
+    useState(() => loadStores(storage));
   // Before the first launch is done no key has reached the device, so there is nothing to resume.
   const savedSession = deviceMemory.firstLaunchDone ? session : null;
   const [sessionChoicePending, setSessionChoicePending] = useState(
@@ -94,6 +101,12 @@ export function useSimulator(): {
     deviceMemory.firstLaunchDone,
   );
   const [muted, setMuted] = useState(deviceMemory.muted);
+  const [truppzuordnung, setTruppzuordnung] = useState(
+    savedSession === null ? BLANK_TRUPPZUORDNUNG : savedTruppzuordnung,
+  );
+  const [truppzuordnungShown, setTruppzuordnungShown] = useState(
+    deviceMemory.truppzuordnungShown,
+  );
   const [clock, setClock] = useState(() =>
     savedSession === null
       ? startSimulationClock({
@@ -124,6 +137,7 @@ export function useSimulator(): {
       ...names,
       firstLaunchDone,
       muted,
+      truppzuordnungShown,
       einsatzprotokolle: state.einsatzprotokolle,
       nextEinsatznummer: state.nextEinsatznummer,
     });
@@ -132,6 +146,7 @@ export function useSimulator(): {
     names,
     firstLaunchDone,
     muted,
+    truppzuordnungShown,
     state.einsatzprotokolle,
     state.nextEinsatznummer,
   ]);
@@ -139,9 +154,9 @@ export function useSimulator(): {
   // Until the Trainee chooses, the saved session stays as it was, so another reload asks again.
   useEffect(() => {
     if (persisting.current && !sessionChoicePending) {
-      saveSession(storage, state);
+      saveSession(storage, state, truppzuordnung);
     }
-  }, [storage, state, sessionChoicePending]);
+  }, [storage, state, truppzuordnung, sessionChoicePending]);
 
   // The tick loop reads the signal here, so the clock follows it from the next frame on.
   const alarmSounding = useRef(isAlarmSounding(state));
@@ -226,6 +241,16 @@ export function useSimulator(): {
   const toggleMute = useCallback(() => {
     setMuted((current) => !current);
   }, []);
+  const writeTruppzuordnung = useCallback(
+    (truppnummer: number, entry: string) => {
+      setTruppzuordnung((current) =>
+        current.map((written, index) =>
+          index === truppnummer - 1 ? entry : written,
+        ),
+      );
+    },
+    [],
+  );
   // Reloading starts a new session on the cleared storage, so the first-launch dialog returns
   // and the Uhrzeit starts again at the real time of day.
   const resetToFactoryAndReload = useCallback(() => {
@@ -260,6 +285,10 @@ export function useSimulator(): {
     setNames,
     muted,
     toggleMute,
+    truppzuordnung,
+    writeTruppzuordnung,
+    truppzuordnungShown,
+    setTruppzuordnungShown,
     resetToFactory: resetToFactoryAndReload,
     sessionChoicePending,
     resumeSession,

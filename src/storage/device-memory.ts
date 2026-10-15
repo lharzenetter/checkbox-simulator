@@ -21,6 +21,8 @@ export interface DeviceMemory {
   /** Whether the Trainee has confirmed the first-launch dialog. */
   readonly firstLaunchDone: boolean;
   readonly muted: boolean;
+  /** Whether the Truppzuordnung is shown beside the Checkbox. */
+  readonly truppzuordnungShown: boolean;
   /** Oldest first, as the device core keeps them. */
   readonly einsatzprotokolle: readonly Einsatzprotokoll[];
   /** The Einsatznummer the next Einsatzprotokoll gets. */
@@ -33,6 +35,7 @@ export const FACTORY_DEVICE_MEMORY: DeviceMemory = {
   fahrzeuge: DEFAULT_FAHRZEUGE,
   firstLaunchDone: false,
   muted: false,
+  truppzuordnungShown: true,
   ...FACTORY_STORED_EINSATZPROTOKOLLE,
 };
 
@@ -42,7 +45,7 @@ const DEVICE_MEMORY_KEY = `${KEY_PREFIX}device-memory`;
 
 // Raise on any change to the stored shape: older data is then wiped, never migrated (decided in
 // "Decide what survives a page reload").
-const DEVICE_MEMORY_VERSION = 3;
+const DEVICE_MEMORY_VERSION = 4;
 
 /**
  * Reads the device memory. Stored data the simulator can no longer read is wiped in full,
@@ -98,6 +101,7 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     feuerwehrname,
     firstLaunchDone,
     muted,
+    truppzuordnungShown,
     einsatzprotokolle,
     nextEinsatznummer,
   } = value;
@@ -107,6 +111,7 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     fahrzeuge === null ||
     typeof firstLaunchDone !== "boolean" ||
     typeof muted !== "boolean" ||
+    typeof truppzuordnungShown !== "boolean" ||
     !Array.isArray(einsatzprotokolle) ||
     !einsatzprotokolle.every(isEinsatzprotokoll) ||
     typeof nextEinsatznummer !== "number" ||
@@ -120,6 +125,7 @@ function parseDeviceMemory(stored: string): DeviceMemory | null {
     fahrzeuge,
     firstLaunchDone,
     muted,
+    truppzuordnungShown,
     einsatzprotokolle,
     nextEinsatznummer,
   };

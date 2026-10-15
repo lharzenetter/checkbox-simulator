@@ -20,6 +20,7 @@ import { MuteToggle } from "./MuteToggle";
 import { SessionChoiceDialog } from "./SessionChoiceDialog";
 import { Settings } from "./Settings";
 import { TallyRoster } from "./TallyRoster";
+import { Truppzuordnung } from "./Truppzuordnung";
 import { useFullscreen } from "./use-fullscreen";
 import { useKeyMap } from "./use-key-map";
 import { useSiren } from "./use-siren";
@@ -41,6 +42,10 @@ export function App() {
     setNames,
     muted,
     toggleMute,
+    truppzuordnung,
+    writeTruppzuordnung,
+    truppzuordnungShown,
+    setTruppzuordnungShown,
     resetToFactory,
     sessionChoicePending,
     resumeSession,
@@ -117,6 +122,15 @@ export function App() {
     onClockKeyPressed: steerClock,
   });
 
+  const frontPanel = (
+    <FrontPanel
+      state={state}
+      feuerwehrname={names.feuerwehrname}
+      dispatch={dispatch}
+      onTallyDropped={tapTallyById}
+    />
+  );
+
   return (
     <div className={styles.app}>
       <header className={styles.bar}>
@@ -162,12 +176,17 @@ export function App() {
         </div>
       </header>
       <main className={styles.stage}>
-        <FrontPanel
-          state={state}
-          feuerwehrname={names.feuerwehrname}
-          dispatch={dispatch}
-          onTallyDropped={tapTallyById}
-        />
+        {truppzuordnungShown ? (
+          <div className={styles.device}>
+            <Truppzuordnung
+              entries={truppzuordnung}
+              onWritten={writeTruppzuordnung}
+            />
+            <div className={styles.frontPanelSlot}>{frontPanel}</div>
+          </div>
+        ) : (
+          frontPanel
+        )}
         <TallyRoster
           state={state}
           fahrzeuge={names.fahrzeuge}
@@ -190,6 +209,8 @@ export function App() {
           names={names}
           state={state}
           onNamed={setNames}
+          truppzuordnungShown={truppzuordnungShown}
+          onTruppzuordnungShownChosen={setTruppzuordnungShown}
           onFactoryReset={resetToFactory}
           onClose={() => {
             setSettingsOpen(false);

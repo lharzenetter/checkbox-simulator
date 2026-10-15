@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createInitialState } from "../core/index";
 import type { Einsatzprotokoll, State, Trupp } from "../core/index";
 import {
+  BLANK_TRUPPZUORDNUNG,
   discardSession,
   FACTORY_DEVICE_MEMORY,
   loadStores,
+  resetToFactory,
   saveDeviceMemory,
   saveSession,
 } from "./index";
-import type { DeviceMemory } from "./index";
+import type { DeviceMemory, Truppzuordnung } from "./index";
 
 const DEVICE_MEMORY_KEY = "checkbox-simulator/device-memory";
 const SESSION_KEY = "checkbox-simulator/session";
@@ -113,6 +115,15 @@ const MID_EINSATZ: State = {
   notausschaltung: "alleTrupps",
 };
 
+const TRUPPZUORDNUNG: Truppzuordnung = [
+  "",
+  "HLF AT – Müller/Schmidt",
+  "",
+  "LF WT",
+  "",
+  "",
+];
+
 function storageWith(items: Readonly<Record<string, string>>): Storage {
   const storage = new MemoryStorage();
   for (const [key, value] of Object.entries(items)) {
@@ -121,10 +132,13 @@ function storageWith(items: Readonly<Record<string, string>>): Storage {
   return storage;
 }
 
-function savedStorage(session: State): Storage {
+function savedStorage(
+  session: State,
+  truppzuordnung: Truppzuordnung = BLANK_TRUPPZUORDNUNG,
+): Storage {
   const storage = new MemoryStorage();
   saveDeviceMemory(storage, DEVICE_MEMORY);
-  saveSession(storage, session);
+  saveSession(storage, session, truppzuordnung);
   return storage;
 }
 
@@ -135,6 +149,7 @@ describe("the running session", () => {
     expect(loadStores(storage)).toEqual({
       deviceMemory: DEVICE_MEMORY,
       session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
     });
   });
 
@@ -143,6 +158,7 @@ describe("the running session", () => {
     expect(loadStores(savedStorage(MID_EINSATZ))).toEqual({
       deviceMemory: DEVICE_MEMORY,
       session: MID_EINSATZ,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
     });
   });
 
@@ -167,6 +183,13 @@ describe("the running session", () => {
     );
   });
 
+  // decided in "Decide what survives a page reload": fortsetzen restores the running session
+  it("comes back with the Truppzuordnung written beside it", () => {
+    expect(
+      loadStores(savedStorage(MID_EINSATZ, TRUPPZUORDNUNG)).truppzuordnung,
+    ).toEqual(TRUPPZUORDNUNG);
+  });
+
   // decided in "Decide what survives a page reload": the Einsatznummer is device memory
   it("takes its Einsatznummer from the device memory", () => {
     const storage = savedStorage({ ...MID_EINSATZ, nextEinsatznummer: 3 });
@@ -176,12 +199,26 @@ describe("the running session", () => {
 
 describe("discarding the running session", () => {
   // decided in "Decide what survives a page reload": verwerfen keeps the device memory
-  it("drops the session and keeps the device memory", () => {
-    const storage = savedStorage(MID_EINSATZ);
+  it("drops the session and the Truppzuordnung and keeps the device memory", () => {
+    const storage = savedStorage(MID_EINSATZ, TRUPPZUORDNUNG);
     discardSession(storage);
     expect(loadStores(storage)).toEqual({
       deviceMemory: DEVICE_MEMORY,
       session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
+    });
+  });
+});
+
+describe("the factory reset", () => {
+  // decided in "Decide what survives a page reload": it clears both stores
+  it("blanks the Truppzuordnung", () => {
+    const storage = savedStorage(MID_EINSATZ, TRUPPZUORDNUNG);
+    resetToFactory(storage);
+    expect(loadStores(storage)).toEqual({
+      deviceMemory: FACTORY_DEVICE_MEMORY,
+      session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
     });
   });
 });
@@ -189,10 +226,11 @@ describe("discarding the running session", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 2,
+      version: 3,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
       nextEinsatznummer: undefined,
+      truppzuordnung: TRUPPZUORDNUNG,
       ...changes,
     });
   }
@@ -202,6 +240,22 @@ describe("incompatible stored session data", () => {
     ["is not JSON", "{not json"],
     ["has no version", sessionJson({ version: undefined })],
     ["has an old version", sessionJson({ version: 1 })],
+    [
+      "has version 2, without the Truppzuordnung",
+      sessionJson({ version: 2, truppzuordnung: undefined }),
+    ],
+    [
+      "has a Truppzuordnung with five rows",
+      sessionJson({ truppzuordnung: TRUPPZUORDNUNG.slice(1) }),
+    ],
+    [
+      "has a Truppzuordnung row that is no text",
+      sessionJson({ truppzuordnung: [1, "", "", "", "", ""] }),
+    ],
+    [
+      "has a Truppzuordnung row longer than 40 characters",
+      sessionJson({ truppzuordnung: ["x".repeat(41), "", "", "", "", ""] }),
+    ],
     ["has an unknown screen", sessionJson({ screen: "pause" })],
     ["lacks a field", sessionJson({ pendingAlarms: undefined })],
     [
@@ -270,6 +324,7 @@ describe("incompatible stored session data", () => {
     expect(loadStores(storage)).toEqual({
       deviceMemory: FACTORY_DEVICE_MEMORY,
       session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
     });
     expect(storage.getItem(DEVICE_MEMORY_KEY)).toBeNull();
     expect(storage.getItem(SESSION_KEY)).toBeNull();
@@ -282,6 +337,7 @@ describe("incompatible stored session data", () => {
     expect(loadStores(storage)).toEqual({
       deviceMemory: FACTORY_DEVICE_MEMORY,
       session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
     });
     expect(storage.getItem(SESSION_KEY)).toBeNull();
   });
@@ -309,6 +365,7 @@ describe("browser storage that is blocked or full", () => {
     expect(loadStores(new BlockedStorage())).toEqual({
       deviceMemory: FACTORY_DEVICE_MEMORY,
       session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
     });
   });
 
@@ -316,7 +373,7 @@ describe("browser storage that is blocked or full", () => {
   it("drops the writes it cannot take", () => {
     const storage = new FullStorage();
     expect(() => {
-      saveSession(storage, MID_EINSATZ);
+      saveSession(storage, MID_EINSATZ, TRUPPZUORDNUNG);
       saveDeviceMemory(storage, DEVICE_MEMORY);
       discardSession(storage);
     }).not.toThrow();

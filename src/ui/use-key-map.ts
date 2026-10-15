@@ -19,6 +19,14 @@ function focusedControlKeeps(target: EventTarget | null): boolean {
   );
 }
 
+// Writing on the Truppzuordnung must never tap a Tally, press a device key or steer the clock.
+function writesTruppzuordnung(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest("[data-truppzuordnung]") !== null
+  );
+}
+
 export function useKeyMap({
   enabled,
   onKeyPressed,
@@ -48,7 +56,13 @@ export function useKeyMap({
       return;
     }
     function handleKeyDown(event: KeyboardEvent): void {
-      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) {
+      if (
+        event.repeat ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        writesTruppzuordnung(event.target)
+      ) {
         return;
       }
       const binding = deviceKeyBindingFor(event.key);
@@ -78,8 +92,8 @@ export function useKeyMap({
       }
       // Space clicks a focused button on key-up; on a front-panel key that would press it twice.
       if (
-        !binding.yieldsToFocusedControl ||
-        !focusedControlKeeps(event.target)
+        !writesTruppzuordnung(event.target) &&
+        (!binding.yieldsToFocusedControl || !focusedControlKeeps(event.target))
       ) {
         event.preventDefault();
       }

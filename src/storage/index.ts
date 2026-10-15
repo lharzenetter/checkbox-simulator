@@ -5,5 +5,11 @@ export {
   saveDeviceMemory,
 } from "./device-memory";
 export type { DeviceMemory } from "./device-memory";
-export { discardSession, loadStores, saveSession } from "./session";
-export type { Stores } from "./session";
+export {
+  BLANK_TRUPPZUORDNUNG,
+  discardSession,
+  loadStores,
+  saveSession,
+  TRUPPZUORDNUNG_MAX_LENGTH,
+} from "./session";
+export type { Stores, Truppzuordnung } from "./session";

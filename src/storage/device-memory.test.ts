@@ -64,13 +64,14 @@ const CHANGED: DeviceMemory = {
   ],
   firstLaunchDone: true,
   muted: true,
+  truppzuordnungShown: false,
   einsatzprotokolle: [EINSATZPROTOKOLL],
   nextEinsatznummer: 322,
 };
 
 // The current version's stored form of CHANGED, with these fields replaced.
 function stored(fields: Readonly<Record<string, unknown>>): string {
-  return JSON.stringify({ version: 3, ...CHANGED, ...fields });
+  return JSON.stringify({ version: 4, ...CHANGED, ...fields });
 }
 
 function storageWith(items: Readonly<Record<string, string>>): Storage {
@@ -92,6 +93,7 @@ describe("the device memory", () => {
       ],
       firstLaunchDone: false,
       muted: false,
+      truppzuordnungShown: true,
       einsatzprotokolle: [],
       nextEinsatznummer: 1,
     });
@@ -105,7 +107,7 @@ describe("the device memory", () => {
     expect(loadDeviceMemory(storage).fahrzeuge).toEqual(CHANGED.fahrzeuge);
   });
 
-  it("keeps the Feuerwehrname, the names, the first launch, the mute setting, the Einsatzprotokolle and the Einsatznummer", () => {
+  it("keeps the Feuerwehrname, the names, the first launch, the mute setting, the Truppzuordnung switched off, the Einsatzprotokolle and the Einsatznummer", () => {
     const storage = new MemoryStorage();
     saveDeviceMemory(storage, CHANGED);
     expect(loadDeviceMemory(storage)).toEqual(CHANGED);
@@ -134,6 +136,18 @@ describe("incompatible stored data", () => {
         ],
       }),
     ],
+    [
+      "has version 3, without the Truppzuordnung setting",
+      JSON.stringify({
+        version: 3,
+        ...CHANGED,
+        truppzuordnungShown: undefined,
+      }),
+    ],
+    [
+      "has a Truppzuordnung setting that is no boolean",
+      stored({ truppzuordnungShown: "ja" }),
+    ],
     ["has no Einsatznummer", stored({ nextEinsatznummer: undefined })],
     ["has an Einsatznummer below 1", stored({ nextEinsatznummer: 0 })],
     [
@@ -156,11 +170,7 @@ describe("incompatible stored data", () => {
     ],
     [
       "has a Feuerwehrname longer than an LCD line",
-      JSON.stringify({
-        version: 3,
-        ...CHANGED,
-        feuerwehrname: "Freiwillige Feuerwehr Musterstadt",
-      }),
+      stored({ feuerwehrname: "Freiwillige Feuerwehr Musterstadt" }),
     ],
     [
       "has a Kurzname longer than 10 characters",
@@ -209,17 +219,13 @@ describe("incompatible stored data", () => {
     ],
     [
       "has an Einsatzprotokoll with an unknown Einsatzstatus",
-      JSON.stringify({
-        version: 3,
-        ...CHANGED,
+      stored({
         einsatzprotokolle: [{ ...EINSATZPROTOKOLL, einsatzstatus: "pause" }],
       }),
     ],
     [
       "has an Einsatzprotokoll without its Atemschutzträger",
-      JSON.stringify({
-        version: 3,
-        ...CHANGED,
+      stored({
         einsatzprotokolle: [{ ...EINSATZPROTOKOLL, atemschutztraeger: null }],
       }),
     ],
@@ -237,7 +243,7 @@ describe("incompatible stored data", () => {
 
   it("keeps compatible data as it is", () => {
     const storage = storageWith({
-      [DEVICE_MEMORY_KEY]: JSON.stringify({ version: 3, ...CHANGED }),
+      [DEVICE_MEMORY_KEY]: stored({}),
     });
     expect(loadDeviceMemory(storage)).toEqual(CHANGED);
   });
@@ -251,6 +257,7 @@ describe("the factory reset", () => {
     resetToFactory(storage);
     expect(loadDeviceMemory(storage)).toEqual(FACTORY_DEVICE_MEMORY);
     expect(FACTORY_DEVICE_MEMORY.firstLaunchDone).toBe(false);
+    expect(FACTORY_DEVICE_MEMORY.truppzuordnungShown).toBe(true);
     expect(storage.getItem(SESSION_KEY)).toBeNull();
     expect(storage.getItem("another-app")).toBe("kept");
   });

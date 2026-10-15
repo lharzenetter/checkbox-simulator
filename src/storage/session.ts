@@ -10,7 +10,11 @@ import type {
   TruppMenue,
   TruppMenueAktion,
 } from "../core/index";
-import { assertNever, EINSATZZEITEN_MS } from "../core/index";
+import {
+  assertNever,
+  EINSATZZEITEN_MS,
+  P72_ANZAHL_DER_MAXIMALEN_TRUPPS,
+} from "../core/index";
 import { KEY_PREFIX, loadDeviceMemory, resetToFactory } from "./device-memory";
 import type { DeviceMemory } from "./device-memory";
 import {
@@ -22,18 +26,32 @@ import {
   tryWrite,
 } from "./guards";
 
+/** What the Trainee wrote on the Truppzuordnung: one entry per Truppnummer, in order. */
+export type Truppzuordnung = readonly string[];
+
+/** The Truppzuordnung with nothing written on it. */
+export const BLANK_TRUPPZUORDNUNG: Truppzuordnung = Array.from(
+  { length: P72_ANZAHL_DER_MAXIMALEN_TRUPPS },
+  () => "",
+);
+
+/** The most characters one Truppzuordnung entry takes. */
+export const TRUPPZUORDNUNG_MAX_LENGTH = 40;
+
 /** Both stores as a page load finds them. */
 export interface Stores {
   readonly deviceMemory: DeviceMemory;
   /** The running session saved before the reload; `null` when there is none. */
   readonly session: State | null;
+  /** Saved with the running session; blank when there is none. */
+  readonly truppzuordnung: Truppzuordnung;
 }
 
 const SESSION_KEY = `${KEY_PREFIX}session`;
 
-// Raise on any change to the core's state: older sessions are then wiped with the device memory,
+// Raise on any change to the core's state or the Truppzuordnung: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 2;
+const SESSION_VERSION = 3;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
@@ -103,21 +121,34 @@ export function loadStores(storage: Storage): Stores {
   const deviceMemory = loadDeviceMemory(storage);
   const stored = readItem(storage, SESSION_KEY);
   if (stored === null) {
-    return { deviceMemory, session: null };
+    return {
+      deviceMemory,
+      session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
+    };
   }
-  const session = parseSession(stored, deviceMemory);
-  if (session === null) {
+  const saved = parseSavedSession(stored, deviceMemory);
+  if (saved === null) {
     resetToFactory(storage);
-    return { deviceMemory: loadDeviceMemory(storage), session: null };
+    return {
+      deviceMemory: loadDeviceMemory(storage),
+      session: null,
+      truppzuordnung: BLANK_TRUPPZUORDNUNG,
+    };
   }
-  return { deviceMemory, session };
+  return { deviceMemory, ...saved };
 }
 
 /**
- * Writes the running session, replacing the one saved before. Its Einsatzprotokolle and
- * Einsatznummer are left out: they are device memory, saved with {@link saveDeviceMemory}.
+ * Writes the running session and the Truppzuordnung beside it, replacing those saved before. The
+ * session's Einsatzprotokolle and Einsatznummer are left out: they are device memory, saved with
+ * {@link saveDeviceMemory}.
  */
-export function saveSession(storage: Storage, session: State): void {
+export function saveSession(
+  storage: Storage,
+  session: State,
+  truppzuordnung: Truppzuordnung,
+): void {
   tryWrite(() => {
     storage.setItem(
       SESSION_KEY,
@@ -126,22 +157,23 @@ export function saveSession(storage: Storage, session: State): void {
         ...session,
         einsatzprotokolle: undefined,
         nextEinsatznummer: undefined,
+        truppzuordnung,
       }),
     );
   });
 }
 
-/** Drops the running session; the device memory is kept. */
+/** Drops the running session and its Truppzuordnung; the device memory is kept. */
 export function discardSession(storage: Storage): void {
   tryWrite(() => {
     storage.removeItem(SESSION_KEY);
   });
 }
 
-function parseSession(
+function parseSavedSession(
   stored: string,
-  { einsatzprotokolle, nextEinsatznummer }: DeviceMemory,
-): State | null {
+  deviceMemory: DeviceMemory,
+): Pick<Stores, "session" | "truppzuordnung"> | null {
   let value: unknown;
   try {
     value = JSON.parse(stored);
@@ -151,6 +183,28 @@ function parseSession(
   if (!isRecord(value) || value.version !== SESSION_VERSION) {
     return null;
   }
+  const session = parseSession(value, deviceMemory);
+  const { truppzuordnung } = value;
+  return session !== null && isTruppzuordnung(truppzuordnung)
+    ? { session, truppzuordnung }
+    : null;
+}
+
+function isTruppzuordnung(value: unknown): value is Truppzuordnung {
+  return (
+    Array.isArray(value) &&
+    value.length === P72_ANZAHL_DER_MAXIMALEN_TRUPPS &&
+    value.every(
+      (entry) =>
+        typeof entry === "string" && entry.length <= TRUPPZUORDNUNG_MAX_LENGTH,
+    )
+  );
+}
+
+function parseSession(
+  value: Readonly<Record<string, unknown>>,
+  { einsatzprotokolle, nextEinsatznummer }: DeviceMemory,
+): State | null {
   const {
     screen,
     now,

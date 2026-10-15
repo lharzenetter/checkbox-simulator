@@ -30,6 +30,10 @@ _Avoid_: auto-off, timeout
 The fire brigade's name the Checkbox shows atop the Startdisplay and the Einsatzliste, `FF-Musterstadt` from the factory; the Trainee sets it in the simulator.
 _Avoid_: Wehrname, brigade name, Organisationsname
 
+**Truppzuordnung**:
+The paper attached to the Checkbox on which whoever runs the Atemschutzüberwachung writes, against each Truppnummer 1–6, which Trupp is logged in under it; in the simulator the Trainee fills it in.
+_Avoid_: Truppzettel, Notizzettel, label, paper
+
 ## Screens
 
 **Startdisplay**:
