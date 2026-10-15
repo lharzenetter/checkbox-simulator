@@ -20,21 +20,20 @@
 .line {
   display: flex;
   flex: 1;
-  align-items: flex-end;
+  align-items: center;
   min-height: 36px;
   border-bottom: 1px solid var(--ruling);
 }
 
 .truppnummer {
-  flex: 0 0 28px;
+  flex: 0 0 36px;
   align-self: stretch;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 4px;
   border-right: 2px solid var(--margin-line);
   font:
-    700 0.95rem/1 system-ui,
+    700 1.35rem/1 system-ui,
     sans-serif;
 }
 
