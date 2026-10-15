@@ -178,11 +178,15 @@ export function App() {
       <main className={styles.stage}>
         {truppzuordnungShown ? (
           <div className={styles.device}>
-            <Truppzuordnung
-              entries={truppzuordnung}
-              onWritten={writeTruppzuordnung}
-            />
-            <div className={styles.frontPanelSlot}>{frontPanel}</div>
+            <div className={styles.deviceRow}>
+              <div className={styles.truppzuordnungSlot}>
+                <Truppzuordnung
+                  entries={truppzuordnung}
+                  onWritten={writeTruppzuordnung}
+                />
+              </div>
+              <div className={styles.frontPanelSlot}>{frontPanel}</div>
+            </div>
           </div>
         ) : (
           frontPanel

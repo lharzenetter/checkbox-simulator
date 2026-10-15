@@ -48,13 +48,22 @@
 }
 
 /* The Truppzuordnung is fastened to the left side of the housing; where both do not fit side by
-   side it wraps above, so the LCD and keys are never squeezed. */
+   side it sits above, so the LCD and keys are never squeezed. */
 .device {
+  container: device / inline-size;
+  width: min(100%, 870px);
+}
+
+.deviceRow {
   display: flex;
-  flex-wrap: wrap;
   align-items: stretch;
   justify-content: center;
-  width: min(100%, 870px);
+}
+
+.truppzuordnungSlot {
+  display: flex;
+  flex: 0 0 250px;
+  margin: 24px 0;
 }
 
 .frontPanelSlot {
@@ -62,6 +71,29 @@
   flex: 1 1 560px;
   justify-content: center;
   max-width: 620px;
+}
+
+/* 250px of Truppzuordnung beside the 560px the front panel needs. */
+@container device (max-width: 809px) {
+  .deviceRow {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* As wide as the faceplate: the housing's width less its side padding, which matches
+     FrontPanel.module.css. */
+  .truppzuordnungSlot {
+    flex: none;
+    width: calc(min(100%, 620px) - 2 * clamp(12px, 4vw, 40px));
+    margin: 0;
+  }
+
+  .frontPanelSlot {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
 }
 
 @media (max-width: 560px) {
@@ -80,14 +112,5 @@
   .stage {
     gap: 24px;
     padding: 16px;
-  }
-
-  /* On a phone the Truppzuordnung sits above the Checkbox. */
-  .device {
-    gap: 16px;
-  }
-
-  .frontPanelSlot {
-    flex-basis: 100%;
   }
 }
