@@ -1,5 +1,7 @@
 # Decide when a Daueralarm starts and ends
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): the login Daueralarm is replaced by the `Zu wenig Einsatzkräfte!` box.
+
 Both Daueralarme start only when the operator tries to confirm, never on a timer.
 
 - **Logoff Daueralarm:** starts on OK on ABMELDEN while any Atemschutzträger is unmarked. It ends as soon as everyone is marked (ABMELDEN then waits for OK), on X (marks cleared, the Trupp keeps running in its previous Einsatzstatus) or on a Notausschaltung. OK again with Atemschutzträger still missing restarts it.

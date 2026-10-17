@@ -1,5 +1,7 @@
 # Drop the simulation to real time while an Alarm sounds
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): point 2: the speed stays locked until the second OK.
+
 At 5× or 10× the Restzeit races on while the Trainee reacts to an Alarm, which is nothing like the real device. So the speed drops to 1× when the signal starts. This changes the clock in [Design how the Trainee handles Tallys and the clock](0005-design-how-the-trainee-handles-tallys-and-the-clock.md).
 
 1. **Any signal triggers it:** every Alarm and every Daueralarm, muted or not, from the moment the siren and LED would start ([Decide how alarms are presented](0013-decide-how-alarms-are-presented.md)). Including the Daueralarme costs nothing, and making the speed depend on the mute toggle would be odd.

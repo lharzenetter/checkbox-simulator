@@ -1,5 +1,7 @@
 # Decide when one-shot and repeating alarms fire
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): the Rückzugsalarm is armed from login, fires once and re-arms only on a pressure entry above the Rückzugsdruck; there are no Anmarsch legs any more, and a Sicherheitstrupp gets no Bereitschaft Alarm.
+
 The manual doesn't say how often each Alarm fires or what anchors its repeats, so this was decided:
 
 - Each Alarmgrenze fires once per Einsatz, in every Einsatzstatus.

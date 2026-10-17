@@ -31,7 +31,7 @@ The fire brigade's name the Checkbox shows atop the Startdisplay and the Einsatz
 _Avoid_: Wehrname, brigade name, Organisationsname
 
 **Truppzuordnung**:
-The paper attached to the Checkbox on which whoever runs the Atemschutzüberwachung writes, against each Truppnummer 1–6, which Trupp is logged in under it; in the simulator the Trainee fills it in.
+The paper attached to the Checkbox on which whoever runs the Atemschutzüberwachung writes, against each Truppnummer 1–6, the Ort and Auftrag of the Trupp logged in under it; in the simulator the Trainee fills it in.
 _Avoid_: Truppzettel, Notizzettel, label, paper
 
 ## Screens
@@ -91,7 +91,7 @@ A Fahrzeug's short name of at most 10 characters, unique within the Roster, e.g.
 _Avoid_: short name, Fahrzeugkürzel
 
 **Sicherheitstrupp**:
-A Trupp registered as standby rescue team; a flag alongside its Einsatzstatus, not a status of its own. It starts in Bereitschaft and is shown alternating with the text `SICHER`.
+A Trupp registered as standby rescue team; a flag alongside its Einsatzstatus, not a status of its own. It starts in Bereitschaft, is shown alternating with the text `SICHER`, and gets no Bereitschaft Alarm. When sent into Einsatz it may be deactivated for good, becoming an ordinary Trupp.
 _Avoid_: Sicherungstrupp, rescue team
 
 **Einsatzstatus**:
@@ -99,7 +99,7 @@ A Trupp's current phase: Bereitschaft, Anmarsch, Einsatzziel erreicht, or Rückm
 _Avoid_: state, Status
 
 **Bereitschaft**:
-The Einsatzstatus of a Trupp waiting in a safe area, with its Einsatzzeit paused; with the Rückzugsalarmmodus on, leaving it starts a new Anmarsch.
+The Einsatzstatus of a Trupp waiting in a safe area, with its Einsatzzeit paused; leaving it restores the Einsatzstatus the Trupp had before, or Anmarsch if it has none.
 _Avoid_: standby, pause
 
 **Anmarsch**:
@@ -111,7 +111,7 @@ The Einsatzstatus of a Trupp on its way back out, entered with the menu item `R�
 _Avoid_: Rückzug (as a status name), retreat
 
 **Einsatzzeit**:
-The total time budget a Trupp is given at login, chosen from Einsatzzeit #1–#4 (defaults 30, 60, 20, 240 min).
+The total time budget a Trupp is given at login, chosen from 30, 20 or 180 min.
 _Avoid_: duration, timer, Regelzeit
 
 **Restzeit**:
@@ -119,12 +119,8 @@ The Einsatzzeit a Trupp has left; shown counting negative once exceeded.
 _Avoid_: remaining time, countdown
 
 **Anmarschzeit**:
-The running time from the start of a Trupp's Anmarsch until it reports Einsatzziel erreicht; doubled, it sizes the Rückzugsalarm.
+The running time from the start of a Trupp's Anmarsch until it reports Einsatzziel erreicht.
 _Avoid_: approach time, Hinweg
-
-**Rückmarschzeit**:
-The time a Trupp's Rückmarsch is budgeted: twice its Anmarschzeit plus the Reservedruck converted to time; the Rückzugsalarm fires when the Restzeit falls to it.
-_Avoid_: return time, Rückweg
 
 **Flaschendruck**:
 The pressure of a Trupp's breathing-air cylinders, in bar.
@@ -134,12 +130,16 @@ _Avoid_: pressure, Druck
 The Flaschendruck entered when a Trupp logs in, and when it logs off.
 _Avoid_: Anfangsdruckerfassung, Enddruckerfassung, start pressure
 
+**Anmarschdruck**:
+The Flaschendruck a Trupp used on its Anmarsch: its Anfangsdruck minus the Flaschendruck entered at Einsatzziel erreicht.
+_Avoid_: Hinwegdruck, Anmarschverbrauch
+
 **Reservedruck**:
-The Flaschendruck that must remain for a safe return; it feeds the Rückzugsalarm.
+The lowest Rückzugsdruck the Checkbox allows (50 bar).
 _Avoid_: reserve
 
 **Rückzugsdruck**:
-The Flaschendruck at which the Rückzugsalarm fires, shown on the Trupp-Ansicht.
+The Flaschendruck at which the Rückzugsalarm fires: twice the Anmarschdruck, but never below the Reservedruck.
 _Avoid_: retreat pressure, Umkehrdruck
 
 ## Alarms
@@ -153,7 +153,7 @@ A percentage of the Einsatzzeit at which an Alarm fires (defaults 33 % and 66 %,
 _Avoid_: Alarmstufe, threshold, alarm level
 
 **Rückzugsalarm**:
-An Alarm fired when the Restzeit drops to twice the Anmarsch time plus the Reservedruck allowance.
+An Alarm fired when a Trupp's Flaschendruck falls to its Rückzugsdruck.
 _Avoid_: retreat alarm
 
 **Rückzugsalarmmodus**:

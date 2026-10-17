@@ -4,6 +4,8 @@ The manual shows most screens but only some of the key presses (catalogue gaps G
 
 Amended since: by [Decide when a Daueralarm starts and ends](0011-decide-when-a-daueralarm-starts-and-ends.md) (OK on ABMELDEN and on the Anmeldefenster) and by [Decide how alarms are presented](0013-decide-how-alarms-are-presented.md) (the ALARM screen). The amendments are applied below.
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): the Trupp-Menü opening straight from the Einsatzliste, the Trupp-Ansicht shown only after a pressure entry, the menu items per Einsatzstatus, 30/20/180 min, the 300 bar ceiling, `Zu wenig Einsatzkräfte!` and the two-OK ALARM screen. Those are **not** applied below; that ADR wins.
+
 ## Flow
 
 - **Aus (S00):** Check → Startdisplay. A Tally on Check starts a login directly.

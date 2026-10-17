@@ -1,5 +1,7 @@
 # Settle the edge cases the verification scenarios exposed
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): point 3: the ceiling is 300 bar, not 330.
+
 Writing exact test vectors exposed six points the earlier decisions left open:
 
 1. **Alarmgrenzen are literal percentages:** 33 % / 66 % fire at 9:54 / 19:48 (30 min) and 6:36 / 13:12 (20 min), not at exact thirds ("exact enough"). (§2.6)

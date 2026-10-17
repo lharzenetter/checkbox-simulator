@@ -1,5 +1,7 @@
 # Decide the Einsatzstatus transitions
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): `Trupp -> Einsatz` restores the earlier Einsatzstatus, there are no Anmarsch legs, Anmarsch → Rückmarsch is gone, and a Sicherheitstrupp may be deactivated when sent in.
+
 These follow the real device's behaviour:
 
 - **Bereitschaft is a safe area.** `Trupp -> Einsatz` never restores the earlier status: it leads to Anmarsch (Rückzugsalarmmodus on), or to Einsatzziel erreicht (mode off, not implemented).

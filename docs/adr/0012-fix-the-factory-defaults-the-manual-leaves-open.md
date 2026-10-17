@@ -1,5 +1,7 @@
 # Fix the factory defaults the manual leaves open
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): Einsatzzeit #4 is simulated as 180 min, and [77] = 0 % (no pressure above 300 bar).
+
 Section 9.1 of the manual lists the parameters but gives **no defaults**. The simulator fixes a value for each parameter it uses, chosen with the user, who knows the real device. The key ones:
 
 - Rückzugsalarmmodus on for 30 and 20 min

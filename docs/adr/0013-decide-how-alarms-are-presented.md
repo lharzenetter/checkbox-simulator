@@ -1,5 +1,7 @@
 # Decide how alarms are presented
 
+Amended by [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md): headers name the cause, Alarms are no longer merged, and each takes two OKs (points 1, 3, 4).
+
 The manual shows only the overrun ALARM screen (catalogue gap G5). The rest follows the real device where the user knows it.
 
 1. **One screen.** Every Alarm except a Daueralarm (Alarmgrenzen, 00:00:00, overdue repeats, Rückzugsalarm, Bereitschaft) uses S12, `Trupp NN ALARM` / `Alarmende mit OK`, with **no cause text**. S12 is live: Restzeit, cylinder and pressure estimate keep updating. There is no SICHER alternation on S12.
