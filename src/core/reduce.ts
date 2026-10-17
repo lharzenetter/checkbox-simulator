@@ -439,9 +439,9 @@ function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
             ...truppMenue,
             sicherheitstruppDeaktivierenShown: true,
           })
-        : sendTrupp(state, trupp, "truppEinsatz");
+        : chooseEinsatzstatus(state, trupp, "truppEinsatz");
     case "truppBereitschaft":
-      return sendTrupp(state, trupp, "truppBereitschaft");
+      return chooseEinsatzstatus(state, trupp, "truppBereitschaft");
     case "einsatzzielErreicht":
     case "rueckzugAntreten":
     case "flaschendruckAendern":
@@ -469,10 +469,10 @@ function handleSicherheitstruppDeaktivierenKey(state: State, key: Key): State {
   const trupp = selectedTrupp(state);
   switch (key) {
     case "X":
-      return sendTrupp(state, trupp, "truppEinsatz");
+      return chooseEinsatzstatus(state, trupp, "truppEinsatz");
     case "OK": {
       const deactivated = { ...trupp, sicherheitstrupp: false };
-      return sendTrupp(
+      return chooseEinsatzstatus(
         replaceTrupp(state, trupp, deactivated),
         deactivated,
         "truppEinsatz",
@@ -487,7 +487,7 @@ function handleSicherheitstruppDeaktivierenKey(state: State, key: Key): State {
   }
 }
 
-function sendTrupp(
+function chooseEinsatzstatus(
   state: State,
   trupp: Trupp,
   aktion: "truppEinsatz" | "truppBereitschaft",
@@ -992,7 +992,8 @@ function handleTallyHeld(
       return routeTally(state, atemschutztraeger);
     case "truppAnsicht":
       return routeTallyFromTrupp(state, atemschutztraeger);
-    // ignored while `Sicherheitstrupp deaktivieren?` shows, as decided in issue #52
+    // ASSUMPTION: a Tally is ignored while `Sicherheitstrupp deaktivieren?` shows, like every key
+    // but X and OK (taken in issue #52).
     case "truppMenue":
       return requireTruppMenue(state).sicherheitstruppDeaktivierenShown
         ? state
@@ -1275,6 +1276,8 @@ function runDisplayTimings(state: State): State {
 }
 
 // timing-and-alarm-rules §9 [13], 9.1
+// ASSUMPTION: [13] closes `Sicherheitstrupp deaktivieren?` with the Trupp-Menü, leaving the Trupp
+// in Bereitschaft and flagged, since the box answers neither question (taken in issue #52).
 // ASSUMPTION: the pressure editor `Esz-Zeit ändern` has no timeout; [13] names only the Trupp-Menü
 // ("Correct the simulator against the real Checkbox").
 function hasP13TimeoutRunOut(state: State): boolean {

@@ -327,20 +327,7 @@ function drawMenueBox(
     MENUE_BOX_HEIGHT,
     false,
   );
-  strokeRect(
-    framebuffer,
-    MENUE_BOX_X,
-    MENUE_BOX_Y,
-    MENUE_BOX_WIDTH,
-    MENUE_BOX_HEIGHT,
-  );
-  strokeRect(
-    framebuffer,
-    MENUE_BOX_X + 2,
-    MENUE_BOX_Y + 2,
-    MENUE_BOX_WIDTH - 4,
-    MENUE_BOX_HEIGHT - 4,
-  );
+  drawDoubleFrame(framebuffer, MENUE_BOX_Y, MENUE_BOX_HEIGHT, MENUE_BOX_X);
   lines.forEach((line, index) => {
     drawCenteredText(framebuffer, line, MENUE_BOX_Y + 6 + index * LINE_PITCH);
   });
@@ -778,13 +765,16 @@ function centredInSymbolColumn(width: number): number {
   return Math.floor((SYMBOL_COLUMN_LEFT + SYMBOL_COLUMN_RIGHT - width) / 2);
 }
 
+// `inset` is the outer frame's distance from either side of the screen.
 function drawDoubleFrame(
   framebuffer: Framebuffer,
   y: number,
   height: number,
+  inset = 2,
 ): void {
-  strokeRect(framebuffer, 2, y, LCD_WIDTH - 4, height);
-  strokeRect(framebuffer, 4, y + 2, LCD_WIDTH - 8, height - 4);
+  const width = LCD_WIDTH - 2 * inset;
+  strokeRect(framebuffer, inset, y, width, height);
+  strokeRect(framebuffer, inset + 2, y + 2, width - 4, height - 4);
 }
 
 // ASSUMPTION: the manufacturer's ⟨IEP⟩ logo is drawn as doubled text; the figure's bitmap is

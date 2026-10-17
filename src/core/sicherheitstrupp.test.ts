@@ -112,20 +112,61 @@ describe("`Trupp -> Einsatz` on a Sicherheitstrupp", () => {
     }
   });
 
-  it("ignores a Tally on Check while the box shows", () => {
+  // ASSUMPTION in reduce.ts, taken in issue #52
+  it("ignores a Tally held to Check while the box shows", () => {
     const asked = deaktivierenAsked();
     const A3 = { tallyId: "a3", name: "TLF AT-F" };
     expect(reduce(asked, hold(A3))).toBe(asked);
     expect(reduce(asked, hold(A1))).toBe(asked);
   });
 
-  // ASSUMPTION in reduce.ts, decided in "Correct the simulator against the real Checkbox"
+  // timing-and-alarm-rules §12.8; ASSUMPTION in reduce.ts
   it("asks again each time it leaves Bereitschaft while still flagged", () => {
     let state = reduce(deaktivierenAsked(), press("X"));
     state = chooseItem(run(state, tickAt(4)), "truppBereitschaft");
     state = chooseItem(run(state, tickAt(6)), "truppEinsatz");
     expect(state.truppMenue?.sicherheitstruppDeaktivierenShown).toBe(true);
     expect(truppOf(state).einsatzstatus).toBe("bereitschaft");
+  });
+
+  // timing-and-alarm-rules §9 [13]; ASSUMPTION in reduce.ts, taken in issue #52
+  it("closes the box with the Trupp-Menü after 15 s without a key, the Trupp still in Bereitschaft", () => {
+    const asked = deaktivierenAsked();
+    let state = reduce(asked, tickAt(2, 14));
+    expect(state.truppMenue?.sicherheitstruppDeaktivierenShown).toBe(true);
+    state = reduce(state, tickAt(2, 15));
+    expect(state.screen).toBe("einsatzliste");
+    expect(state.truppMenue).toBeNull();
+    expect(truppOf(state).einsatzstatus).toBe("bereitschaft");
+    expect(truppOf(state).sicherheitstrupp).toBe(true);
+  });
+
+  // timing-and-alarm-rules §8.2, 8.4: S12 takes over from any screen and gives it back unchanged
+  it("shows the box again after an Alarm that interrupted it", () => {
+    const B1 = { tallyId: "b1", name: "TLF AT-F" };
+    const B2 = { tallyId: "b2", name: "TLF AT-M" };
+    // Trupp 02 in Anmarsch reaches its first Alarmgrenze at 9:54 into its Einsatz
+    const zweiterTrupp = run(
+      sicherheitstrupp(),
+      hold(B1),
+      press("OK"),
+      hold(B2),
+      press("OK"),
+      press("OK"),
+      press("X"),
+      press("Up"),
+    );
+    const asked = run(zweiterTrupp, tickAt(9, 50), press("OK"), press("OK"));
+    expect(asked.truppMenue?.sicherheitstruppDeaktivierenShown).toBe(true);
+
+    const interrupted = reduce(asked, tickAt(9, 54));
+    expect(interrupted.screen).toBe("alarm");
+    const resumed = run(interrupted, press("OK"), press("OK"));
+    expect(resumed.screen).toBe("truppMenue");
+    expect(resumed.truppMenue?.sicherheitstruppDeaktivierenShown).toBe(true);
+    expect(reduce(resumed, press("X")).trupps[0]?.einsatzstatus).toBe(
+      "anmarsch",
+    );
   });
 
   it("does not ask an ordinary Trupp", () => {
