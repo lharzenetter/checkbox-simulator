@@ -347,6 +347,47 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
     expect(einsatzstatusOf(state)).toBe("rueckmarsch");
     expect(restzeitOf(state)).toBe(minutes(24));
     expect(restzeitOf(reduce(state, tickAt(9, 30)))).toBe(minutes(23, 30));
+
+    const menue = run(state, tickAt(9, 30), press("OK"));
+    expect(truppMenueAktionen(menue)).not.toContain("einsatzzielErreicht");
+    expect(truppMenueAktionen(menue)).not.toContain("rueckzugAntreten");
+
+    // OK ALARM 1 at 12:54 and ALARM 2 at 22:48; R = 6:00 at 27:00 is the Rückzugsdruck, but
+    // Rückmarsch suppresses the Rückzugsalarm (timing-and-alarm-rules §5.9)
+    state = run(
+      state,
+      tickAt(12, 54),
+      press("OK"),
+      press("OK"),
+      tickAt(22, 48),
+      press("OK"),
+      press("OK"),
+    );
+    state = run(state, tickAt(27));
+    expect(restzeitOf(state)).toBe(minutes(6));
+    expect(state.pendingAlarms).toEqual([]);
+  });
+
+  // timing-and-alarm-rules §4.6, 5.9
+  it("keeps a Rückzugsalarm that fired before Bereitschaft fired", () => {
+    // 300 → 160 bar gives a Rückzugsdruck of 280 bar, so the Rückzugsalarm fires on OK
+    // (timing-and-alarm-rules §5.7, 5.14)
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(4)),
+      "einsatzzielErreicht",
+      160,
+    );
+    expect(state.pendingAlarms).toEqual([
+      { truppnummer: 1, cause: "rueckzugsalarm" },
+    ]);
+    state = run(state, press("OK"), press("OK"));
+    state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
+
+    // the Bereitschaft Alarm at 13:00 (timing-and-alarm-rules §4.3)
+    state = run(state, tickAt(13), press("OK"), press("OK"));
+    state = chooseItem(run(state, tickAt(14)), "truppEinsatz");
+    expect(state.trupps[0]?.rueckzugsalarmArmed).toBe(false);
+    expect(run(state, tickAt(15)).pendingAlarms).toEqual([]);
   });
 
   // verification scenario V12, its transition; timing-and-alarm-rules §12.1, 12.4

@@ -455,7 +455,8 @@ function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
 }
 
 // timing-and-alarm-rules §4.1, 4.6, 12.3, 12.4, 12.5: `Trupp -> Einsatz` restores the earlier
-// Einsatzstatus and resets nothing, and choosing the current status changes nothing
+// Einsatzstatus and keeps the Anmarschzeit, the Rückzugsdruck and the Rückzugsalarm as they
+// were, and choosing the current status changes nothing
 function changeEinsatzstatus(
   state: State,
   trupp: Trupp,
