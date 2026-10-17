@@ -16,7 +16,7 @@ An operator training tool. A single **Trainee** operates the Checkbox and also p
 ## 2. Screens and key navigation
 
 - **What each screen looks like:** [LCD screen catalogue](research/lcd-screen-catalogue.md). It covers the display (~128 × 128 px graphic LCD, ~21 columns), the Statussymbole F–M, SICHER, the Restzeit formats, and transcriptions plus cropped figures of S00–S15. S16–S22 are out of scope, and X1–X9 are described but not shown.
-- **What every key does on every screen:** [Define the key-by-screen navigation model](adr/0004-define-the-key-by-screen-navigation-model.md). This covers the login chain, the Einsatzliste, Trupp-Ansicht and Trupp-Menü per Einsatzstatus, the pressure editors, ABMELDEN, the Notausschaltung, and where a Tally on Check is routed. The catalogue's transition table records the manual's view; the ADR overrides it.
+- **What every key does on every screen:** [Define the key-by-screen navigation model](adr/0004-define-the-key-by-screen-navigation-model.md). This covers the login chain, the Einsatzliste, Trupp-Ansicht and Trupp-Menü per Einsatzstatus, the pressure editors, ABMELDEN, the Notausschaltung, and where a Tally on Check is routed. The catalogue's transition table records the manual's view; the ADR overrides it. [Correct the simulator against the real Checkbox](adr/0018-correct-the-simulator-against-the-real-checkbox.md) amends it: OK on the Einsatzliste opens the Trupp-Menü directly, Anmarsch offers no `Rückzug antreten`, and the Trupp-Ansicht appears only for 5 s after a pressure entry.
 
 ## 3. Timing and alarm rules
 
