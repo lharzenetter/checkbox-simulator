@@ -10,7 +10,7 @@ Every part of this spec was settled on the wayfinding map [Checkbox 5+1 training
 
 An operator training tool. A single **Trainee** operates the Checkbox and also plays every Atemschutzträger. The front panel and LCD are a close replica of the manual's figures, and the UI is German only. The scope is core operation and every Alarm. There is no Workbench, and every parameter stays at its factory default.
 
-- What is in and what is deliberately out (Workbench, Attribute, refused logins, Einsatzzeit #2/#4 and the Prozentmodus, the SERVICE menu, batteries, trainer modes): [Draw the simulator's scope](adr/0002-draw-the-simulators-scope.md)
+- What is in and what is deliberately out (Workbench, Attribute, refused logins, Einsatzzeit #2/#4 and the Prozentmodus, the SERVICE menu, batteries, trainer modes): [Draw the simulator's scope](adr/0002-draw-the-simulators-scope.md). [Correct the simulator against the real Checkbox](adr/0018-correct-the-simulator-against-the-real-checkbox.md) brings Einsatzzeit #4 (180 min) in, without the Prozentmodus
 - Wording rule (device wording is canonical: Tally, Sicherheitstrupp, Rückmarsch, keys Up/Down/OK/X/Check): [Reconcile the glossary with the LCD's on-screen wording](adr/0003-reconcile-the-glossary-with-the-lcds-on-screen-wording.md), terms in [`GLOSSARY.md`](../GLOSSARY.md)
 
 ## 2. Screens and key navigation
@@ -25,7 +25,7 @@ An operator training tool. A single **Trainee** operates the Checkbox and also p
   - [Decide how Flaschendruck drives Restzeit and the Rückzugsalarm](adr/0008-decide-how-flaschendruck-drives-restzeit-and-the-rueckzugsalarm.md)
   - [Decide when one-shot and repeating alarms fire](adr/0009-decide-when-one-shot-and-repeating-alarms-fire.md)
   - [Decide the Einsatzstatus transitions](adr/0010-decide-the-einsatzstatus-transitions.md)
-  - [Decide when a Daueralarm starts and ends](adr/0011-decide-when-a-daueralarm-starts-and-ends.md)
+  - [Decide when a Daueralarm starts and ends](adr/0011-decide-when-a-daueralarm-starts-and-ends.md), amended by [Correct the simulator against the real Checkbox](adr/0018-correct-the-simulator-against-the-real-checkbox.md): too few Atemschutzträger at login show the box `Zu wenig Einsatzkräfte!`, not a Daueralarm
   - [Settle the edge cases the verification scenarios exposed](adr/0014-settle-the-edge-cases-the-verification-scenarios-exposed.md)
 
 ## 4. Alarm presentation
@@ -63,7 +63,7 @@ Contradictions found while consolidating, and how each was handled:
 - **Timing rule 2.2** gave the manual's rounded 10 / 20 min as the simulator's example, which contradicts 2.6 (9:54 / 19:48). Reworded.
 - **Timing notation `t_run`** said "wall-clock time". It is simulated time (§9.1). Fixed.
 - **Timing §6 and A7** still read as an open assumption. Now marked out of scope.
-- **The map's gist of the navigation decision** read "Anfangsdruck (300 bar fixed …)". It is the _cylinder type_ (`P_N`) that is fixed; the Anfangsdruck is entered from 270 to 330 bar (§1.6). Fixed on the map.
+- **The map's gist of the navigation decision** read "Anfangsdruck (300 bar fixed …)". It is the _cylinder type_ (`P_N`) that is fixed; the Anfangsdruck is entered from 270 to 330 bar (§1.6). Fixed on the map. Since [Correct the simulator against the real Checkbox](adr/0018-correct-the-simulator-against-the-real-checkbox.md) it runs from 0 to 300 bar.
 - **Old wording in closed tickets** ("Transponder", keys A–E, "Rückzug" as a status, "Sicherungstrupp") is left as history. The ADRs use the device wording, so two ADR titles differ from their ticket titles (see [ADR 0003](adr/0003-reconcile-the-glossary-with-the-lcds-on-screen-wording.md)).
 - **Superseded parts of the navigation decision** (OK doing nothing on ABMELDEN and the Anmeldefenster; the provisional Tally-on-ALARM row) are applied in the navigation ADR.
 
