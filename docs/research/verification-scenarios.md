@@ -160,13 +160,13 @@ Login at `t` = 0:00. The Trupp is never touched until 0:00:00.
 
 Boundary: Einsatzziel erreicht with 275 instead gives Anmarschdruck 25, exactly 50 bar either way.
 
-### V8 — Rückzugsalarm with the 20-min Einsatzzeit (Langzeiteinsatz)
+### V8 — Rückzugsalarm with the 20-min Einsatzzeit (Kurzzeiteinsatz)
 
 §5.5 (threshold scales with `T`), 5.7, 8.3
 
 | `t`   | Input                                   | Expected                                                                             |
 | ----- | --------------------------------------- | ------------------------------------------------------------------------------------ |
-| 0:00  | choose 20 min, OK                       | the bottom line reads `Langzeiteinsatz? OK`; the Anmeldefenster is **not** shown yet |
+| 0:00  | choose 20 min, OK                       | the 20 min line reads `Kurzzeiteinsatz? OK`; the Anmeldefenster is **not** shown yet |
 | 0:00  | X                                       | back to the Einsatzzeit choice                                                       |
 | 0:00  | choose 20 min, OK, OK; finish the login | Anmarsch, `R` = 20:00                                                                |
 | 2:00  | Einsatzziel erreicht, accept (270)      | `R` = 18:00, Rückzugsdruck 60 bar, threshold `R` ≤ 4:00                              |
@@ -281,7 +281,7 @@ Boundary: Einsatzziel erreicht with 275 instead gives Anmarschdruck 25, exactly 
 
 §4.4, 4.7, 3.3, 3.5
 
-20-min Einsatzzeit (Langzeiteinsatz confirmed as in V8), Anfangsdruck 300.
+20-min Einsatzzeit (Kurzzeiteinsatz confirmed as in V8), Anfangsdruck 300.
 
 | `t`          | Input                 | Expected                                       |
 | ------------ | --------------------- | ---------------------------------------------- |

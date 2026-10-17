@@ -96,7 +96,7 @@ const MID_EINSATZ: State = {
   login: {
     truppnummer: 3,
     einsatzzeitMs: 60 * 60_000,
-    awaitingLangzeiteinsatzOk: false,
+    awaitingEinsatzzeitOk: false,
     atemschutztraeger: [{ tallyId: "5", name: "LF AT-F" }],
     anmeldeaktion: "flaschendruckAendern",
     anfangsdruckBar: 300,

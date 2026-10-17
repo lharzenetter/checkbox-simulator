@@ -701,15 +701,15 @@ export const EINSATZZEITEN_MS = [
 // decided in "Define the key-by-screen navigation model"
 function handleEinsatzzeitWaehlenKey(state: State, key: Key): State {
   const login = requireLogin(state);
-  if (login.awaitingLangzeiteinsatzOk) {
+  if (login.awaitingEinsatzzeitOk) {
     switch (key) {
       case "OK":
         return enterScreen(
-          withLogin(state, { ...login, awaitingLangzeiteinsatzOk: false }),
+          withLogin(state, { ...login, awaitingEinsatzzeitOk: false }),
           "anmeldefenster",
         );
       case "X":
-        return withLogin(state, { ...login, awaitingLangzeiteinsatzOk: false });
+        return withLogin(state, { ...login, awaitingEinsatzzeitOk: false });
       case "Up":
       case "Down":
       case "Check":
@@ -729,7 +729,7 @@ function handleEinsatzzeitWaehlenKey(state: State, key: Key): State {
     case "OK":
       return login.einsatzzeitMs === P01_EINSATZZEIT_1_MS
         ? enterScreen(state, "anmeldefenster")
-        : withLogin(state, { ...login, awaitingLangzeiteinsatzOk: true });
+        : withLogin(state, { ...login, awaitingEinsatzzeitOk: true });
     case "X":
       return discardLogin(state);
     case "Check":
@@ -1047,7 +1047,7 @@ function startLogin(state: State, atemschutztraeger: Atemschutztraeger): State {
       login: {
         truppnummer: nextFreeTruppnummer(state),
         einsatzzeitMs: P01_EINSATZZEIT_1_MS,
-        awaitingLangzeiteinsatzOk: false,
+        awaitingEinsatzzeitOk: false,
         atemschutztraeger: [atemschutztraeger],
         anmeldeaktion: "truppOkEinsatz",
         anfangsdruckBar: P81_FLASCHENTYP_2_BAR,

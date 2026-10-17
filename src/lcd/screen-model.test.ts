@@ -336,8 +336,8 @@ describe("S03 Einsatzzeit wählen", () => {
     });
   });
 
-  // manual 5.3 step 5; decided in "Define the key-by-screen navigation model"
-  it("turns the 20 min line into `Langzeiteinsatz? OK` on OK at 20 min", () => {
+  // manual 5.3 step 5; the real Checkbox asks `Kurzzeiteinsatz? OK` for the shorter Einsatzzeit
+  it("turns the 20 min line into `Kurzzeiteinsatz? OK` on OK at 20 min", () => {
     const model = screenModel(stateAfter(HLF_AT_F, press("Down"), press("OK")));
     expect(screenText(model)).toEqual([
       "Neuen Trupp anmelden:",
@@ -345,7 +345,7 @@ describe("S03 Einsatzzeit wählen", () => {
       "Trupp Nr.: 01",
       "*HLF AT-F",
       "Einsatzzeit 30 min?",
-      "Langzeiteinsatz? OK",
+      "Kurzzeiteinsatz? OK",
       "Einsatzzeit180 min?",
     ]);
     expect(model).toMatchObject({ selectedIndex: 1 });
@@ -394,7 +394,7 @@ describe("S04 Anmeldefenster", () => {
   });
 
   // manual 5.3, Anmeldefenster figure: the header carries the chosen Einsatzzeit
-  it("heads a Langzeiteinsatz with its 20 min", () => {
+  it("heads a Kurzzeiteinsatz with its 20 min", () => {
     const model = screenModel(
       stateAfter(HLF_AT_F, press("Down"), press("OK"), press("OK")),
     );

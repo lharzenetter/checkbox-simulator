@@ -10,6 +10,7 @@ export {
 } from "./feuerwehrname";
 export {
   ALARM_BLINK_PHASE_MS,
+  P01_EINSATZZEIT_1_MS,
   P72_ANZAHL_DER_MAXIMALEN_TRUPPS,
   P81_FLASCHENTYP_2_BAR,
 } from "./parameters";

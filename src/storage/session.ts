@@ -424,7 +424,7 @@ function isLogin(value: unknown): value is Login {
     isRecord(value) &&
     isInteger(value.truppnummer) &&
     isInteger(value.einsatzzeitMs) &&
-    typeof value.awaitingLangzeiteinsatzOk === "boolean" &&
+    typeof value.awaitingEinsatzzeitOk === "boolean" &&
     Array.isArray(value.atemschutztraeger) &&
     value.atemschutztraeger.every(isAtemschutztraeger) &&
     isMemberOf(ANMELDEAKTIONEN, value.anmeldeaktion) &&

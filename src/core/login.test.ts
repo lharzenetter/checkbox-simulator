@@ -62,23 +62,23 @@ describe("Einsatzzeit wählen", () => {
     expect(state.login?.einsatzzeitMs).toBe(30 * 60_000);
   });
 
-  // manual 5.3 step 5, timing-and-alarm-rules §8.3: a Langzeiteinsatz needs a second OK
-  it("asks for the Langzeiteinsatz on OK at 20 min and opens the Anmeldefenster on a second OK", () => {
+  // manual 5.3 step 5, timing-and-alarm-rules §8.3: an Einsatzzeit other than 30 min needs a second OK
+  it("asks for the Kurzzeiteinsatz on OK at 20 min and opens the Anmeldefenster on a second OK", () => {
     const asking = run(aus(), hold(A1), press("Down"), press("OK"));
     expect(asking.screen).toBe("einsatzzeitWaehlen");
-    expect(asking.login?.awaitingLangzeiteinsatzOk).toBe(true);
+    expect(asking.login?.awaitingEinsatzzeitOk).toBe(true);
     const state = reduce(asking, press("OK"));
     expect(state.screen).toBe("anmeldefenster");
     expect(state.login?.einsatzzeitMs).toBe(20 * 60_000);
   });
 
   // decided in "Define the key-by-screen navigation model"
-  it("goes back to the choice on X at the Langzeiteinsatz question", () => {
+  it("goes back to the choice on X at the Kurzzeiteinsatz question", () => {
     const state = run(aus(), hold(A1), press("Down"), press("OK"), press("X"));
     expect(state.screen).toBe("einsatzzeitWaehlen");
     expect(state.login).toMatchObject({
       einsatzzeitMs: 20 * 60_000,
-      awaitingLangzeiteinsatzOk: false,
+      awaitingEinsatzzeitOk: false,
     });
   });
 
@@ -97,7 +97,7 @@ describe("Einsatzzeit wählen", () => {
   it("asks for the Langzeiteinsatz on OK at 180 min and logs a 3-hour Trupp in", () => {
     const asking = run(aus(), hold(A1), press("Up"), press("OK"));
     expect(asking.screen).toBe("einsatzzeitWaehlen");
-    expect(asking.login?.awaitingLangzeiteinsatzOk).toBe(true);
+    expect(asking.login?.awaitingEinsatzzeitOk).toBe(true);
     const anmeldefenster = reduce(asking, press("OK"));
     expect(anmeldefenster.screen).toBe("anmeldefenster");
     const trupp = run(anmeldefenster, hold(A2), press("OK"), press("OK"))

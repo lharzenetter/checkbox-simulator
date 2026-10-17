@@ -7,6 +7,7 @@ import {
   computeRestzeitMs,
   einsatzprotokollWindow,
   EINSATZZEITEN_MS,
+  P01_EINSATZZEIT_1_MS,
   estimateFlaschendruckBar,
   FACTORY_FEUERWEHRNAME,
   isSicherShown,
@@ -222,8 +223,13 @@ const SERVICE_ITEMS: Readonly<Record<ServiceAktion, string>> = {
   testprogramm: "Testprogramm",
 };
 
-// manual 5.3 step 5; the line's wording is decided in "Define the key-by-screen navigation model"
-const LANGZEITEINSATZ_ITEM = "Langzeiteinsatz? OK";
+// manual 5.3 step 5; the real Checkbox asks `Kurzzeiteinsatz? OK` for an Einsatzzeit shorter than
+// [01] and `Langzeiteinsatz? OK` for a longer one
+function einsatzzeitConfirmationItem(einsatzzeitMs: number): string {
+  return einsatzzeitMs < P01_EINSATZZEIT_1_MS
+    ? "Kurzzeiteinsatz? OK"
+    : "Langzeiteinsatz? OK";
+}
 
 const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
   truppOkEinsatz: "Trupp OK Einsatz",
@@ -419,8 +425,8 @@ function text(content: string): EinsatzprotokollRow {
 // `180` runs into the word ("Correct the simulator against the real Checkbox").
 function einsatzzeitWaehlenModel(login: Login): ScreenModel {
   const items = EINSATZZEITEN_MS.map((einsatzzeitMs) =>
-    login.awaitingLangzeiteinsatzOk && einsatzzeitMs === login.einsatzzeitMs
-      ? LANGZEITEINSATZ_ITEM
+    login.awaitingEinsatzzeitOk && einsatzzeitMs === login.einsatzzeitMs
+      ? einsatzzeitConfirmationItem(einsatzzeitMs)
       : `Einsatzzeit${formatMinutes(einsatzzeitMs).padStart(3)} min?`,
   );
   return {

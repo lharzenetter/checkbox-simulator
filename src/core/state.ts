@@ -120,8 +120,8 @@ export interface Login {
   readonly truppnummer: number;
   /** The Einsatzzeit chosen, or under the cursor on Einsatzzeit wählen. */
   readonly einsatzzeitMs: number;
-  /** Einsatzzeit wählen asks `Langzeiteinsatz? OK` before the Anmeldefenster opens. */
-  readonly awaitingLangzeiteinsatzOk: boolean;
+  /** Einsatzzeit wählen asks `Kurzzeiteinsatz? OK` or `Langzeiteinsatz? OK` before the Anmeldefenster opens. */
+  readonly awaitingEinsatzzeitOk: boolean;
   readonly atemschutztraeger: readonly Atemschutztraeger[];
   /** The Anmeldefenster's choice under the cursor. */
   readonly anmeldeaktion: Anmeldeaktion;
