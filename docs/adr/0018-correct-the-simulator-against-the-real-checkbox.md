@@ -26,6 +26,7 @@ This amends [Decide how alarms are presented](0013-decide-how-alarms-are-present
 - OK on the Einsatzliste opens the **Trupp-Menü** directly; X there → Einsatzliste. The menu shows a clock line with the Restzeit and, for a Sicherheitstrupp, a static `SICHER`.
 - The **Trupp-Ansicht** (layout as the ALARM screen, labelled `Ansicht`) appears only after OK confirms a pressure entry, for 5 s of real time; any key closes it early → Einsatzliste. After the login entry too (assumption).
 - `Einsatzziel erreicht` is offered only in Anmarsch, and `Rückzug antreten` only in Einsatzziel erreicht. Anmarsch → Rückmarsch directly is gone.
+- The Trupp-Menü has **no `Attribute eintragen`** (photos `trupp-menue-anmarsch.jpeg` and `trupp-menue-rueckmarsch.jpeg` in [the real-device photos](../research/real-device/README.md)). The menu has at most four items, so it fits its four lines without scrolling.
 - `Trupp -> Einsatz` from Bereitschaft **restores the previous Einsatzstatus**, or Anmarsch if the Trupp started in Bereitschaft. Nothing resets: the Anmarschzeit resumes, and there are no more Anmarsch legs.
 - A Sicherheitstrupp leaving Bereitschaft is asked `Sicherheitstrupp deaktivieren?` each time (assumption): X sends it in as a Sicherheitstrupp, OK sends it in as an ordinary Trupp, for good.
 

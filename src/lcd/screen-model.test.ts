@@ -803,20 +803,20 @@ describe("S09 Trupp-Menü", () => {
     });
   });
 
-  // decided in "Define the key-by-screen navigation model": the list scrolls past 4 lines
-  it("scrolls to keep the cursor in view", () => {
+  // the real-device photo trupp-menue-anmarsch.jpeg: all four items fit, no `Attribute eintragen`
+  it("shows every item at once", () => {
     const model = screenModel(
       stateAfter(
         ...TRUPP_MENUE,
-        ...Array.from({ length: 4 }, () => press("Down")),
+        ...Array.from({ length: 3 }, () => press("Down")),
       ),
     );
     expect(model).toMatchObject({
       items: [
+        "Trupp -> Einsatz",
         "Trupp -> Bereitschaft",
         "Einsatzziel erreicht",
         "Druck ändern",
-        "Attribute eintragen",
       ],
       selectedIndex: 3,
     });
@@ -844,12 +844,7 @@ describe("S09 Trupp-Menü", () => {
     );
     expect(model).toMatchObject({
       title: "Trupp 01 BEREITSCHAFT",
-      items: [
-        "Trupp -> Einsatz",
-        "Trupp -> Bereitschaft",
-        "Druck ändern",
-        "Attribute eintragen",
-      ],
+      items: ["Trupp -> Einsatz", "Trupp -> Bereitschaft", "Druck ändern"],
     });
   });
 
@@ -1222,12 +1217,7 @@ describe("the Einsatzstatus screens", () => {
     expect(model).toMatchObject({
       layout: "truppMenue",
       title: "Trupp 01 RÜCKMARSCH",
-      items: [
-        "Trupp -> Einsatz",
-        "Trupp -> Bereitschaft",
-        "Druck ändern",
-        "Attribute eintragen",
-      ],
+      items: ["Trupp -> Einsatz", "Trupp -> Bereitschaft", "Druck ändern"],
     });
   });
 

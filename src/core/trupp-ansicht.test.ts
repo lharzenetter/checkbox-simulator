@@ -104,7 +104,6 @@ describe("the Trupp-Menü", () => {
       "truppBereitschaft",
       "einsatzzielErreicht",
       "flaschendruckAendern",
-      "attributeEintragen",
     ]);
   });
 
@@ -117,7 +116,6 @@ describe("the Trupp-Menü", () => {
       "truppBereitschaft",
       "rueckzugAntreten",
       "flaschendruckAendern",
-      "attributeEintragen",
     ]);
   });
 
@@ -127,12 +125,7 @@ describe("the Trupp-Menü", () => {
       truppMenueAktionen(
         truppMenue(truppInRueckmarsch(truppAtEinsatzziel(truppInAnmarsch()))),
       ),
-    ).toEqual([
-      "truppEinsatz",
-      "truppBereitschaft",
-      "flaschendruckAendern",
-      "attributeEintragen",
-    ]);
+    ).toEqual(["truppEinsatz", "truppBereitschaft", "flaschendruckAendern"]);
   });
 
   // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
@@ -141,7 +134,6 @@ describe("the Trupp-Menü", () => {
       "truppEinsatz",
       "truppBereitschaft",
       "flaschendruckAendern",
-      "attributeEintragen",
     ]);
   });
 
@@ -160,7 +152,7 @@ describe("the Trupp-Menü", () => {
       "einsatzzielErreicht",
     );
     expect(run(menue, press("Up")).truppMenue?.aktion).toBe(
-      "attributeEintragen",
+      "flaschendruckAendern",
     );
   });
 
@@ -169,12 +161,6 @@ describe("the Trupp-Menü", () => {
     const state = reduce(truppMenue(truppInAnmarsch()), press("X"));
     expect(state.screen).toBe("einsatzliste");
     expect(state.truppMenue).toBeNull();
-  });
-
-  // decided in "Define the key-by-screen navigation model": shown but inert
-  it("does nothing on OK on `Attribute eintragen`", () => {
-    const attribute = run(truppMenue(truppInAnmarsch()), press("Up"));
-    expect(reduce(attribute, press("OK"))).toEqual(attribute);
   });
 });
 

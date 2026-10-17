@@ -126,7 +126,8 @@ export function selectedTrupp(state: State): Trupp {
 }
 
 // decided in "Define the key-by-screen navigation model", its Trupp-Menü table, as amended in
-// "Correct the simulator against the real Checkbox": Anmarsch → Rückmarsch directly is gone
+// "Correct the simulator against the real Checkbox": Anmarsch → Rückmarsch directly is gone, and
+// the real device offers no `Attribute eintragen` (photos in docs/research/real-device/)
 const TRUPP_MENUE_AKTIONEN: Readonly<
   Record<Einsatzstatus, readonly TruppMenueAktion[]>
 > = {
@@ -135,27 +136,15 @@ const TRUPP_MENUE_AKTIONEN: Readonly<
     "truppBereitschaft",
     "einsatzzielErreicht",
     "flaschendruckAendern",
-    "attributeEintragen",
   ],
   einsatzzielErreicht: [
     "truppEinsatz",
     "truppBereitschaft",
     "rueckzugAntreten",
     "flaschendruckAendern",
-    "attributeEintragen",
   ],
-  rueckmarsch: [
-    "truppEinsatz",
-    "truppBereitschaft",
-    "flaschendruckAendern",
-    "attributeEintragen",
-  ],
-  bereitschaft: [
-    "truppEinsatz",
-    "truppBereitschaft",
-    "flaschendruckAendern",
-    "attributeEintragen",
-  ],
+  rueckmarsch: ["truppEinsatz", "truppBereitschaft", "flaschendruckAendern"],
+  bereitschaft: ["truppEinsatz", "truppBereitschaft", "flaschendruckAendern"],
 };
 
 /** The Trupp-Menü's items for the selected Trupp, top to bottom. */

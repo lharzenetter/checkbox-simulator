@@ -224,7 +224,6 @@ describe("the Trupp-Menü of a Trupp at its Einsatzziel", () => {
       "truppBereitschaft",
       "rueckzugAntreten",
       "flaschendruckAendern",
-      "attributeEintragen",
     ]);
   });
 });

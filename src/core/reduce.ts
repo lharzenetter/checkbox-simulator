@@ -402,7 +402,7 @@ function handleTruppAnsichtKey(state: State): State {
 }
 
 // decided in "Define the key-by-screen navigation model", as amended in "Correct the simulator
-// against the real Checkbox"; `Attribute eintragen` is inert
+// against the real Checkbox"
 function handleTruppMenueKey(state: State, key: Key): State {
   const truppMenue = requireTruppMenue(state);
   if (truppMenue.sicherheitstruppDeaktivierenShown) {
@@ -454,8 +454,6 @@ function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
         }),
         "truppFlaschendruckAendern",
       );
-    case "attributeEintragen":
-      return state;
     default:
       return assertNever(truppMenue.aktion);
   }
@@ -599,7 +597,6 @@ function confirmFlaschendruck(
       return leaveTruppMenue(state, trupp, entered);
     case "truppEinsatz":
     case "truppBereitschaft":
-    case "attributeEintragen":
       throw new Error(`${truppMenue.aktion} opens no Flaschendruck editor`);
     default:
       return assertNever(truppMenue.aktion);

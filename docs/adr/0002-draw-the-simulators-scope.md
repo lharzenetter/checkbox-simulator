@@ -4,7 +4,7 @@ The simulator is an operator training tool for the Checkbox 5+1 USB V04 (30936).
 
 Deliberately **left out**, so nobody adds them back by accident:
 
-- **The Checkbox 5+1 Workbench** (manual ch. 6) and everything that depends on it: parameter editing, Tally programming, personnel data, reports, firmware, the REMOTE screen and **Attribute** (`Attribute eintragen` is shown but does nothing). Every parameter is fixed at its factory default ([Fix the factory defaults the manual leaves open](0012-fix-the-factory-defaults-the-manual-leaves-open.md)).
+- **The Checkbox 5+1 Workbench** (manual ch. 6) and everything that depends on it: parameter editing, Tally programming, personnel data, reports, firmware, the REMOTE screen and **Attribute** (the Trupp-Menü does not offer `Attribute eintragen`, as on the real device; see [Correct the simulator against the real Checkbox](0018-correct-the-simulator-against-the-real-checkbox.md)). Every parameter is fixed at its factory default ([Fix the factory defaults the manual leaves open](0012-fix-the-factory-defaults-the-manual-leaves-open.md)).
 - **Refused logins** (G26 expired or not an Atemschutzträger, parameter [55], screen X8). Every Tally in the Roster logs in.
 - **Einsatzzeit #2 (60 min) and #4 (240 min)**, and with them the Prozentmodus ([45]–[48]). Only #1 (30 min) and #3 (20 min) are simulated, for a normal Pressluftatmer.
 - **Behaviour the fixed defaults make unreachable:** Rückzugsalarmmodus off and [73] = 0. The rules stay recorded in the [timing and alarm rules](../research/timing-and-alarm-rules.md) (§9.3) for a later Workbench or trainer mode.

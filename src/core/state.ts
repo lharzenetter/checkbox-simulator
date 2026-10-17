@@ -148,8 +148,7 @@ export type TruppMenueAktion =
   | "truppBereitschaft"
   | "einsatzzielErreicht"
   | "rueckzugAntreten"
-  | "flaschendruckAendern"
-  | "attributeEintragen";
+  | "flaschendruckAendern";
 
 /** The Trupp-Menü open for the selected Trupp, and the editors it opens. */
 export interface TruppMenue {

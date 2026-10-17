@@ -271,7 +271,6 @@ const TRUPP_MENUE_ITEMS: Readonly<Record<TruppMenueAktion, string>> = {
   einsatzzielErreicht: "Einsatzziel erreicht",
   rueckzugAntreten: "Rückzug antreten",
   flaschendruckAendern: "Druck ändern",
-  attributeEintragen: "Attribute eintragen",
 };
 
 // manual 5.4, Trupp-Menü figure: four item lines
@@ -498,7 +497,6 @@ function truppFlaschendruckEditorTitle(aktion: TruppMenueAktion): string {
       return "Rückzug antreten";
     case "truppEinsatz":
     case "truppBereitschaft":
-    case "attributeEintragen":
       throw new Error(`${aktion} opens no Flaschendruck editor`);
     default:
       return assertNever(aktion);

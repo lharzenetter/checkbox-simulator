@@ -62,7 +62,7 @@ const SESSION_KEY = `${KEY_PREFIX}session`;
 
 // Raise on any change to the core's state or the Truppzuordnung: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 8;
+const SESSION_VERSION = 9;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
@@ -95,7 +95,6 @@ const TRUPP_MENUE_AKTIONEN: Readonly<Record<TruppMenueAktion, true>> = {
   einsatzzielErreicht: true,
   rueckzugAntreten: true,
   flaschendruckAendern: true,
-  attributeEintragen: true,
 };
 const NOTAUSSCHALTUNG_AKTIONEN: Readonly<Record<NotausschaltungAktion, true>> =
   {
@@ -111,7 +110,6 @@ const OPENS_FLASCHENDRUCK_EDITOR: Readonly<Record<TruppMenueAktion, boolean>> =
     einsatzzielErreicht: true,
     rueckzugAntreten: true,
     flaschendruckAendern: true,
-    attributeEintragen: false,
   };
 const SERVICE_AKTIONEN: Readonly<Record<ServiceAktion, true>> = {
   einsatzprotokoll: true,
