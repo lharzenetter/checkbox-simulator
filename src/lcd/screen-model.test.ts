@@ -441,6 +441,7 @@ describe("S06 Anfangsdruck editor", () => {
 });
 
 describe("S07 Einsatzliste", () => {
+  // X closes the Trupp-Ansicht the login shows.
   function einsatzliste(...keys: readonly Key[]): State {
     return stateAfter(
       HLF_AT_F,
@@ -449,6 +450,7 @@ describe("S07 Einsatzliste", () => {
       press("OK"),
       ...keys.map(press),
       press("OK"),
+      press("X"),
     );
   }
 
@@ -531,6 +533,7 @@ describe("S07 Einsatzliste", () => {
       { type: "tallyHeld", tallyId: "8", name: "LF WT-M" },
       press("OK"),
       press("OK"),
+      press("X"),
     );
     expect(screenModel(state)).toMatchObject({
       rows: [
@@ -557,6 +560,7 @@ describe("S07 Einsatzliste", () => {
       press("Down"),
       press("OK"),
       press("OK"),
+      press("X"),
     );
   }
 
@@ -647,6 +651,7 @@ describe("S13 ABMELDEN", () => {
 });
 
 describe("S11 Trupp-Ansicht", () => {
+  // the login shows it (ASSUMPTION in the reducer)
   const TRUPP_01 = [
     HLF_AT_F,
     press("OK"),
@@ -655,18 +660,26 @@ describe("S11 Trupp-Ansicht", () => {
     press("OK"),
   ] as const;
 
-  // manual 3.2.3, Trupp-Ansicht figure; decided in "Define the key-by-screen navigation model"
-  it("reads as in the figure, labelled `Ansicht`", () => {
+  // From the Einsatzliste: Druck ändern, the Anmarsch menu's fourth item, accepted at the estimate.
+  const DRUCK_AENDERN = [
+    press("OK"),
+    ...Array.from({ length: 3 }, () => press("Down")),
+    press("OK"),
+    press("OK"),
+  ] as const;
+
+  // the real-device photo trupp-ansicht.jpeg; decided in "Correct the simulator against the real
+  // Checkbox": the ALARM layout, labelled `Ansicht`
+  it("reads as in the device photo after a pressure entry, labelled `Ansicht`", () => {
     const model = screenModel(
-      reduce(
+      DRUCK_AENDERN.reduce(
+        reduce,
         acknowledged(tickBy(stateAfter(...TRUPP_01), 15 * 60_000)),
-        press("OK"),
       ),
     );
     expect(screenText(model)).toEqual([
       "Trupp 01 ANMARSCH",
-      "*HLF AT-F",
-      "*HLF AT-M",
+      "Personen-Anzahl: 2",
       "Druck 150 bar",
       "Restzeit 00:15:00",
       "Ansicht",
@@ -674,34 +687,24 @@ describe("S11 Trupp-Ansicht", () => {
     expect(model).toMatchObject({ layout: "truppAnsicht", fillLevel: 0.5 });
   });
 
-  // manual 3.2.2: the Trupp's Statussymbol, as on the Einsatzliste
-  it("shows the Trupp's Statussymbol", () => {
-    expect(
-      screenModel(reduce(stateAfter(...TRUPP_01), press("OK"))),
-    ).toMatchObject({
-      statussymbol: { einsatzstatus: "anmarsch", count: 2 },
-    });
+  // timing-and-alarm-rules §1.7: live, in whole bar, rounded down
+  it("shows the Aktueller Flaschendruck live, rounded down", () => {
+    const model = screenModel(tickBy(stateAfter(...TRUPP_01), 4_000));
+    expect(model).toMatchObject({ layout: "truppAnsicht" });
+    expect(screenText(model)).toContain("Druck 299 bar");
   });
 
-  // timing-and-alarm-rules §1.7: whole bar, rounded down
-  it("shows the Aktueller Flaschendruck rounded down", () => {
-    const model = screenModel(
-      reduce(tickBy(stateAfter(...TRUPP_01), (6 * 60 + 3) * 1000), press("OK")),
+  // timing-and-alarm-rules §1.7: clamped at 0 once the Restzeit is negative; the negative Restzeit
+  // in full, as on the ALARM screen
+  it("shows 0 bar and the negative Restzeit in full once the Einsatzzeit is exceeded", () => {
+    const entered = DRUCK_AENDERN.reduce(
+      reduce,
+      acknowledged(tickBy(stateAfter(...TRUPP_01), 31 * 60_000)),
     );
-    expect(screenText(model)).toContain("Druck 239 bar");
-  });
-
-  // timing-and-alarm-rules §1.7: clamped at 0 once the Restzeit is negative
-  it("shows 0 bar and the negative Restzeit once the Einsatzzeit is exceeded", () => {
-    const model = screenModel(
-      reduce(
-        acknowledged(tickBy(stateAfter(...TRUPP_01), 31 * 60_000)),
-        press("OK"),
-      ),
-    );
+    const model = screenModel(tickBy(entered, 4_000));
     expect(screenText(model)).toContain("Druck 0 bar");
-    expect(screenText(model)).toContain("Restzeit -0:01:00");
-    expect(model).toMatchObject({ fillLevel: 0 });
+    expect(screenText(model)).toContain("Restzeit -00:00:04");
+    expect(model).toMatchObject({ layout: "truppAnsicht", fillLevel: 0 });
   });
 
   // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
@@ -714,7 +717,6 @@ describe("S11 Trupp-Ansicht", () => {
         press("Down"),
         press("OK"),
         press("OK"),
-        press("OK"),
       ),
     );
     expect(screenText(model)[0]).toBe("Trupp 01 BEREITSCHAFT");
@@ -722,19 +724,20 @@ describe("S11 Trupp-Ansicht", () => {
 });
 
 describe("S09 Trupp-Menü", () => {
+  // X closes the login's Trupp-Ansicht, and OK on the Einsatzliste opens the Trupp-Menü
   const TRUPP_MENUE = [
     HLF_AT_F,
     press("OK"),
     HLF_AT_M,
     press("OK"),
     press("OK"),
-    press("OK"),
+    press("X"),
     press("OK"),
   ] as const;
 
-  // manual 5.4, Trupp-Menü figure (ANMARSCH); decided in "Define the key-by-screen navigation
-  // model", its Trupp-Menü table
-  it("reads as the ANMARSCH figure, cursor on the first item", () => {
+  // the real-device photo trupp-menue-anmarsch.jpeg; decided in "Correct the simulator against the
+  // real Checkbox", navigation
+  it("reads as the ANMARSCH photo, cursor on the first item", () => {
     const model = screenModel(stateAfter(...TRUPP_MENUE));
     expect(screenText(model)).toEqual([
       "Trupp 01 ANMARSCH",
@@ -744,9 +747,13 @@ describe("S09 Trupp-Menü", () => {
       "Trupp -> Einsatz",
       "Trupp -> Bereitschaft",
       "Einsatzziel erreicht",
-      "Rückzug antreten",
+      "Druck ändern",
     ]);
-    expect(model).toMatchObject({ layout: "truppMenue", selectedIndex: 0 });
+    expect(model).toMatchObject({
+      layout: "truppMenue",
+      selectedIndex: 0,
+      sicher: false,
+    });
   });
 
   // decided in "Define the key-by-screen navigation model": the list scrolls past 4 lines
@@ -754,13 +761,13 @@ describe("S09 Trupp-Menü", () => {
     const model = screenModel(
       stateAfter(
         ...TRUPP_MENUE,
-        ...Array.from({ length: 5 }, () => press("Down")),
+        ...Array.from({ length: 4 }, () => press("Down")),
       ),
     );
     expect(model).toMatchObject({
       items: [
+        "Trupp -> Bereitschaft",
         "Einsatzziel erreicht",
-        "Rückzug antreten",
         "Druck ändern",
         "Attribute eintragen",
       ],
@@ -768,7 +775,7 @@ describe("S09 Trupp-Menü", () => {
     });
   });
 
-  // timing-and-alarm-rules §1.1
+  // timing-and-alarm-rules §1.1: the clock line is live
   it("shows the Restzeit running down", () => {
     const model = screenModel(tickBy(stateAfter(...TRUPP_MENUE), 5_000));
     expect(screenText(model)).toContain("Restzeit 00:29:55");
@@ -784,7 +791,7 @@ describe("S09 Trupp-Menü", () => {
         press("Down"),
         press("OK"),
         press("OK"),
-        press("OK"),
+        press("X"),
         press("OK"),
       ),
     );
@@ -797,6 +804,27 @@ describe("S09 Trupp-Menü", () => {
         "Attribute eintragen",
       ],
     });
+  });
+
+  // the real-device photo trupp-menue-sicherheitstrupp.jpeg; timing-and-alarm-rules §12.8: static,
+  // not alternating as on the Einsatzliste
+  it("shows a static `SICHER` on the clock line of a Sicherheitstrupp", () => {
+    const sicherheitstrupp = stateAfter(
+      HLF_AT_F,
+      press("OK"),
+      HLF_AT_M,
+      press("Down"),
+      press("Down"),
+      press("OK"),
+      press("OK"),
+      press("X"),
+      press("OK"),
+    );
+    for (const elapsedMs of [0, 1_000, 2_000]) {
+      const model = screenModel(tickBy(sicherheitstrupp, elapsedMs));
+      expect(model).toMatchObject({ layout: "truppMenue", sicher: true });
+      expect(screenText(model)).toContain("Restzeit 00:30:00 SICHER");
+    }
   });
 });
 
@@ -816,8 +844,7 @@ describe("S08 `Esz-Zeit ändern` from the Trupp-Menü", () => {
           realNow: (6 * 60 + 3) * 1000,
         },
         press("OK"),
-        press("OK"),
-        ...Array.from({ length: 4 }, () => press("Down")),
+        ...Array.from({ length: 3 }, () => press("Down")),
         press("OK"),
       ),
     );
@@ -897,7 +924,7 @@ describe("S12 Trupp ALARM", () => {
       events: () =>
         stateAfter(
           ...TRUPP_01,
-          press("OK"),
+          press("X"),
           press("OK"),
           press("Down"),
           press("Down"),
@@ -958,7 +985,6 @@ describe("S12 Trupp ALARM", () => {
     const einsatzziel = stateAfter(
       ...TRUPP_01,
       { type: "tick", now: FIGURE_UHRZEIT + 5 * 60_000, realNow: 5 * 60_000 },
-      press("OK"),
       press("OK"),
       press("Down"),
       press("Down"),
@@ -1037,17 +1063,13 @@ describe("the Einsatzstatus screens", () => {
     };
   }
 
-  // Opens the Trupp-Menü and moves down to the item.
+  // Opens the Trupp-Menü from the Einsatzliste and moves down to the item.
   function truppMenueAt(downs: number): readonly Event[] {
-    return [
-      press("OK"),
-      press("OK"),
-      ...Array.from({ length: downs }, () => press("Down")),
-    ];
+    return [press("OK"), ...Array.from({ length: downs }, () => press("Down"))];
   }
 
-  // Einsatzziel erreicht at 5:00, accepted at 250 bar
-  const EINSATZZIEL = [
+  // Einsatzziel erreicht at 5:00, accepted at 250 bar, on its Trupp-Ansicht
+  const EINSATZZIEL_ANSICHT = [
     ...TRUPP_01,
     at(5),
     ...truppMenueAt(2),
@@ -1055,11 +1077,14 @@ describe("the Einsatzstatus screens", () => {
     press("OK"),
   ] as const;
 
-  // Anmarsch → Rückmarsch at 6:00, accepted at 240 bar
+  // the same, back on the Einsatzliste
+  const EINSATZZIEL = [...EINSATZZIEL_ANSICHT, press("X")] as const;
+
+  // Rückzug antreten at 6:00, accepted at 240 bar, on its Trupp-Ansicht
   const RUECKMARSCH = [
-    ...TRUPP_01,
+    ...EINSATZZIEL,
     at(6),
-    ...truppMenueAt(3),
+    ...truppMenueAt(2),
     press("OK"),
     press("OK"),
   ] as const;
@@ -1085,7 +1110,7 @@ describe("the Einsatzstatus screens", () => {
   // manual 5.7; decided in "Define the key-by-screen navigation model", its pressure editor table
   it("titles the Rückzug antreten editor `Rückzug antreten`", () => {
     const model = screenModel(
-      stateAfter(...TRUPP_01, at(6), ...truppMenueAt(3), press("OK")),
+      stateAfter(...EINSATZZIEL, at(6), ...truppMenueAt(2), press("OK")),
     );
     expect(screenText(model)[0]).toBe("Rückzug antreten");
   });
@@ -1109,8 +1134,7 @@ describe("the Einsatzstatus screens", () => {
   // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
   it("heads the Trupp-Menü in Rückmarsch `RÜCKMARSCH` with its items", () => {
     const model = screenModel(
-      // the editor left the Trupp-Ansicht open, so one OK opens the Trupp-Menü
-      stateAfter(...RUECKMARSCH, press("OK")),
+      stateAfter(...RUECKMARSCH, press("X"), press("OK")),
     );
     expect(model).toMatchObject({
       layout: "truppMenue",
@@ -1124,44 +1148,37 @@ describe("the Einsatzstatus screens", () => {
     });
   });
 
-  // manual 5.7 step 5, RÜCKMARSCH figure; decided in "Define the key-by-screen navigation model":
-  // the editor returns to the Trupp-Ansicht in RÜCKMARSCH; timing-and-alarm-rules §5.10
-  it("shows the Trupp-Ansicht in `RÜCKMARSCH` without a Rückzugsdruck after Anmarsch", () => {
-    const model = screenModel(stateAfter(...RUECKMARSCH));
-    expect(screenText(model)).toEqual([
+  // manual 5.7 step 5, RÜCKMARSCH figure; decided in "Correct the simulator against the real
+  // Checkbox": every pressure entry shows the Trupp-Ansicht
+  it("shows the Trupp-Ansicht in `RÜCKMARSCH` after Rückzug antreten", () => {
+    expect(screenText(screenModel(stateAfter(...RUECKMARSCH)))).toEqual([
       "Trupp 01 RÜCKMARSCH",
-      "*HLF AT-F",
-      "*HLF AT-M",
+      "Personen-Anzahl: 2",
       "Druck 240 bar",
       "Restzeit 00:24:00",
+      "Rückzugsdruck 150 bar",
       "Ansicht",
     ]);
-    expect(model).toMatchObject({
-      statussymbol: { einsatzstatus: "rueckmarsch", count: 2 },
-      rueckzugsdruck: null,
-    });
   });
 
   // manual 3.2.3 item 9; timing-and-alarm-rules §5.7; verification scenario V7
   it("shows the Rückzugsdruck on the Trupp-Ansicht once the Einsatzziel is reached", () => {
-    const model = screenModel(stateAfter(...EINSATZZIEL, press("OK")));
-    expect(screenText(model)).toEqual([
-      "Trupp 01 EINSATZ",
-      "*HLF AT-F",
-      "*HLF AT-M",
-      "Druck 250 bar",
-      "Restzeit 00:25:00",
-      "Rückzugsdruck 150 bar",
-      "Ansicht",
-    ]);
-    expect(model).toMatchObject({
-      statussymbol: { einsatzstatus: "einsatzzielErreicht", count: 2 },
-    });
+    expect(screenText(screenModel(stateAfter(...EINSATZZIEL_ANSICHT)))).toEqual(
+      [
+        "Trupp 01 EINSATZ",
+        "Personen-Anzahl: 2",
+        "Druck 250 bar",
+        "Restzeit 00:25:00",
+        "Rückzugsdruck 150 bar",
+        "Ansicht",
+      ],
+    );
   });
 
   // manual 3.2.3 item 9: the Anmarsch has no Anmarschzeit yet (timing-and-alarm-rules §5.13)
   it("shows no Rückzugsdruck on the Trupp-Ansicht in Anmarsch", () => {
-    expect(screenModel(stateAfter(...TRUPP_01, press("OK")))).toMatchObject({
+    expect(screenModel(stateAfter(...TRUPP_01))).toMatchObject({
+      layout: "truppAnsicht",
       rueckzugsdruck: null,
     });
   });
@@ -1175,21 +1192,21 @@ describe("the Einsatzstatus screens", () => {
       press("Down"),
       press("OK"),
       press("OK"),
-      press("OK"),
     );
     expect(screenModel(bereitschaft)).toMatchObject({
       layout: "truppAnsicht",
       timeSplit: null,
     });
-    expect(
-      screenModel(stateAfter(...TRUPP_01, at(5), press("OK"))),
-    ).toMatchObject({ layout: "truppAnsicht", timeSplit: null });
+    expect(screenModel(stateAfter(...TRUPP_01))).toMatchObject({
+      layout: "truppAnsicht",
+      timeSplit: null,
+    });
   });
 
   // manual 3.2.3 items 3–5; timing-and-alarm-rules §5.5, 5.6, 5.8; ADR 0008: field ⑤ is the
   // Rückmarschzeit `2·t_A + t_res`, here 2 × 5 min + 5 min of the 30 min Einsatzzeit
   it("splits the bar into Anmarschzeit and Rückmarschzeit once the Einsatzziel is reached", () => {
-    expect(screenModel(stateAfter(...EINSATZZIEL, press("OK")))).toMatchObject({
+    expect(screenModel(stateAfter(...EINSATZZIEL_ANSICHT))).toMatchObject({
       layout: "truppAnsicht",
       timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschzeitShare: 15 / 30 },
     });
@@ -1197,7 +1214,7 @@ describe("the Einsatzstatus screens", () => {
 
   // timing-and-alarm-rules §5.7: the Rückzugsdruck is field ⑤ in bar, `[42] + 2·t_A × P_N / T`
   it("agrees with the Rückzugsdruck on the same screen", () => {
-    const model = screenModel(stateAfter(...EINSATZZIEL, press("OK")));
+    const model = screenModel(stateAfter(...EINSATZZIEL_ANSICHT));
     if (model.layout !== "truppAnsicht" || model.timeSplit === null) {
       throw new Error("expected the Trupp-Ansicht with a time split");
     }
@@ -1208,16 +1225,7 @@ describe("the Einsatzstatus screens", () => {
 
   // manual 5.7 step 5, RÜCKMARSCH figure: the Anmarschzeit is kept on the Rückmarsch
   it("keeps the time split on the Trupp-Ansicht in `RÜCKMARSCH` after the Einsatzziel", () => {
-    expect(
-      screenModel(
-        stateAfter(
-          ...EINSATZZIEL,
-          ...truppMenueAt(2),
-          press("OK"),
-          press("OK"),
-        ),
-      ),
-    ).toMatchObject({
+    expect(screenModel(stateAfter(...RUECKMARSCH))).toMatchObject({
       title: "Trupp 01 RÜCKMARSCH",
       timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschzeitShare: 15 / 30 },
     });
@@ -1271,7 +1279,8 @@ describe("the Einsatzstatus screens", () => {
   });
 });
 
-// Trupp 01 logged in, and X and Check held together on the Einsatzliste for 4 s.
+// Trupp 01 logged in, its Trupp-Ansicht closed, and X and Check held together on the Einsatzliste
+// for 4 s.
 function notausschaltungAuswahl(): State {
   return tickBy(
     stateAfter(
@@ -1280,6 +1289,7 @@ function notausschaltungAuswahl(): State {
       HLF_AT_M,
       press("OK"),
       press("OK"),
+      press("X"),
       press("X"),
       press("Check"),
     ),

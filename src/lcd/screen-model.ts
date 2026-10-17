@@ -136,10 +136,11 @@ export type ScreenModel =
   | {
       readonly layout: "truppAnsicht";
       readonly title: string;
-      readonly atemschutztraeger: readonly string[];
-      readonly statussymbol: Statussymbol;
+      /** `Personen-Anzahl: N`, in place of the names. */
+      readonly personenAnzahl: string;
       /** The Aktueller Flaschendruck. */
       readonly flaschendruck: string;
+      /** In full, so a negative one takes nine characters. */
       readonly restzeit: string;
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
@@ -175,6 +176,8 @@ export type ScreenModel =
       readonly title: string;
       readonly atemschutztraeger: readonly string[];
       readonly restzeit: string;
+      /** A Sicherheitstrupp's static `SICHER` beside the Restzeit. */
+      readonly sicher: boolean;
       /** The items in view, at most four. */
       readonly items: readonly string[];
       /** The cursor's line among the items in view. */
@@ -509,16 +512,16 @@ function cylinderFillLevel(flaschendruckBar: number): number {
   return Math.min(1, flaschendruckBar / P81_FLASCHENTYP_2_BAR);
 }
 
-// manual 3.2.3, Trupp-Ansicht figure
+// manual 3.2.3, Trupp-Ansicht figure, and the real-device photo trupp-ansicht.jpeg; decided in
+// "Correct the simulator against the real Checkbox": the ALARM screen's layout, labelled `Ansicht`
 function truppAnsichtModel(trupp: Trupp): ScreenModel {
   const flaschendruckBar = estimateFlaschendruckBar(trupp);
   return {
     layout: "truppAnsicht",
     title: truppHeader(trupp),
-    atemschutztraeger: trupp.atemschutztraeger.map(formatName),
-    statussymbol: statussymbolOf(trupp),
+    personenAnzahl: formatPersonenAnzahl(trupp),
     flaschendruck: formatBar(flaschendruckBar),
-    restzeit: formatRestzeit(trupp.restzeitMs),
+    restzeit: formatFullRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
     rueckzugsdruck: formatRueckzugsdruck(trupp),
     timeSplit: timeSplitOf(trupp),
@@ -535,7 +538,7 @@ function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
   return {
     layout: "alarm",
     title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ${ALARM_HEADERS[cause]}`,
-    personenAnzahl: `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`,
+    personenAnzahl: formatPersonenAnzahl(trupp),
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatFullRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
@@ -547,7 +550,8 @@ function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
   };
 }
 
-// manual 5.4, Trupp-Menü figure
+// manual 5.4, Trupp-Menü figure, and the real-device photos trupp-menue-*.jpeg; decided in
+// "Correct the simulator against the real Checkbox": a static `SICHER` on the clock line
 function truppMenueModel(state: State, truppMenue: TruppMenue): ScreenModel {
   const trupp = selectedTrupp(state);
   const aktionen = truppMenueAktionen(state);
@@ -560,6 +564,7 @@ function truppMenueModel(state: State, truppMenue: TruppMenue): ScreenModel {
     title: truppHeader(trupp),
     atemschutztraeger: trupp.atemschutztraeger.map(formatName),
     restzeit: formatRestzeit(trupp.restzeitMs),
+    sicher: trupp.sicherheitstrupp,
     items: aktionen
       .slice(firstInView, firstInView + TRUPP_MENUE_LINES)
       .map((aktion) => TRUPP_MENUE_ITEMS[aktion]),
@@ -731,7 +736,7 @@ export function screenText(model: ScreenModel): readonly string[] {
     case "truppAnsicht":
       return [
         model.title,
-        ...model.atemschutztraeger,
+        model.personenAnzahl,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
         ...rueckzugsdruckText(model.rueckzugsdruck),
@@ -750,7 +755,9 @@ export function screenText(model: ScreenModel): readonly string[] {
       return [
         model.title,
         ...model.atemschutztraeger,
-        `Restzeit ${model.restzeit}`,
+        model.sicher
+          ? `Restzeit ${model.restzeit} ${SICHER}`
+          : `Restzeit ${model.restzeit}`,
         ...model.items,
       ];
     case "abmelden":
@@ -805,6 +812,10 @@ const EINSATZSTATUS_LABELS: Readonly<Record<Einsatzstatus, string>> = {
   einsatzzielErreicht: "Einsatzziel erreicht",
   rueckmarsch: "Rückmarsch",
 };
+
+function formatPersonenAnzahl(trupp: Trupp): string {
+  return `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`;
+}
 
 // The leading `*` is kept as drawn (LCD screen catalogue, gap G15).
 function formatName(atemschutztraeger: Atemschutztraeger): string {

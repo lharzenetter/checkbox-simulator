@@ -256,8 +256,10 @@ function drawNotausschaltungBestaetigung(
   drawLines(framebuffer, model.abbrechen, 92);
 }
 
-// Laid out after the Trupp-Menü figures (manual 5.4, 5.6.2): names under the title, the Restzeit
-// between two rules, and four item lines at the bottom with a full-width selection bar.
+// Laid out after the Trupp-Menü figures (manual 5.4, 5.6.2) and the real-device photos
+// trupp-menue-*.jpeg: names under the title, the clock line between two rules with a
+// Sicherheitstrupp's `SICHER` at its right end, and four item lines at the bottom with a
+// full-width selection bar.
 const TRUPP_MENUE_ITEMS_Y = LCD_HEIGHT - 4 * LINE_PITCH;
 
 function drawTruppMenue(
@@ -270,6 +272,9 @@ function drawTruppMenue(
   fillRect(framebuffer, 0, restzeitY - 3, LCD_WIDTH, 1);
   drawBitmap(framebuffer, CLOCK, 1, restzeitY);
   drawText(framebuffer, model.restzeit, 13, restzeitY);
+  if (model.sicher) {
+    drawRightAlignedText(framebuffer, SICHER, LCD_WIDTH - 2, restzeitY);
+  }
   fillRect(framebuffer, 0, TRUPP_MENUE_ITEMS_Y - 3, LCD_WIDTH, 1);
   model.items.forEach((item, index) => {
     const y = TRUPP_MENUE_ITEMS_Y + index * LINE_PITCH;
@@ -281,8 +286,9 @@ function drawTruppMenue(
   });
 }
 
-// Laid out after the Trupp-Ansicht figure (manual 3.2.3): the S06 cylinder and time-split bar on
-// the left, the values on the right of a divider, and the `Ansicht` button at the bottom.
+// Laid out after the Trupp-Ansicht figure (manual 3.2.3) and the real-device photo
+// trupp-ansicht.jpeg: the ALARM screen's panels and Personen-Anzahl, the cylinder's `1`, and the
+// `Ansicht` button at the bottom.
 const ANSICHT_DIVIDER_X = 64;
 
 // manual 3.2.3: the `Ansicht` button spans the value boxes' columns and ends level with the
@@ -297,18 +303,8 @@ function drawTruppAnsicht(
   model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  // ASSUMPTION: only the two names the figure has room for are drawn; a larger Trupp's further
-  // Atemschutzträger are left off (LCD screen catalogue, S11).
-  drawLines(framebuffer, model.atemschutztraeger.slice(0, 2), 13);
+  drawText(framebuffer, model.personenAnzahl, 1, PERSONEN_ANZAHL_Y);
   drawCylinderOne(framebuffer);
-  // ASSUMPTION: the Statussymbol, which the figure does not draw, sits right of the names, as
-  // issue #30 asks, leaving its box to the Rückzugsdruck (manual 3.2.3 item 9).
-  drawStatussymbol(
-    framebuffer,
-    model.statussymbol,
-    LCD_WIDTH - 1 - statussymbolWidth(model.statussymbol),
-    17,
-  );
   drawAnsichtButton(framebuffer, model.label);
 }
 
@@ -341,7 +337,7 @@ function drawAlarm(
   model: Extract<ScreenModel, { layout: "alarm" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  drawText(framebuffer, model.personenAnzahl, 1, 18);
+  drawText(framebuffer, model.personenAnzahl, 1, PERSONEN_ANZAHL_Y);
   if (model.rueckzugsdruckLevel !== null) {
     drawRueckzugsdruckMark(framebuffer, model.rueckzugsdruckLevel);
   }
@@ -405,6 +401,9 @@ const RUECKZUG_ARROWS = [
 const FLASCHENDRUCK_BOX_Y = 48;
 const RESTZEIT_BOX_Y = 73;
 const RUECKZUGSDRUCK_BOX_Y = 94;
+
+// centred between the rules, as in the photos alarm-rueckzug.jpeg and trupp-ansicht.jpeg
+const PERSONEN_ANZAHL_Y = 18;
 
 // The parts the Trupp-Ansicht and ALARM figures share (manual 3.2.3, 5.5.3).
 function drawTruppPanels(

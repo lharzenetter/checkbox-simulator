@@ -21,6 +21,8 @@ function press(key: Key): Event {
 const HLF_AT_F: Event = { type: "tallyHeld", tallyId: "1", name: "HLF AT-F" };
 const HLF_AT_M: Event = { type: "tallyHeld", tallyId: "2", name: "HLF AT-M" };
 const LOGIN = [HLF_AT_F, press("OK"), HLF_AT_M, press("OK")] as const;
+// The login's OK shows the Trupp-Ansicht, and X closes it to the Einsatzliste.
+const EINSATZLISTE = [...LOGIN, press("OK"), press("X")] as const;
 
 function framebufferAfter(...events: readonly Event[]): Framebuffer {
   const state = events.reduce(
@@ -156,7 +158,7 @@ describe("the LCD framebuffer", () => {
 
   // manual 5.3, Einsatzliste figure with one Trupp
   it("draws the Einsatzliste with one Trupp in Anmarsch", () => {
-    expect(toAscii(framebufferAfter(...LOGIN, press("OK")))).toMatchSnapshot();
+    expect(toAscii(framebufferAfter(...EINSATZLISTE))).toMatchSnapshot();
   });
 
   // manual 3.2.2: more than three Atemschutzträger show as a count
@@ -227,6 +229,7 @@ describe("the LCD framebuffer", () => {
           press("Down"),
           press("OK"),
           press("OK"),
+          press("X"),
         ),
       ),
     ).toMatchSnapshot();
@@ -239,13 +242,13 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
-  // manual 3.2.3, Trupp-Ansicht figure, at its 00:16:00
+  // manual 3.2.3, Trupp-Ansicht figure, at its 00:16:00, and the real-device photo
+  // trupp-ansicht.jpeg: the Personen-Anzahl in place of the names
   it("draws the Trupp-Ansicht", () => {
     expect(
       toAscii(
         framebufferAfter(
-          ...LOGIN,
-          press("OK"),
+          ...EINSATZLISTE,
           {
             type: "tick",
             now: FIGURE_UHRZEIT + 14 * 60_000,
@@ -254,13 +257,17 @@ describe("the LCD framebuffer", () => {
           // two OKs end the first Alarmgrenze's Alarm
           press("OK"),
           press("OK"),
+          // Druck ändern, accepted at 160 bar
+          press("OK"),
+          ...Array.from({ length: 3 }, () => press("Down")),
+          press("OK"),
           press("OK"),
         ),
       ),
     ).toMatchSnapshot();
   });
 
-  // manual 3.2.3; issue #40: the widest Statussymbol, three in Bereitschaft, clears the names
+  // the login's Trupp-Ansicht (ASSUMPTION in the reducer) of a Trupp of three in Bereitschaft
   it("draws the Trupp-Ansicht of a Trupp of three in Bereitschaft", () => {
     expect(
       toAscii(
@@ -272,17 +279,33 @@ describe("the LCD framebuffer", () => {
           press("Down"),
           press("OK"),
           press("OK"),
-          press("OK"),
         ),
       ),
     ).toMatchSnapshot();
   });
 
-  // manual 5.4, Trupp-Menü figure (ANMARSCH)
+  // manual 5.4, Trupp-Menü figure (ANMARSCH), and the real-device photo trupp-menue-anmarsch.jpeg
   it("draws the Trupp-Menü of a Trupp in Anmarsch", () => {
     expect(
+      toAscii(framebufferAfter(...EINSATZLISTE, press("OK"))),
+    ).toMatchSnapshot();
+  });
+
+  // the real-device photo trupp-menue-sicherheitstrupp.jpeg: `SICHER` on the clock line
+  it("draws the Trupp-Menü of a Sicherheitstrupp", () => {
+    expect(
       toAscii(
-        framebufferAfter(...LOGIN, press("OK"), press("OK"), press("OK")),
+        framebufferAfter(
+          HLF_AT_F,
+          press("OK"),
+          HLF_AT_M,
+          press("Down"),
+          press("Down"),
+          press("OK"),
+          press("OK"),
+          press("X"),
+          press("OK"),
+        ),
       ),
     ).toMatchSnapshot();
   });
@@ -300,8 +323,7 @@ describe("the LCD framebuffer", () => {
             realNow: 5 * 60_000,
           },
           press("OK"),
-          press("OK"),
-          ...Array.from({ length: 4 }, () => press("Down")),
+          ...Array.from({ length: 3 }, () => press("Down")),
           press("OK"),
         ),
       ),
@@ -326,9 +348,9 @@ describe("the LCD framebuffer", () => {
     expect(
       toAscii(
         framebufferAfter(
-          ...LOGIN,
-          press("OK"),
+          ...EINSATZLISTE,
           ...TO_EINSATZZIEL,
+          press("X"),
           { type: "tallyHeld", tallyId: "5", name: "LF AT-F" },
           press("OK"),
           { type: "tallyHeld", tallyId: "6", name: "LF AT-M" },
@@ -336,12 +358,17 @@ describe("the LCD framebuffer", () => {
           { type: "tallyHeld", tallyId: "8", name: "LF WT-M" },
           press("OK"),
           press("OK"),
+          press("X"),
           ...TO_EINSATZZIEL,
+          press("X"),
           { type: "tallyHeld", tallyId: "3", name: "HLF WT-F" },
           press("OK"),
           { type: "tallyHeld", tallyId: "4", name: "HLF WT-M" },
           press("OK"),
           press("OK"),
+          press("X"),
+          ...TO_EINSATZZIEL,
+          press("X"),
           ...TO_RUECKMARSCH,
           press("X"),
           { type: "tallyHeld", tallyId: "9", name: "TLF AT-F" },
@@ -351,6 +378,9 @@ describe("the LCD framebuffer", () => {
           { type: "tallyHeld", tallyId: "12", name: "TLF WT-M" },
           press("OK"),
           press("OK"),
+          press("X"),
+          ...TO_EINSATZZIEL,
+          press("X"),
           ...TO_RUECKMARSCH,
           press("X"),
         ),
@@ -371,7 +401,6 @@ describe("the LCD framebuffer", () => {
             realNow: 5 * 60_000,
           },
           ...TO_EINSATZZIEL,
-          press("OK"),
         ),
       ),
     ).toMatchSnapshot();
@@ -390,12 +419,8 @@ describe("the LCD framebuffer", () => {
             realNow: 5 * 60_000,
           },
           ...TO_EINSATZZIEL,
-          press("OK"),
-          press("OK"),
-          press("Down"),
-          press("Down"),
-          press("OK"),
-          press("OK"),
+          press("X"),
+          ...TO_RUECKMARSCH,
         ),
       ),
     ).toMatchSnapshot();
@@ -427,10 +452,9 @@ describe("the LCD framebuffer", () => {
     expect(
       toAscii(
         framebufferAfter(
-          ...LOGIN,
-          press("OK"),
+          ...EINSATZLISTE,
           ...TO_EINSATZZIEL,
-          press("OK"),
+          press("X"),
           press("OK"),
         ),
       ),
@@ -442,9 +466,7 @@ describe("the LCD framebuffer", () => {
     expect(
       toAscii(
         framebufferAfter(
-          ...LOGIN,
-          press("OK"),
-          press("OK"),
+          ...EINSATZLISTE,
           press("OK"),
           press("Down"),
           press("Down"),
@@ -458,7 +480,7 @@ describe("the LCD framebuffer", () => {
   // manual 5.9 step 2, right figure, with the inverse bar on the marked Trupp
   it("draws Notausschaltung – Auswahl", () => {
     expect(
-      toAscii(framebufferAfter(...LOGIN, press("OK"), ...NOTAUSSCHALTUNG)),
+      toAscii(framebufferAfter(...EINSATZLISTE, ...NOTAUSSCHALTUNG)),
     ).toMatchSnapshot();
   });
 
@@ -466,12 +488,7 @@ describe("the LCD framebuffer", () => {
   it("draws Notausschaltung – Bestätigung", () => {
     expect(
       toAscii(
-        framebufferAfter(
-          ...LOGIN,
-          press("OK"),
-          ...NOTAUSSCHALTUNG,
-          press("OK"),
-        ),
+        framebufferAfter(...EINSATZLISTE, ...NOTAUSSCHALTUNG, press("OK")),
       ),
     ).toMatchSnapshot();
   });
@@ -484,7 +501,7 @@ function einsatzlisteWith(
   counts: readonly number[],
 ): ScreenModel {
   const model = screenModel(
-    [...LOGIN, press("OK")].reduce(
+    EINSATZLISTE.reduce(
       reduce,
       createInitialState({ now: FIGURE_UHRZEIT, realNow: 0 }),
     ),
@@ -525,7 +542,7 @@ function truppAnsichtWith(
   overrides: Partial<Pick<TruppAnsicht, "fillLevel" | "timeSplit">>,
 ): ScreenModel {
   const model = screenModel(
-    [...LOGIN, press("OK"), press("OK")].reduce(
+    [...LOGIN, press("OK")].reduce(
       reduce,
       createInitialState({ now: FIGURE_UHRZEIT, realNow: 0 }),
     ),
@@ -604,9 +621,9 @@ const NOTAUSSCHALTUNG: readonly Event[] = [
   { type: "tick", now: FIGURE_UHRZEIT + 4_000, realNow: 4_000 },
 ];
 
-// From the Einsatzliste: Trupp-Ansicht, Trupp-Menü, `Einsatzziel erreicht`, accept.
+// From the Einsatzliste of a Trupp in Anmarsch: Trupp-Menü, `Einsatzziel erreicht`, accept; it
+// ends on the Trupp-Ansicht.
 const TO_EINSATZZIEL = [
-  press("OK"),
   press("OK"),
   press("Down"),
   press("Down"),
@@ -614,12 +631,10 @@ const TO_EINSATZZIEL = [
   press("OK"),
 ] as const;
 
-// From the Einsatzliste: Trupp-Ansicht, Trupp-Menü, `Rückzug antreten`, accept; it ends on the
-// Trupp-Ansicht.
+// From the Einsatzliste of a Trupp at its Einsatzziel: Trupp-Menü, `Rückzug antreten`, accept; it
+// ends on the Trupp-Ansicht.
 const TO_RUECKMARSCH = [
   press("OK"),
-  press("OK"),
-  press("Down"),
   press("Down"),
   press("Down"),
   press("OK"),
