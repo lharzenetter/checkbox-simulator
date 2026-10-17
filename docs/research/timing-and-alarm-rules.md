@@ -96,7 +96,7 @@ Every rule is tagged:
 
 ## 6. Prozentmodus (Einsatzzeit #4)
 
-**Out of scope:** Einsatzzeit #4 and the Prozentmodus are not simulated ([Draw the simulator's scope](../adr/0002-draw-the-simulators-scope.md)). This section is kept as research only; A7 is closed without a decision.
+**Out of scope:** the Prozentmodus is not simulated ([Draw the simulator's scope](../adr/0002-draw-the-simulators-scope.md)); Einsatzzeit #4 is, with it off (§9, _Correct the simulator against the real Checkbox_). This section is kept as research only; A7 is closed without a decision.
 
 What the manual says, in full:
 
@@ -191,7 +191,7 @@ Display timings the manual does not give (catalogue gap G14):
 - **[48] vs [49]:** 6.12.1 calls the EZ#4 follow-up alarm [48]; 9.1 calls it [49]. 6.12.1 also lists [49] as the Atemschutzflaschentyp for one Einsatzzeit ([14, 49, 53, 54]), and 9.1 has no Flaschentyp entry for Einsatzzeit #2.
 - **[82] has two meanings:** in Register DRUCK it is the "Standard-Reservedruck … ohne Rückzugsalarm" (10–9999); further down the same page it is the "Flaschendruck bei Rückzugalarm (50 bar Standard)", which is [42]'s job.
 - **[42] range** is "zwischen 0 und 2500 bar", implausible for 200/300 bar bottles.
-- **Resolution:** neither conflict changes behaviour. The [48]/[49] numbering only touches Einsatzzeit #2 and #4, which are out of scope. [82] is inert (5.12) and defaults to 50 bar. The simulator uses the 9.1 numbering wherever a number is shown.
+- **Resolution:** neither conflict changes behaviour. The [48]/[49] numbering only touches Einsatzzeit #2 and the Prozentmodus of #4, neither of which is simulated. [82] is inert (5.12) and defaults to 50 bar. The simulator uses the 9.1 numbering wherever a number is shown.
 - **Figures disagree with each other:** p. 22 shows 295 bar → 00:28:00; p. 29 shows 40 bar, 00:02:00 and a 120 bar Rückzugsdruck. Treat figure numbers as layout references, not test vectors.
 
 ## 11. FwDV 7 cross-check
@@ -202,7 +202,7 @@ Checked against FwDV 7 (Ausgabe 2002 mit Änderungen 2005), page numbers as prin
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | "Für den Rückweg ist in der Regel die doppelte **Atemluftmenge** wie für den Hinweg einzuplanen"; the Atemluftmenge is "der begrenzende Faktor".                                             | 7.3 p. 11; "Hin- und Rückweg" p. 16 | The regulation measures the Rückweg in air, and so does the device: twice the Anmarschdruck, with a 50 bar floor (5.7, 5.11). |
 | "Nach einem und nach zwei Drittel der zu erwartenden Einsatzzeit ist … der Atemschutztrupp auf die Beachtung der Behälterdrücke hinzuweisen"; registration of the "Uhrzeit bei 1/3 und 2/3". | 7.4 p. 13                           | The Alarmgrenzen are clock-time reminders to check pressure, so they run on elapsed time (2.2, 2.4).                          |
-| Cylinders below 90 % of the Nenn-Fülldruck at Einsatzbeginn are not einsatzbereit.                                                                                                           | 7.3 p. 11                           | Matches the −10 % Anfangsdruck bound [78] (1.6).                                                                              |
+| Cylinders below 90 % of the Nenn-Fülldruck at Einsatzbeginn are not einsatzbereit.                                                                                                           | 7.3 p. 11                           | The device does not enforce it: [78] = 100 % lets the Anfangsdruck go down to 0 (1.6).                                        |
 | Radio reports at connecting, Einsatzziel erreicht and Antritt des Rückweges.                                                                                                                 | 7.3 p. 11                           | Matches the Einsatzstatus flow (5.3).                                                                                         |
 | No numeric Reservedruck.                                                                                                                                                                     | —                                   | [42] is a device parameter only.                                                                                              |
 
@@ -253,6 +253,6 @@ These feed the follow-up grilling ticket.
 - **A4 — Leaving Bereitschaft.** Which Einsatzstatus does "Trupp -> Einsatz" restore?
 - **A5 — Reserve conversion.** Is the Reservedruck converted to time linearly (`[42] × T / P_N`)? Should the Rückzugsdruck be shown as `[42] + 2 × (P_0 − P_Ziel)`? And which one triggers the alarm: the time comparison or the pressure comparison?
 - **A6 — Anmarsch → Rückmarsch.** Is this transition allowed without passing Einsatzziel erreicht?
-- **A7 — Prozentmodus semantics.** _Out of scope_ (section 6). Adopt reading 6.1/6.2, or leave Prozentmodus off (it only affects the 240-min Einsatzzeit #4)?
+- **A7 — Prozentmodus semantics.** _Out of scope_ (section 6). Adopt reading 6.1/6.2, or leave Prozentmodus off (it only affects Einsatzzeit #4, 180 min on the device)?
 - **A8 — Daueralarm start and cancel.** When does each Daueralarm start, and can X cancel the logoff Daueralarm?
 - **A9 — Unknown defaults.** Fix values for every **unknown** row in section 9, including whether the Rückzugsalarmmodus is on for each Einsatzzeit. _Decided:_ see section 9.
