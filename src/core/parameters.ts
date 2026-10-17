@@ -53,6 +53,9 @@ export const P73_DRUCK_VERGROESSERBAR_BAR = 5;
 // [14] fixes the Atemschutzflaschentyp to Flaschentyp 2, so every cylinder's Nenndruck is [81].
 export const P81_FLASCHENTYP_2_BAR = 300;
 export const P76_DRUCK_SPRUNGGROESSE_BAR = 5;
-export const P77_MAX_UEBER_SOLL_PROZENT = 10;
-export const P78_MIN_UNTER_SOLL_PROZENT = 10;
+// [77] = 0 % from the real Checkbox, so no editor goes above 300 bar.
+// ASSUMPTION: [78] = 100 %, so the Anfangsdruck has no lower bound but 0; the user did not try it
+// on the device ("Correct the simulator against the real Checkbox").
+export const P77_MAX_UEBER_SOLL_PROZENT = 0;
+export const P78_MIN_UNTER_SOLL_PROZENT = 100;
 export const P72_ANZAHL_DER_MAXIMALEN_TRUPPS = 6;

@@ -148,7 +148,7 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
-  // manual 5.3, S06 figure; its 250 bar lies below the 270 bar floor, so this draws 270
+  // manual 5.3, S06 figure, at its 250 bar
   it("draws the Anfangsdruck editor", () => {
     const tenStepsDown = Array.from({ length: 10 }, () => press("Down"));
     expect(

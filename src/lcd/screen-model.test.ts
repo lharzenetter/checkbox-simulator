@@ -442,13 +442,13 @@ describe("S06 Anfangsdruck editor", () => {
     });
   });
 
-  // timing-and-alarm-rules §1.3; the S06 figure's 250 bar lies below the 270 bar floor (§1.6)
+  // timing-and-alarm-rules §1.3, 1.6; the S06 figure's 250 bar gives 00:25:00
   it("shows the Restzeit the entered Anfangsdruck gives", () => {
     const model = screenModel(
       anfangsdruckEditor(...Array<Key>(10).fill("Down")),
     );
-    expect(screenText(model)).toContain("Druck 270 bar");
-    expect(screenText(model)).toContain("Restzeit 00:27:00");
+    expect(screenText(model)).toContain("Druck 250 bar");
+    expect(screenText(model)).toContain("Restzeit 00:25:00");
   });
 
   it("fills the cylinder in proportion to the Flaschendruck, at most full", () => {

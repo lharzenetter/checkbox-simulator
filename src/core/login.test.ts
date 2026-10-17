@@ -336,14 +336,18 @@ describe("Druck ändern on the Anmeldefenster", () => {
     expect(state.login?.anfangsdruckBar).toBe(300);
   });
 
-  // manual 9.1 [76]–[78]; timing-and-alarm-rules §1.6
-  it("stays between 270 and 330 bar", () => {
+  // manual 9.1 [76]; timing-and-alarm-rules §1.6, 9 ([77] = 0 %, [78] = 100 %)
+  it("stays between 0 and 300 bar", () => {
     function draftAfter(key: Key): number | null | undefined {
       return run(flaschendruckAendern(), ...Array<Key>(20).fill(key).map(press))
         .login?.draftFlaschendruckBar;
     }
-    expect(draftAfter("Down")).toBe(270);
-    expect(draftAfter("Up")).toBe(330);
+    expect(draftAfter("Down")).toBe(200);
+    expect(
+      run(flaschendruckAendern(), ...Array<Key>(70).fill("Down").map(press))
+        .login?.draftFlaschendruckBar,
+    ).toBe(0);
+    expect(draftAfter("Up")).toBe(300);
   });
 
   // decided in "Define the key-by-screen navigation model"
@@ -365,13 +369,16 @@ describe("the Anfangsdruck editor", () => {
   // manual 9.1 [76]
   it("changes the Anfangsdruck in 5-bar steps", () => {
     expect(anfangsdruckAfter("Down")).toBe(295);
-    expect(anfangsdruckAfter("Up", "Up")).toBe(310);
+    expect(anfangsdruckAfter("Down", "Down", "Up")).toBe(295);
   });
 
-  // verification-scenarios V2; timing-and-alarm-rules §1.6
-  it("stops at 270 bar going down and at 330 bar going up", () => {
-    expect(anfangsdruckAfter(...Array<Key>(20).fill("Down"))).toBe(270);
-    expect(anfangsdruckAfter(...Array<Key>(20).fill("Up"))).toBe(330);
+  // verification-scenarios V2; timing-and-alarm-rules §1.6: [77] = 0 % from the real Checkbox.
+  // ASSUMPTION: no lower bound but 0 ("Correct the simulator against the real Checkbox").
+  it("stops at 300 bar going up and only at 0 bar going down", () => {
+    expect(anfangsdruckAfter("Up")).toBe(300);
+    expect(anfangsdruckAfter(...Array<Key>(20).fill("Up"))).toBe(300);
+    expect(anfangsdruckAfter(...Array<Key>(10).fill("Down"))).toBe(250);
+    expect(anfangsdruckAfter(...Array<Key>(70).fill("Down"))).toBe(0);
   });
 
   // decided in "Define the key-by-screen navigation model"
@@ -419,7 +426,7 @@ describe("the Anfangsdruck editor", () => {
         .trupps[0]?.restzeitMs;
     }
     expect(restzeitAt(...Array<Key>(6).fill("Down"))).toBe(27 * 60_000);
-    expect(restzeitAt(...Array<Key>(6).fill("Up"))).toBe(33 * 60_000);
+    expect(restzeitAt(...Array<Key>(10).fill("Down"))).toBe(25 * 60_000);
   });
 });
 

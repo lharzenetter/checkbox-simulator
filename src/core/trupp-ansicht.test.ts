@@ -215,7 +215,7 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
   });
 
   // verification scenario V4; timing-and-alarm-rules §1.4, 1.5, 1.8
-  it("raises the Flaschendruck in 5 bar steps up to 330 bar", () => {
+  it("raises the Flaschendruck in 5 bar steps up to 300 bar", () => {
     // two OKs end the first Alarmgrenze's Alarm at 9:54
     const opened = run(
       truppInAnmarsch(),
@@ -245,8 +245,8 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
       ...DRUCK_AENDERN,
       ...Array.from({ length: 40 }, () => press("Up")),
     );
-    expect(ceiling.truppMenue?.draftFlaschendruckBar).toBe(330);
-    expect(restzeitMs(reduce(ceiling, press("OK")))).toBe(33 * 60_000);
+    expect(ceiling.truppMenue?.draftFlaschendruckBar).toBe(300);
+    expect(restzeitMs(reduce(ceiling, press("OK")))).toBe(30 * 60_000);
   });
 
   // verification scenario V5
