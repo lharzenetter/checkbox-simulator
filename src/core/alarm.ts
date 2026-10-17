@@ -11,7 +11,7 @@ import {
   P65_ALARMGRENZE_1_EINSATZZEIT_4_PROZENT,
   P66_ALARMGRENZE_2_EINSATZZEIT_4_PROZENT,
 } from "./parameters";
-import { rueckmarschzeitMs } from "./restzeit";
+import { rueckzugsalarmRestzeitMs } from "./restzeit";
 import type { AlarmCause, Trupp } from "./state";
 
 // An Alarm that fired, and how far into the run-down from `before` to `after` it was reached.
@@ -52,6 +52,10 @@ export function compareFiredAlarms(a: FiredAlarm, b: FiredAlarm): number {
 // ASSUMPTION: an Alarm point a pressure entry passes in Bereitschaft is dropped, not held until
 // `Trupp -> Einsatz`; §4.7 pauses the other Alarms but does not say what happens to one passed
 // while paused (taken in "Repeat overdue and Bereitschaft Alarms", issue #33).
+// ASSUMPTION: the Rückzugsalarm is the exception, as it is checked against the estimate rather
+// than a point passed: it stays armed, so an entry in Bereitschaft at or below the Rückzugsdruck
+// fires it once the Trupp leaves Bereitschaft; §5.9 says it "pauses in Bereitschaft" (taken in
+// issue #55).
 export function checkAlarms(before: Trupp, after: Trupp): AlarmCheck {
   if (after.einsatzstatus === "bereitschaft") {
     return {
@@ -77,18 +81,19 @@ function listOf(alarm: FiredAlarm | null): readonly FiredAlarm[] {
   return alarm === null ? [] : [alarm];
 }
 
-// timing-and-alarm-rules §5.5, 5.6, 5.9, 5.13, 5.14: checked against the current Restzeit, so a
-// Restzeit already at or below the threshold fires at once; disarming it on firing keeps a raise
-// from re-arming it, and only Einsatzziel erreicht arms it, so Rückmarsch never fires it.
+// timing-and-alarm-rules §5.5, 5.9, 5.13, 5.14: armed from login and checked against the current
+// Restzeit, so an estimate already at or below the Rückzugsdruck fires at once; disarming it on
+// firing keeps it from firing again until a pressure entry lifts the estimate above.
+// ASSUMPTION: Rückmarsch never fires it; the user believes so but did not see it (decided in
+// "Correct the simulator against the real Checkbox").
 // ASSUMPTION: it is reached where the Restzeit falls to its threshold, or at once if it was there
 // already, which places it among the step's other Alarms; §8.2 orders by "the order their
 // thresholds were crossed" but gives no time for an Alarm already due (taken in issue #49).
 function rueckzugsalarmAlarm(before: Trupp, after: Trupp): FiredAlarm | null {
-  const thresholdMs = rueckmarschzeitMs(after);
+  const thresholdMs = rueckzugsalarmRestzeitMs(after);
   if (
     !after.rueckzugsalarmArmed ||
-    after.einsatzstatus !== "einsatzzielErreicht" ||
-    thresholdMs === null ||
+    after.einsatzstatus === "rueckmarsch" ||
     after.restzeitMs > thresholdMs
   ) {
     return null;

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
-  estimateFlaschendruckBar,
   isSicherShown,
   reduce,
   rueckzugsdruckBar,
@@ -301,8 +300,9 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
     expect(restzeitOf(state)).toBe(minutes(16));
     expect(state.trupps[0]?.anmarschzeitMs).toBe(minutes(4));
 
-    // the Rückzugsalarm at 7:00 (timing-and-alarm-rules §5.5)
-    state = run(state, tickAt(7), press("OK"), press("OK"));
+    // 300 → 160 bar gives a Rückzugsdruck of 280 bar, so the Rückzugsalarm fires on OK
+    // (timing-and-alarm-rules §5.7, 5.14)
+    state = run(state, press("OK"), press("OK"));
     state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
     expect(restzeitOf(state)).toBe(minutes(12));
 
@@ -383,61 +383,28 @@ describe("a Sicherheitstrupp", () => {
   });
 });
 
-// timing-and-alarm-rules §5.5, 5.6, 5.7
+// timing-and-alarm-rules §5.7, 5.13, 5.15
 describe("the Rückzugsdruck", () => {
-  function rueckzugsdruckOf(state: State): number | null {
+  function rueckzugsdruckOf(state: State): number {
     return rueckzugsdruckBar(selectedTrupp(state));
   }
 
-  function estimateOf(state: State): number {
-    return estimateFlaschendruckBar(selectedTrupp(state));
-  }
-
-  // §5.13: no Anmarschzeit yet
-  it("is absent in Anmarsch", () => {
-    expect(rueckzugsdruckOf(run(truppInAnmarsch(), tickAt(5)))).toBeNull();
+  // §5.13: the Reservedruck until Einsatzziel erreicht
+  it("is the 50 bar Reservedruck in Anmarsch", () => {
+    expect(rueckzugsdruckOf(run(truppInAnmarsch(), tickAt(5)))).toBe(50);
   });
 
-  // verification scenario V7: the estimate meets the Rückzugsdruck at the threshold
-  it("is 150 bar after 5 min of Anmarsch, the estimate at R = 15:00", () => {
-    let state = accept(
-      run(truppInAnmarsch(), tickAt(5)),
-      "einsatzzielErreicht",
-    );
-    expect(rueckzugsdruckOf(state)).toBe(150);
-    state = run(state, tickAt(9, 54), press("OK"), press("OK"));
-    expect(estimateOf(run(state, tickAt(14, 59)))).toBe(150);
-    expect(estimateOf(run(state, tickAt(15)))).toBe(150);
-    expect(restzeitOf(run(state, tickAt(15)))).toBe(minutes(15));
-  });
-
-  // verification scenario V7, rounding variant: 151.33 bar rounded down
-  it("is rounded down to 151 bar after 5:04 of Anmarsch", () => {
-    const editor = chooseItem(
-      run(truppInAnmarsch(), tickAt(5, 4)),
-      "einsatzzielErreicht",
-    );
-    const state = reduce(editor, press("OK"));
-    expect(restzeitOf(state)).toBe(minutes(24, 30));
-    expect(rueckzugsdruckOf(state)).toBe(151);
-    expect(
-      estimateOf(
-        run(state, tickAt(9, 54), press("OK"), press("OK"), tickAt(14, 26)),
-      ),
-    ).toBe(151);
-  });
-
-  // verification scenario V6
-  it("is 110 bar after 3 min of Anmarsch", () => {
+  // verification scenario V6: 300 → 270 bar
+  it("is twice the Anmarschdruck, 60 bar for an Anmarschdruck of 30 bar", () => {
     const state = accept(
       run(truppInAnmarsch(), tickAt(3)),
       "einsatzzielErreicht",
     );
-    expect(rueckzugsdruckOf(state)).toBe(110);
+    expect(rueckzugsdruckOf(state)).toBe(60);
   });
 
-  // verification scenario V8: `t_res` scales with the 20-min Einsatzzeit
-  it("is 110 bar after 2 min of Anmarsch with a 20-min Einsatzzeit", () => {
+  // verification scenario V8: in pressure, so the Einsatzzeit does not change it
+  it("is 60 bar for an Anmarschdruck of 30 bar with a 20-min Einsatzzeit", () => {
     const zwanzig = run(
       createInitialState(SESSION_START),
       hold(A1),
@@ -452,31 +419,39 @@ describe("the Rückzugsdruck", () => {
     expect(zwanzig.trupps[0]?.einsatzzeitMs).toBe(minutes(20));
     const state = accept(run(zwanzig, tickAt(2)), "einsatzzielErreicht");
     expect(restzeitOf(state)).toBe(minutes(18));
-    expect(rueckzugsdruckOf(state)).toBe(110);
-    expect(
-      estimateOf(
-        run(state, tickAt(6, 36), press("OK"), press("OK"), tickAt(12, 40)),
-      ),
-    ).toBe(110);
+    expect(rueckzugsdruckOf(state)).toBe(60);
   });
 
-  // verification scenario V13: a new Anmarsch measures `t_A` again (§5.15)
-  it("is cleared by Bereitschaft and measured again on the next Anmarsch", () => {
+  // §5.15: the Anmarschdruck always runs from the Anfangsdruck
+  it("measures the Anmarschdruck from an Anfangsdruck of 270 bar", () => {
+    const at270Bar = run(
+      createInitialState(SESSION_START),
+      hold(A1),
+      press("OK"),
+      hold(A2),
+      press("OK"),
+      ...Array.from({ length: 6 }, () => press("Down")),
+      press("OK"),
+      press("X"),
+    );
+    expect(restzeitOf(at270Bar)).toBe(minutes(27));
+    const state = enter(run(at270Bar, tickAt(2)), "einsatzzielErreicht", 220);
+    expect(rueckzugsdruckOf(state)).toBe(100);
+  });
+
+  // verification scenario V13
+  it("is kept through Bereitschaft", () => {
     let state = enter(
       run(truppInAnmarsch(), tickAt(4)),
       "einsatzzielErreicht",
-      160,
+      260,
     );
-    expect(rueckzugsdruckOf(state)).toBe(130);
-    // the Rückzugsalarm at 7:00 (timing-and-alarm-rules §5.5)
-    state = run(state, tickAt(7), press("OK"), press("OK"));
-    state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
+    expect(rueckzugsdruckOf(state)).toBe(80);
+    state = chooseItem(run(state, press("X"), tickAt(8)), "truppBereitschaft");
+    expect(rueckzugsdruckOf(state)).toBe(80);
     // the Bereitschaft Alarm at 13:00 (timing-and-alarm-rules §4.3)
     state = run(state, tickAt(13), press("OK"), press("OK"));
     state = chooseItem(run(state, tickAt(14)), "truppEinsatz");
-    expect(rueckzugsdruckOf(state)).toBeNull();
-    state = run(state, tickAt(15, 54), press("OK"), press("OK"));
-    state = accept(run(state, tickAt(16)), "einsatzzielErreicht");
-    expect(rueckzugsdruckOf(state)).toBe(90);
+    expect(rueckzugsdruckOf(state)).toBe(80);
   });
 });

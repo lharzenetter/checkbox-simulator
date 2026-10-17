@@ -504,11 +504,14 @@ describe("the Anfangsdruck editor", () => {
         einsatzstatus: "anmarsch",
         sicherheitstrupp: false,
         restzeitMs: 30 * 60_000,
+        anfangsdruckBar: 300,
         runningTimeMs: 0,
         timeInBereitschaftMs: 0,
         anmarschBeganAtRunningTimeMs: 0,
         anmarschzeitMs: null,
-        rueckzugsalarmArmed: false,
+        anmarschdruckBar: null,
+        // armed from login (timing-and-alarm-rules §5.13)
+        rueckzugsalarmArmed: true,
         loggedInAtMs: SESSION_START.now,
       },
     ]);

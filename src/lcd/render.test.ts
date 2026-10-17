@@ -194,8 +194,8 @@ describe("the LCD framebuffer", () => {
             now: FIGURE_UHRZEIT + 31 * 60_000,
             realNow: 31 * 60_000,
           },
-          // two OKs end each of the three Alarms per Trupp the tick fired
-          ...Array.from({ length: 12 }, () => press("OK")),
+          // two OKs end each of the four Alarms per Trupp the tick fired
+          ...Array.from({ length: 16 }, () => press("OK")),
         ),
       ),
     ).toMatchSnapshot();
@@ -440,8 +440,8 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
-  // manual 5.5.3, ALARM figure, with the time split of a long Anmarsch (issue #42); the
-  // Rückzugsalarm fires on reaching the Einsatzziel
+  // manual 5.5.3, ALARM figure, with the time split of a long Anmarsch (issue #42); 300 → 60 bar
+  // gives a Rückzugsdruck of 480 bar, so the Rückzugsalarm fires on reaching the Einsatzziel
   it("draws S12 Trupp ALARM with the time-split bar", () => {
     expect(
       toAscii(
@@ -450,8 +450,8 @@ describe("the LCD framebuffer", () => {
           press("OK"),
           {
             type: "tick",
-            now: FIGURE_UHRZEIT + 25 * 60_000,
-            realNow: 25 * 60_000,
+            now: FIGURE_UHRZEIT + 24 * 60_000,
+            realNow: 24 * 60_000,
           },
           // two OKs each for both Alarmgrenzen
           ...Array.from({ length: 4 }, () => press("OK")),
@@ -608,7 +608,7 @@ describe("the Trupp-Ansicht's time-split bar", () => {
     expect(
       timeSplitBarColumn(
         truppAnsichtWith({
-          timeSplit: { anmarschzeitShare: 1 / 6, rueckmarschzeitShare: 1 / 2 },
+          timeSplit: { anmarschzeitShare: 1 / 6, rueckmarschShare: 1 / 2 },
         }),
       ),
     ).toBe(`${"#".repeat(11)}${".".repeat(22)}${"#".repeat(33)}`);
@@ -620,7 +620,7 @@ describe("the Trupp-Ansicht's time-split bar", () => {
         truppAnsichtWith({
           timeSplit: {
             anmarschzeitShare: 0.505,
-            rueckmarschzeitShare: 1 - 0.505,
+            rueckmarschShare: 1 - 0.505,
           },
         }),
       ),

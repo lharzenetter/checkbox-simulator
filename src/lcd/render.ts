@@ -354,9 +354,7 @@ function drawAlarm(
   model: Extract<ScreenModel, { layout: "alarm" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  if (model.rueckzugsdruckLevel !== null) {
-    drawRueckzugsdruckMark(framebuffer, model.rueckzugsdruckLevel);
-  }
+  drawRueckzugsdruckMark(framebuffer, model.rueckzugsdruckLevel);
   model.prompt.forEach((line, index) => {
     drawText(
       framebuffer,
@@ -430,7 +428,7 @@ function drawTruppPanels(
     readonly flaschendruck: string;
     readonly restzeit: string;
     readonly fillLevel: number;
-    readonly rueckzugsdruck: string | null;
+    readonly rueckzugsdruck: string;
     readonly timeSplit: TimeSplit | null;
   },
 ): void {
@@ -453,7 +451,7 @@ function drawTruppPanels(
     RESTZEIT_BOX_Y - RESTZEIT_CLOCK.length - 1,
   );
   // manual 3.2.3 item 9, 5.5.3: the box is drawn empty until there is a Rückzugsdruck
-  drawValueBox(framebuffer, model.rueckzugsdruck ?? "", RUECKZUGSDRUCK_BOX_Y);
+  drawValueBox(framebuffer, model.rueckzugsdruck, RUECKZUGSDRUCK_BOX_Y);
   drawPictogramOnBox(framebuffer, RUECKZUG_ARROWS, 93, RUECKZUGSDRUCK_BOX_Y);
 }
 
@@ -537,7 +535,7 @@ function drawTimeSplitBar(
   const anmarschRows = Math.round(innerHeight * timeSplit.anmarschzeitShare);
   const rueckmarschTop = Math.max(
     anmarschRows,
-    Math.round(innerHeight * (1 - timeSplit.rueckmarschzeitShare)),
+    Math.round(innerHeight * (1 - timeSplit.rueckmarschShare)),
   );
   fillRect(
     framebuffer,

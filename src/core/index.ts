@@ -23,7 +23,6 @@ export {
 export {
   computeRestzeitMs,
   estimateFlaschendruckBar,
-  rueckmarschzeitMs,
   rueckzugsdruckBar,
 } from "./restzeit";
 export {

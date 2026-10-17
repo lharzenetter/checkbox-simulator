@@ -12,7 +12,6 @@ import {
   isSicherShown,
   NOTAUSSCHALTUNG_AKTIONEN,
   P81_FLASCHENTYP_2_BAR,
-  rueckmarschzeitMs,
   rueckzugsdruckBar,
   selectedTrupp,
   SERVICE_AKTIONEN,
@@ -45,7 +44,7 @@ export interface TimeSplit {
   /** Field ③, from the top. */
   readonly anmarschzeitShare: number;
   /** Field ⑤, from the bottom. */
-  readonly rueckmarschzeitShare: number;
+  readonly rueckmarschShare: number;
 }
 
 /** One occupied row of the Einsatzliste. */
@@ -146,8 +145,7 @@ export type ScreenModel =
       readonly restzeit: string;
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
-      /** `null` while the Trupp has no Anmarschzeit. */
-      readonly rueckzugsdruck: string | null;
+      readonly rueckzugsdruck: string;
       /** `null` while the Trupp has no Anmarschzeit. */
       readonly timeSplit: TimeSplit | null;
       readonly label: string;
@@ -164,10 +162,9 @@ export type ScreenModel =
       readonly restzeit: string;
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
-      /** The height of the cylinder's `R` mark, 0–1; `null` while there is no Rückzugsdruck. */
-      readonly rueckzugsdruckLevel: number | null;
-      /** `null` while the Trupp has no Anmarschzeit. */
-      readonly rueckzugsdruck: string | null;
+      /** The height of the cylinder's `R` mark, 0–1. */
+      readonly rueckzugsdruckLevel: number;
+      readonly rueckzugsdruck: string;
       /** `null` while the Trupp has no Anmarschzeit. */
       readonly timeSplit: TimeSplit | null;
       /** `Alarmende mit OK`, in its two lines. */
@@ -535,13 +532,11 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
 // how alarms are presented", point 1, and "Correct the simulator against the real Checkbox": live
 // values, the cause in the header, the Personen-Anzahl, and no SICHER
 function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
-  const rueckzugsdruck = rueckzugsdruckBar(trupp);
   return {
     layout: "alarm",
     title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ${ALARM_HEADERS[cause]}`,
     ...truppPanelsOf(trupp),
-    rueckzugsdruckLevel:
-      rueckzugsdruck === null ? null : cylinderFillLevel(rueckzugsdruck),
+    rueckzugsdruckLevel: cylinderFillLevel(rueckzugsdruckBar(trupp)),
     prompt: ["Alarmende", "mit OK"],
   };
 }
@@ -554,7 +549,7 @@ function truppPanelsOf(trupp: Trupp) {
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatFullRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
-    rueckzugsdruck: formatRueckzugsdruck(trupp),
+    rueckzugsdruck: formatBar(rueckzugsdruckBar(trupp)),
     timeSplit: timeSplitOf(trupp),
   };
 }
@@ -614,26 +609,20 @@ function einsatzlisteRow(state: State, trupp: Trupp): EinsatzlisteRow {
   };
 }
 
-// manual 3.2.3 item 9, 5.5.3: the box stays empty until the Trupp has an Anmarschzeit
-function formatRueckzugsdruck(trupp: Trupp): string | null {
-  const bar = rueckzugsdruckBar(trupp);
-  return bar === null ? null : formatBar(bar);
-}
-
 // manual 3.2.3 items 3–5; timing-and-alarm-rules §5.8
 // ASSUMPTION: the fields are linear in the Einsatzzeit, the bar is empty until there is an
-// Anmarschzeit, and field ⑤ gives way where the two would overlap (issue #42).
+// Anmarschzeit, and field ⑤ gives way where the two would overlap (issue #42). Field ⑤ is the
+// Restzeit the Rückzugsdruck is worth, the Rückzugsdruck's share of `P_N` (issue #55).
 function timeSplitOf(trupp: Trupp): TimeSplit | null {
-  const rueckmarschzeit = rueckmarschzeitMs(trupp);
-  if (trupp.anmarschzeitMs === null || rueckmarschzeit === null) {
+  if (trupp.anmarschzeitMs === null) {
     return null;
   }
   const anmarschzeitShare = shareOfEinsatzzeit(trupp, trupp.anmarschzeitMs);
   return {
     anmarschzeitShare,
-    rueckmarschzeitShare: Math.min(
+    rueckmarschShare: Math.min(
       1 - anmarschzeitShare,
-      shareOfEinsatzzeit(trupp, rueckmarschzeit),
+      cylinderFillLevel(rueckzugsdruckBar(trupp)),
     ),
   };
 }
@@ -753,7 +742,7 @@ export function screenText(model: ScreenModel): readonly string[] {
         model.personenAnzahl,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
-        ...rueckzugsdruckText(model.rueckzugsdruck),
+        `Rückzugsdruck ${model.rueckzugsdruck}`,
         model.label,
       ];
     case "alarm":
@@ -762,7 +751,7 @@ export function screenText(model: ScreenModel): readonly string[] {
         model.personenAnzahl,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
-        ...rueckzugsdruckText(model.rueckzugsdruck),
+        `Rückzugsdruck ${model.rueckzugsdruck}`,
         ...model.prompt,
       ];
     case "truppMenue":
@@ -802,10 +791,6 @@ export function screenText(model: ScreenModel): readonly string[] {
     default:
       return assertNever(model);
   }
-}
-
-function rueckzugsdruckText(rueckzugsdruck: string | null): readonly string[] {
-  return rueckzugsdruck === null ? [] : [`Rückzugsdruck ${rueckzugsdruck}`];
 }
 
 function einsatzlisteRowText(row: EinsatzlisteRow): string {

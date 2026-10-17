@@ -24,6 +24,7 @@ import {
 import {
   computeRestzeitMs,
   estimateFlaschendruckBar,
+  rueckzugsalarmRestzeitMs,
   snapToFlaschendruckGrid,
 } from "./restzeit";
 import {
@@ -477,7 +478,6 @@ function changeEinsatzstatus(
         timeInBereitschaftMs: 0,
         anmarschBeganAtRunningTimeMs: trupp.runningTimeMs,
         anmarschzeitMs: null,
-        rueckzugsalarmArmed: false,
       })
     : state;
 }
@@ -540,7 +540,11 @@ function confirmFlaschendruck(
   const entered = enterFlaschendruck(trupp, flaschendruckBar);
   switch (truppMenue.aktion) {
     case "einsatzzielErreicht":
-      return leaveTruppMenue(state, trupp, reachEinsatzziel(entered));
+      return leaveTruppMenue(
+        state,
+        trupp,
+        reachEinsatzziel(entered, flaschendruckBar),
+      );
     case "rueckzugAntreten":
       return leaveTruppMenue(state, trupp, {
         ...entered,
@@ -560,7 +564,10 @@ function confirmFlaschendruck(
 // timing-and-alarm-rules §3.4, 5.14: an entry that takes the Restzeit past an Alarm point fires it
 // on OK
 function leaveTruppMenue(state: State, trupp: Trupp, updated: Trupp): State {
-  const { trupp: checked, fired } = checkAlarms(trupp, updated);
+  const { trupp: checked, fired } = checkAlarms(
+    trupp,
+    rearmRueckzugsalarm(updated),
+  );
   return raiseAlarms(
     enterScreen(
       withTruppMenue(replaceTrupp(state, trupp, checked), null),
@@ -578,14 +585,22 @@ function enterFlaschendruck(trupp: Trupp, flaschendruckBar: number): Trupp {
   };
 }
 
-// timing-and-alarm-rules §5.4, 5.13, 5.15: `t_A` is measured from the start of the current
-// Anmarsch, and only from here is the Rückzugsalarm armed
-function reachEinsatzziel(trupp: Trupp): Trupp {
+// timing-and-alarm-rules §5.9: only a pressure entry that lifts the estimate above the
+// Rückzugsdruck re-arms the Rückzugsalarm
+function rearmRueckzugsalarm(trupp: Trupp): Trupp {
+  return trupp.restzeitMs > rueckzugsalarmRestzeitMs(trupp)
+    ? { ...trupp, rueckzugsalarmArmed: true }
+    : trupp;
+}
+
+// timing-and-alarm-rules §5.4, 5.7, 5.15: `t_A` is measured from the start of the current
+// Anmarsch; the Anmarschdruck always runs from the Anfangsdruck
+function reachEinsatzziel(trupp: Trupp, flaschendruckBar: number): Trupp {
   return {
     ...trupp,
     einsatzstatus: "einsatzzielErreicht",
     anmarschzeitMs: trupp.runningTimeMs - trupp.anmarschBeganAtRunningTimeMs,
-    rueckzugsalarmArmed: true,
+    anmarschdruckBar: trupp.anfangsdruckBar - flaschendruckBar,
   };
 }
 
@@ -870,11 +885,14 @@ function logIn(state: State, login: Login): State {
       login.anmeldeaktion === "truppOkEinsatz" ? "anmarsch" : "bereitschaft",
     sicherheitstrupp: login.anmeldeaktion === "sicherheitstruppOk",
     restzeitMs: computeRestzeitMs(login.einsatzzeitMs, login.anfangsdruckBar),
+    anfangsdruckBar: login.anfangsdruckBar,
     runningTimeMs: 0,
     timeInBereitschaftMs: 0,
     anmarschBeganAtRunningTimeMs: 0,
     anmarschzeitMs: null,
-    rueckzugsalarmArmed: false,
+    anmarschdruckBar: null,
+    // timing-and-alarm-rules §5.13
+    rueckzugsalarmArmed: true,
     loggedInAtMs: state.now,
   };
   return enterScreen(

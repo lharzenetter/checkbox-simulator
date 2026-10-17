@@ -76,10 +76,12 @@ const TRUPP: Trupp = {
   einsatzstatus: "anmarsch",
   sicherheitstrupp: false,
   restzeitMs: -10_000,
+  anfangsdruckBar: 300,
   runningTimeMs: 30 * 60_000 + 10_000,
   anmarschBeganAtRunningTimeMs: 0,
   timeInBereitschaftMs: 0,
   anmarschzeitMs: null,
+  anmarschdruckBar: null,
   rueckzugsalarmArmed: true,
   loggedInAtMs: 3_000_000,
 };
@@ -233,7 +235,7 @@ describe("the factory reset", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 5,
+      version: 6,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
       nextEinsatznummer: undefined,
@@ -264,6 +266,19 @@ describe("incompatible stored session data", () => {
       sessionJson({
         version: 4,
         truppzuordnung: ["", "HLF AT – Müller/Schmidt", "", "LF WT", "", ""],
+      }),
+    ],
+    [
+      "has version 5, with Trupps that lack the Anfangsdruck and Anmarschdruck",
+      sessionJson({
+        version: 5,
+        trupps: [
+          {
+            ...TRUPP,
+            anfangsdruckBar: undefined,
+            anmarschdruckBar: undefined,
+          },
+        ],
       }),
     ],
     [

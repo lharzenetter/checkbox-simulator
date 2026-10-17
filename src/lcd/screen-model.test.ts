@@ -728,6 +728,7 @@ describe("S11 Trupp-Ansicht", () => {
       "Personen-Anzahl: 2",
       "Druck 150 bar",
       "Restzeit 00:15:00",
+      "Rückzugsdruck 50 bar",
       "Ansicht",
     ]);
     expect(model).toMatchObject({ layout: "truppAnsicht", fillLevel: 0.5 });
@@ -926,6 +927,7 @@ describe("S12 Trupp ALARM", () => {
       "Personen-Anzahl: 2",
       "Druck 201 bar",
       "Restzeit 00:20:06",
+      "Rückzugsdruck 50 bar",
       "Alarmende",
       "mit OK",
     ]);
@@ -941,17 +943,13 @@ describe("S12 Trupp ALARM", () => {
         tickBy(acknowledged(tickBy(stateAfter(...TRUPP_01), 594_000)), 594_000),
     },
     {
+      // after the Alarmgrenzen at 9:54 and 19:48 and the Rückzugsalarm at 25:00
       cause: "Einsatzzeit erreicht",
       header: "Trupp 01 ALARM",
       events: () =>
         tickBy(
-          acknowledged(
-            tickBy(
-              acknowledged(tickBy(stateAfter(...TRUPP_01), 594_000)),
-              594_000,
-            ),
-          ),
-          612_000,
+          acknowledged(tickBy(stateAfter(...TRUPP_01), 25 * 60_000)),
+          5 * 60_000,
         ),
     },
     {
@@ -1011,6 +1009,7 @@ describe("S12 Trupp ALARM", () => {
       "Personen-Anzahl: 2",
       "Druck 0 bar",
       "Restzeit -00:00:10",
+      "Rückzugsdruck 50 bar",
       "Alarmende",
       "mit OK",
     ]);
@@ -1024,10 +1023,12 @@ describe("S12 Trupp ALARM", () => {
   });
 
   // the real-device photo alarm-rueckzug.jpeg: the `R` mark on the cylinder at the Rückzugsdruck
-  it("marks the Rückzugsdruck on the cylinder once there is one", () => {
+  it("marks the Rückzugsdruck on the cylinder", () => {
     const anmarsch = tickBy(stateAfter(...TRUPP_01), 594_000);
-    expect(screenModel(anmarsch)).toMatchObject({ rueckzugsdruckLevel: null });
-    // Einsatzziel erreicht at 10:00 with the 200 bar the editor opens at: Rückzugsdruck 150 bar
+    expect(screenModel(anmarsch)).toMatchObject({
+      rueckzugsdruckLevel: 50 / 300,
+    });
+    // Einsatzziel erreicht at 5:00 with 225 bar: Rückzugsdruck 2 × 75 = 150 bar
     const einsatzziel = stateAfter(
       ...TRUPP_01,
       { type: "tick", now: FIGURE_UHRZEIT + 5 * 60_000, realNow: 5 * 60_000 },
@@ -1035,7 +1036,7 @@ describe("S12 Trupp ALARM", () => {
       press("Down"),
       press("Down"),
       press("OK"),
-      ...Array.from({ length: 10 }, () => press("Down")),
+      ...Array.from({ length: 5 }, () => press("Down")),
       press("OK"),
       { type: "tick", now: FIGURE_UHRZEIT + 594_000, realNow: 594_000 },
     );
@@ -1073,6 +1074,7 @@ describe("S12 Trupp ALARM", () => {
       "Personen-Anzahl: 2",
       "Druck 196 bar",
       "Restzeit 00:19:36",
+      "Rückzugsdruck 50 bar",
       "Alarmende",
       "mit OK",
     ]);
@@ -1086,6 +1088,7 @@ describe("S12 Trupp ALARM", () => {
       "Personen-Anzahl: 2",
       "Druck 200 bar",
       "Restzeit 00:20:00",
+      "Rückzugsdruck 50 bar",
       "Alarmende",
       "mit OK",
     ]);
@@ -1202,30 +1205,30 @@ describe("the Einsatzstatus screens", () => {
       "Personen-Anzahl: 2",
       "Druck 240 bar",
       "Restzeit 00:24:00",
-      "Rückzugsdruck 150 bar",
+      "Rückzugsdruck 100 bar",
       "Ansicht",
     ]);
   });
 
-  // manual 3.2.3 item 9; timing-and-alarm-rules §5.7; verification scenario V7
-  it("shows the Rückzugsdruck on the Trupp-Ansicht once the Einsatzziel is reached", () => {
+  // manual 3.2.3 item 9; timing-and-alarm-rules §5.7: 300 → 250 bar gives 100 bar
+  it("shows twice the Anmarschdruck as the Rückzugsdruck once the Einsatzziel is reached", () => {
     expect(screenText(screenModel(stateAfter(...EINSATZZIEL_ANSICHT)))).toEqual(
       [
         "Trupp 01 EINSATZ",
         "Personen-Anzahl: 2",
         "Druck 250 bar",
         "Restzeit 00:25:00",
-        "Rückzugsdruck 150 bar",
+        "Rückzugsdruck 100 bar",
         "Ansicht",
       ],
     );
   });
 
-  // manual 3.2.3 item 9: the Anmarsch has no Anmarschzeit yet (timing-and-alarm-rules §5.13)
-  it("shows no Rückzugsdruck on the Trupp-Ansicht in Anmarsch", () => {
+  // manual 3.2.3 item 9; timing-and-alarm-rules §5.7, 5.13; verification scenario V25
+  it("shows the Reservedruck as the Rückzugsdruck on the Trupp-Ansicht from login", () => {
     expect(screenModel(stateAfter(...TRUPP_01))).toMatchObject({
       layout: "truppAnsicht",
-      rueckzugsdruck: null,
+      rueckzugsdruck: "50 bar",
     });
   });
 
@@ -1249,23 +1252,23 @@ describe("the Einsatzstatus screens", () => {
     });
   });
 
-  // manual 3.2.3 items 3–5; timing-and-alarm-rules §5.5, 5.6, 5.8; ADR 0008: field ⑤ is the
-  // Rückmarschzeit `2·t_A + t_res`, here 2 × 5 min + 5 min of the 30 min Einsatzzeit
-  it("splits the bar into Anmarschzeit and Rückmarschzeit once the Einsatzziel is reached", () => {
+  // manual 3.2.3 items 3–5; timing-and-alarm-rules §5.5, 5.8: field ⑤ is the Restzeit the
+  // Rückzugsdruck is worth, here 100 of 300 bar
+  it("splits the bar into Anmarsch and Rückmarsch once the Einsatzziel is reached", () => {
     expect(screenModel(stateAfter(...EINSATZZIEL_ANSICHT))).toMatchObject({
       layout: "truppAnsicht",
-      timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschzeitShare: 15 / 30 },
+      timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschShare: 100 / 300 },
     });
   });
 
-  // timing-and-alarm-rules §5.7: the Rückzugsdruck is field ⑤ in bar, `[42] + 2·t_A × P_N / T`
+  // timing-and-alarm-rules §5.5: field ⑤ is the Rückzugsdruck as a share of `P_N`
   it("agrees with the Rückzugsdruck on the same screen", () => {
     const model = screenModel(stateAfter(...EINSATZZIEL_ANSICHT));
     if (model.layout !== "truppAnsicht" || model.timeSplit === null) {
       throw new Error("expected the Trupp-Ansicht with a time split");
     }
     expect(model.rueckzugsdruck).toBe(
-      `${String(model.timeSplit.rueckmarschzeitShare * P81_FLASCHENTYP_2_BAR)} bar`,
+      `${String(model.timeSplit.rueckmarschShare * P81_FLASCHENTYP_2_BAR)} bar`,
     );
   });
 
@@ -1273,27 +1276,27 @@ describe("the Einsatzstatus screens", () => {
   it("keeps the time split on the Trupp-Ansicht in `RÜCKMARSCH` after the Einsatzziel", () => {
     expect(screenModel(stateAfter(...RUECKMARSCH))).toMatchObject({
       title: "Trupp 01 RÜCKMARSCH",
-      timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschzeitShare: 15 / 30 },
+      timeSplit: { anmarschzeitShare: 5 / 30, rueckmarschShare: 100 / 300 },
     });
   });
 
   // ASSUMPTION: field ⑤ is cut back where the two would overlap (issue #42)
-  it("cuts the Rückmarschzeit back so the fields never overflow the bar after a long Anmarsch", () => {
-    // the Alarmgrenzen fire on the way; the Rückzugsalarm fires on reaching the Einsatzziel
+  it("cuts the Rückmarsch back so the fields never overflow the bar after a long Anmarsch", () => {
+    // 300 → 50 bar gives a Rückzugsdruck of 500 bar, beyond the bar
     const longAnmarsch = stateAfter(
       ...TRUPP_01,
       at(25),
-      // two OKs each for both Alarmgrenzen
-      ...Array.from({ length: 4 }, () => press("OK")),
+      // two OKs each for both Alarmgrenzen and the Rückzugsalarm
+      ...Array.from({ length: 6 }, () => press("OK")),
       ...truppMenueAt(2),
       press("OK"),
       press("OK"),
     );
     expect(screenModel(longAnmarsch)).toMatchObject({
-      layout: "alarm",
+      layout: "truppAnsicht",
       timeSplit: {
         anmarschzeitShare: 25 / 30,
-        rueckmarschzeitShare: expect.closeTo(5 / 30) as number,
+        rueckmarschShare: expect.closeTo(5 / 30) as number,
       },
     });
   });
@@ -1303,14 +1306,14 @@ describe("the Einsatzstatus screens", () => {
     const overdueAnmarsch = stateAfter(
       ...TRUPP_01,
       at(35),
-      // two OKs each for both Alarmgrenzen and Einsatzzeit erreicht
-      ...Array.from({ length: 6 }, () => press("OK")),
+      // two OKs each for both Alarmgrenzen, the Rückzugsalarm and Einsatzzeit erreicht
+      ...Array.from({ length: 8 }, () => press("OK")),
       ...truppMenueAt(2),
       press("OK"),
       press("OK"),
     );
     expect(screenModel(overdueAnmarsch)).toMatchObject({
-      timeSplit: { anmarschzeitShare: 1, rueckmarschzeitShare: 0 },
+      timeSplit: { anmarschzeitShare: 1, rueckmarschShare: 0 },
     });
   });
 

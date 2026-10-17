@@ -62,7 +62,7 @@ const SESSION_KEY = `${KEY_PREFIX}session`;
 
 // Raise on any change to the core's state or the Truppzuordnung: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 5;
+const SESSION_VERSION = 6;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
@@ -408,10 +408,12 @@ function isTrupp(value: unknown): value is Trupp {
     isEinsatzstatus(value.einsatzstatus) &&
     typeof value.sicherheitstrupp === "boolean" &&
     isInteger(value.restzeitMs) &&
+    isInteger(value.anfangsdruckBar) &&
     isInteger(value.runningTimeMs) &&
     isInteger(value.anmarschBeganAtRunningTimeMs) &&
     isInteger(value.timeInBereitschaftMs) &&
     isNullableInteger(value.anmarschzeitMs) &&
+    isNullableInteger(value.anmarschdruckBar) &&
     typeof value.rueckzugsalarmArmed === "boolean" &&
     isInteger(value.loggedInAtMs)
   );

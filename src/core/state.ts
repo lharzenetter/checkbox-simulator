@@ -47,6 +47,8 @@ export interface Trupp {
   readonly sicherheitstrupp: boolean;
   /** Negative once the Einsatzzeit is exceeded. */
   readonly restzeitMs: number;
+  /** The Flaschendruck entered at login: `P_0`, timing-and-alarm-rules. */
+  readonly anfangsdruckBar: number;
   /** Simulated time the Einsatz has run, Bereitschaft excluded: `t_run`, timing-and-alarm-rules. */
   readonly runningTimeMs: number;
   /** The running time at which the current Anmarsch began. */
@@ -55,7 +57,9 @@ export interface Trupp {
   readonly timeInBereitschaftMs: number;
   /** `t_A` of the current Anmarsch, once it reported Einsatzziel erreicht; `null` before. */
   readonly anmarschzeitMs: number | null;
-  /** Whether the Rückzugsalarm of the current Anmarsch leg is still to fire. */
+  /** Set at Einsatzziel erreicht; `null` before. */
+  readonly anmarschdruckBar: number | null;
+  /** Whether the Rückzugsalarm is still to fire. */
   readonly rueckzugsalarmArmed: boolean;
   readonly loggedInAtMs: number;
 }

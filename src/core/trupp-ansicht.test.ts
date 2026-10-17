@@ -262,11 +262,11 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
 
   // timing-and-alarm-rules §1.7: the estimate is clamped at 0
   it("opens at 0 bar once the Restzeit is negative", () => {
-    // two OKs each end the three Alarms that fired on the way
+    // two OKs each end the four Alarms that fired on the way
     const editor = run(
       truppInAnmarsch(),
       tickAt(31),
-      ...Array.from({ length: 6 }, () => press("OK")),
+      ...Array.from({ length: 8 }, () => press("OK")),
       ...DRUCK_AENDERN,
     );
     expect(editor.truppMenue?.draftFlaschendruckBar).toBe(0);

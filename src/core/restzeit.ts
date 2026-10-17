@@ -35,27 +35,19 @@ export function snapToFlaschendruckGrid(flaschendruckBar: number): number {
 }
 
 /**
- * The Rückzugsdruck the Trupp-Ansicht shows: `[42] + 2·t_A × P_N / T` in whole bar, rounded
- * down, timing-and-alarm-rules §5.7; `null` while the Trupp has no Anmarschzeit.
+ * The Rückzugsdruck: twice the Anmarschdruck, never below the Reservedruck, and the Reservedruck
+ * until Einsatzziel erreicht, timing-and-alarm-rules §5.7.
  */
-export function rueckzugsdruckBar(trupp: Trupp): number | null {
-  if (trupp.anmarschzeitMs === null) {
-    return null;
-  }
-  return Math.floor(
-    P42_RESERVEDRUCK_BAR +
-      (2 * trupp.anmarschzeitMs * P81_FLASCHENTYP_2_BAR) / trupp.einsatzzeitMs,
-  );
+export function rueckzugsdruckBar(trupp: Trupp): number {
+  return trupp.anmarschdruckBar === null
+    ? P42_RESERVEDRUCK_BAR
+    : Math.max(2 * trupp.anmarschdruckBar, P42_RESERVEDRUCK_BAR);
 }
 
-/** The Rückmarschzeit, timing-and-alarm-rules §5.5, 5.6; `null` while the Trupp has no Anmarschzeit. */
-export function rueckmarschzeitMs(trupp: Trupp): number | null {
-  if (trupp.anmarschzeitMs === null) {
-    return null;
-  }
-  // §5.6: the Reservedruck converts to time like any Flaschendruck (§1.3)
+// timing-and-alarm-rules §5.5: the Restzeit at which the estimate `R × P_N / T` falls to the
+// Rückzugsdruck, exact, before the estimate is rounded down
+export function rueckzugsalarmRestzeitMs(trupp: Trupp): number {
   return (
-    2 * trupp.anmarschzeitMs +
-    computeRestzeitMs(trupp.einsatzzeitMs, P42_RESERVEDRUCK_BAR)
+    (rueckzugsdruckBar(trupp) * trupp.einsatzzeitMs) / P81_FLASCHENTYP_2_BAR
   );
 }
