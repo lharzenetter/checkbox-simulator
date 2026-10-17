@@ -324,6 +324,26 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
+  // the real-device photo sicherheitstrupp-deaktivieren.jpeg; timing-and-alarm-rules §12.8
+  it("draws `Sicherheitstrupp deaktivieren?` in a framed box over the Trupp-Menü", () => {
+    expect(
+      toAscii(
+        framebufferAfter(
+          HLF_AT_F,
+          press("OK"),
+          HLF_AT_M,
+          press("Down"),
+          press("Down"),
+          press("OK"),
+          press("OK"),
+          press("X"),
+          press("OK"),
+          press("OK"),
+        ),
+      ),
+    ).toMatchSnapshot();
+  });
+
   // manual 5.6.4, Druck ändern figure, opened from the Trupp-Menü
   it("draws Esz-Zeit ändern from the Trupp-Menü", () => {
     expect(

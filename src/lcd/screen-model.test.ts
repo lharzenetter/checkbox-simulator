@@ -873,6 +873,40 @@ describe("S09 Trupp-Menü", () => {
       expect(screenText(model)).toContain("Restzeit 00:30:00 SICHER");
     }
   });
+
+  // the real-device photo sicherheitstrupp-deaktivieren.jpeg; timing-and-alarm-rules §12.8
+  it("shows `Sicherheitstrupp deaktivieren?` in a box over a Sicherheitstrupp's menu on `Trupp -> Einsatz`", () => {
+    const model = screenModel(
+      stateAfter(
+        HLF_AT_F,
+        press("OK"),
+        HLF_AT_M,
+        press("Down"),
+        press("Down"),
+        press("OK"),
+        press("OK"),
+        press("X"),
+        press("OK"),
+        press("OK"),
+      ),
+    );
+    expect(model).toMatchObject({
+      layout: "truppMenue",
+      title: "Trupp 01 BEREITSCHAFT",
+      box: ["Sicherheitstrupp", "deaktivieren?", "[X]         [OK]"],
+    });
+    expect(screenText(model).slice(-3)).toEqual([
+      "Sicherheitstrupp",
+      "deaktivieren?",
+      "[X]         [OK]",
+    ]);
+  });
+
+  it("shows no box while the Trupp-Menü waits", () => {
+    expect(screenModel(stateAfter(...TRUPP_MENUE))).toMatchObject({
+      box: null,
+    });
+  });
 });
 
 describe("S08 `Esz-Zeit ändern` from the Trupp-Menü", () => {

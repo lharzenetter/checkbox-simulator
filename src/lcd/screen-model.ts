@@ -181,6 +181,8 @@ export type ScreenModel =
       readonly items: readonly string[];
       /** The cursor's line among the items in view. */
       readonly selectedIndex: number;
+      /** `Sicherheitstrupp deaktivieren?` with its keys, boxed over the menu; `null` without it. */
+      readonly box: readonly string[] | null;
     }
   | {
       readonly layout: "abmelden";
@@ -232,6 +234,14 @@ const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
 
 // The real-device photo zu-wenig-einsatzkraefte.jpeg, line by line.
 const ZU_WENIG_EINSATZKRAEFTE = ["Zu wenig", "Einsatzkräfte!"];
+
+// The real-device photo sicherheitstrupp-deaktivieren.jpeg, line by line, the keys under the
+// question's ends.
+const SICHERHEITSTRUPP_DEAKTIVIEREN = [
+  "Sicherheitstrupp",
+  "deaktivieren?",
+  "[X]         [OK]",
+];
 
 // manual 9.1 [72]
 const EINSATZLISTE_ROWS = 6;
@@ -573,6 +583,9 @@ function truppMenueModel(state: State, truppMenue: TruppMenue): ScreenModel {
       .slice(firstInView, firstInView + TRUPP_MENUE_LINES)
       .map((aktion) => TRUPP_MENUE_ITEMS[aktion]),
     selectedIndex: cursor - firstInView,
+    box: truppMenue.sicherheitstruppDeaktivierenShown
+      ? SICHERHEITSTRUPP_DEAKTIVIEREN
+      : null,
   };
 }
 
@@ -768,6 +781,7 @@ export function screenText(model: ScreenModel): readonly string[] {
           ? `Restzeit ${model.restzeit} ${SICHER}`
           : `Restzeit ${model.restzeit}`,
         ...model.items,
+        ...(model.box ?? []),
       ];
     case "abmelden":
       return [

@@ -303,6 +303,47 @@ function drawTruppMenue(
     }
     drawText(framebuffer, item, 1, y, { inverse: selected });
   });
+  if (model.box !== null) {
+    drawMenueBox(framebuffer, model.box);
+  }
+}
+
+// Laid out after the real-device photo sicherheitstrupp-deaktivieren.jpeg: a double frame set in
+// from the screen's sides, over the clock line and all of the first item's row, the lines centred.
+const MENUE_BOX_X = 8;
+const MENUE_BOX_Y = 56;
+const MENUE_BOX_WIDTH = LCD_WIDTH - 2 * MENUE_BOX_X;
+const MENUE_BOX_HEIGHT = 41;
+
+function drawMenueBox(
+  framebuffer: Framebuffer,
+  lines: readonly string[],
+): void {
+  fillRect(
+    framebuffer,
+    MENUE_BOX_X,
+    MENUE_BOX_Y,
+    MENUE_BOX_WIDTH,
+    MENUE_BOX_HEIGHT,
+    false,
+  );
+  strokeRect(
+    framebuffer,
+    MENUE_BOX_X,
+    MENUE_BOX_Y,
+    MENUE_BOX_WIDTH,
+    MENUE_BOX_HEIGHT,
+  );
+  strokeRect(
+    framebuffer,
+    MENUE_BOX_X + 2,
+    MENUE_BOX_Y + 2,
+    MENUE_BOX_WIDTH - 4,
+    MENUE_BOX_HEIGHT - 4,
+  );
+  lines.forEach((line, index) => {
+    drawCenteredText(framebuffer, line, MENUE_BOX_Y + 6 + index * LINE_PITCH);
+  });
 }
 
 // Laid out after the Trupp-Ansicht figure (manual 3.2.3) and the real-device photo
