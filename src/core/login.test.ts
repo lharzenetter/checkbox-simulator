@@ -434,16 +434,15 @@ describe("Druck ändern on the Anmeldefenster", () => {
 
   // manual 9.1 [76]; timing-and-alarm-rules §1.6, 9 ([77] = 0 %, [78] = 100 %)
   it("stays between 0 and 300 bar", () => {
-    function draftAfter(key: Key): number | null | undefined {
-      return run(flaschendruckAendern(), ...Array<Key>(20).fill(key).map(press))
-        .login?.draftFlaschendruckBar;
+    function draftAfter(key: Key, count: number): number | null | undefined {
+      return run(
+        flaschendruckAendern(),
+        ...Array<Key>(count).fill(key).map(press),
+      ).login?.draftFlaschendruckBar;
     }
-    expect(draftAfter("Down")).toBe(200);
-    expect(
-      run(flaschendruckAendern(), ...Array<Key>(70).fill("Down").map(press))
-        .login?.draftFlaschendruckBar,
-    ).toBe(0);
-    expect(draftAfter("Up")).toBe(300);
+    expect(draftAfter("Down", 20)).toBe(200);
+    expect(draftAfter("Down", 70)).toBe(0);
+    expect(draftAfter("Up", 20)).toBe(300);
   });
 
   // decided in "Define the key-by-screen navigation model"

@@ -373,7 +373,7 @@ describe("S04 Anmeldefenster", () => {
     const model = screenModel(stateAfter(HLF_AT_F, press("OK"), press("OK")));
     expect(model).toMatchObject({
       layout: "anmeldefenster",
-      meldung: ["Zu wenig", "Einsatzkräfte!"],
+      box: ["Zu wenig", "Einsatzkräfte!"],
     });
     expect(screenText(model)).toEqual([
       "Trupp 01   30 min",
@@ -390,7 +390,7 @@ describe("S04 Anmeldefenster", () => {
   it("shows no box while the Anmeldefenster waits", () => {
     expect(
       screenModel(stateAfter(HLF_AT_F, press("OK"), HLF_AT_M)),
-    ).toMatchObject({ meldung: null });
+    ).toMatchObject({ box: null });
   });
 
   // manual 5.3, Anmeldefenster figure: the header carries the chosen Einsatzzeit

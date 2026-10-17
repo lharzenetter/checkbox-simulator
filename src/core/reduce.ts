@@ -515,7 +515,7 @@ function requireTruppDraftFlaschendruck(truppMenue: TruppMenue): number {
   return truppMenue.draftFlaschendruckBar;
 }
 
-// timing-and-alarm-rules §1.5, 1.8: raised in [73] steps up to the Anfangsdruck's 300 bar ceiling,
+// timing-and-alarm-rules §1.5, 1.8: raised in [73] steps up to the Anfangsdruck's ceiling,
 // lowered in [76] steps down to an empty cylinder (verification scenario V5)
 function changeFlaschendruck(
   flaschendruckBar: number,
@@ -711,7 +711,7 @@ function withLogin(state: State, login: Login): State {
   return { ...state, login };
 }
 
-// manual 9.1 [76]–[78]; timing-and-alarm-rules §1.6: 0 to 300 bar
+// manual 9.1 [76]–[78]; timing-and-alarm-rules §1.6
 const ANFANGSDRUCK_MIN_BAR =
   P81_FLASCHENTYP_2_BAR -
   (P81_FLASCHENTYP_2_BAR * P78_MIN_UNTER_SOLL_PROZENT) / 100;

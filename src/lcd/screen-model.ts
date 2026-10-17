@@ -111,7 +111,7 @@ export type ScreenModel =
       readonly items: readonly string[];
       readonly selectedIndex: number;
       /** `Zu wenig Einsatzkräfte!`, in its two lines, boxed over the screen; `null` without it. */
-      readonly meldung: readonly string[] | null;
+      readonly box: readonly string[] | null;
     }
   | {
       readonly layout: "flaschendruckEditor";
@@ -437,7 +437,7 @@ function anmeldefensterModel(login: Login): ScreenModel {
     atemschutztraeger: login.atemschutztraeger.map(formatName),
     items: ANMELDEAKTIONEN.map((aktion) => ANMELDEFENSTER_ITEMS[aktion]),
     selectedIndex: ANMELDEAKTIONEN.indexOf(login.anmeldeaktion),
-    meldung: login.zuWenigEinsatzkraefteShown ? ZU_WENIG_EINSATZKRAEFTE : null,
+    box: login.zuWenigEinsatzkraefteShown ? ZU_WENIG_EINSATZKRAEFTE : null,
   };
 }
 
@@ -736,7 +736,7 @@ export function screenText(model: ScreenModel): readonly string[] {
         model.title,
         ...model.atemschutztraeger,
         ...model.items,
-        ...(model.meldung ?? []),
+        ...(model.box ?? []),
       ];
     case "flaschendruckEditor":
       return [
