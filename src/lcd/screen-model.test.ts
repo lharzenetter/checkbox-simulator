@@ -302,7 +302,7 @@ describe("S03 Einsatzzeit wählen", () => {
       "*HLF AT-F",
       "Einsatzzeit 30 min?",
       "Einsatzzeit 20 min?",
-      "Einsatzzeit180 min?",
+      "Einsatzzeit 180 min?",
     ]);
     expect(model).toMatchObject({
       layout: "einsatzzeitWaehlen",
@@ -316,7 +316,7 @@ describe("S03 Einsatzzeit wählen", () => {
       items: [
         "Einsatzzeit 30 min?",
         "Einsatzzeit 20 min?",
-        "Einsatzzeit180 min?",
+        "Einsatzzeit 180 min?",
       ],
       selectedIndex: 1,
     });
@@ -346,7 +346,7 @@ describe("S03 Einsatzzeit wählen", () => {
       "*HLF AT-F",
       "Einsatzzeit 30 min?",
       "Kurzzeiteinsatz? OK",
-      "Einsatzzeit180 min?",
+      "Einsatzzeit 180 min?",
     ]);
     expect(model).toMatchObject({ selectedIndex: 1 });
   });

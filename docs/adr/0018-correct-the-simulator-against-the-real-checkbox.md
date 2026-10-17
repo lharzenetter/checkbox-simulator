@@ -34,6 +34,7 @@ This amends [Define the key-by-screen navigation model](0004-define-the-key-by-s
 
 ## Login
 
+- Every Einsatzzeit line has one space before the minutes: `Einsatzzeit 30 min?`, `Einsatzzeit 20 min?`, `Einsatzzeit 180 min?`. The photo runs `180` into the word; the user decided against copying that.
 - The 20 min confirmation reads `Kurzzeiteinsatz? OK`, not `Langzeiteinsatz? OK`: the real Checkbox names an Einsatzzeit shorter than [01] a Kurzzeiteinsatz and a longer one a Langzeiteinsatz.
 - Einsatzzeit wählen offers `30`, `20` and `180 min`; 180 is Einsatzzeit #4 with [17] = 180, needs the `Langzeiteinsatz? OK` confirmation, and follows the same rules (Rückzugsalarmmodus on, 33 % / 66 %, no Prozentmodus).
 - Every pressure editor stops at **300 bar** ([77] = 0 %). The Anfangsdruck has no lower bound but 0 (assumption).
