@@ -207,12 +207,15 @@ describe("display timings under the speed control and pause", () => {
   });
 
   it.todo(
-    "returns from the Trupp-Ansicht to the Einsatzliste after 15 s real at 10×",
+    "returns from the Trupp-Menü to the Einsatzliste after 15 s real at 10×",
+  );
+  it.todo(
+    "returns from the Trupp-Ansicht to the Einsatzliste after 5 s real at 10×",
   );
   it.todo("alternates SICHER and the status glyph once per real second at 10×");
   it.todo("opens the Notausschaltung after X + Check held 4 s real at 10×");
   it.todo(
-    "keeps the Restzeit and fires no Alarm on the Trupp-Ansicht while paused",
+    "keeps the Restzeit and fires no Alarm on the Trupp-Menü while paused",
   );
   it.todo(
     "silences the siren and holds the LED while paused, resuming both on play",

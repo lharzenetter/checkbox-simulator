@@ -29,7 +29,7 @@ function tickAfter(state: State, elapsedMs: number): Event {
   };
 }
 
-/** Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste. */
+/** Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste once X closes its Trupp-Ansicht. */
 function truppInAnmarsch(): State {
   return run(
     createInitialState(SESSION_START),
@@ -38,6 +38,7 @@ function truppInAnmarsch(): State {
     hold(A2),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
@@ -46,20 +47,21 @@ function truppAtEinsatzziel(): State {
   return chooseInTruppMenue(truppInAnmarsch(), 2);
 }
 
-// Trupp 01 straight from Anmarsch into Rückmarsch, back on the Einsatzliste.
+// Trupp 01 turned back at its Einsatzziel, back on the Einsatzliste.
 function truppInRueckmarsch(): State {
-  return reduce(chooseInTruppMenue(truppInAnmarsch(), 3), press("X"));
+  return chooseInTruppMenue(truppAtEinsatzziel(), 2);
 }
 
-// Opens the Trupp-Menü, moves down to the item and accepts its Flaschendruck editor with OK.
+// Opens the Trupp-Menü, moves down to the item, accepts its Flaschendruck editor with OK and closes
+// the Trupp-Ansicht with X.
 function chooseInTruppMenue(state: State, downs: number): State {
   return run(
     state,
     press("OK"),
-    press("OK"),
     ...Array.from({ length: downs }, () => press("Down")),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
@@ -73,6 +75,7 @@ function truppInBereitschaft(): State {
     press("Down"),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
@@ -349,7 +352,6 @@ describe("the Einsatzprotokolle", () => {
     const bereitschaft = run(
       anmarsch,
       tickAfter(anmarsch, 3 * 60_000),
-      press("OK"),
       press("OK"),
       press("Down"),
       press("OK"),

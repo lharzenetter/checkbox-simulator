@@ -370,10 +370,11 @@ describe("the Anfangsdruck editor", () => {
     });
   });
 
-  // decided in "Define the key-by-screen navigation model"
-  it("logs the Trupp in on OK and shows it selected on the Einsatzliste", () => {
+  // decided in "Define the key-by-screen navigation model", as amended in "Correct the simulator
+  // against the real Checkbox": the Trupp-Ansicht comes first
+  it("logs the Trupp in on OK and shows it selected on the Trupp-Ansicht", () => {
     const state = run(anfangsdruckEditor(), press("OK"));
-    expect(state.screen).toBe("einsatzliste");
+    expect(state.screen).toBe("truppAnsicht");
     expect(state.login).toBeNull();
     expect(state.selectedTruppnummer).toBe(1);
     expect(state.trupps).toEqual([
@@ -422,6 +423,7 @@ function loggedIn(
     press("OK"),
     ...anfangsdruckKeys.map(press),
     press("OK"),
+    press("X"),
   );
 }
 

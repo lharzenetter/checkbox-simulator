@@ -50,7 +50,7 @@ function hold(tally: { tallyId: string; name: string }): Event {
   return { type: "tallyHeld", ...tally };
 }
 
-/** Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste. */
+/** Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste once X closes its Trupp-Ansicht. */
 function truppInAnmarsch(): State {
   return run(
     createInitialState(SESSION_START),
@@ -59,6 +59,7 @@ function truppInAnmarsch(): State {
     hold(A2),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
@@ -183,7 +184,7 @@ describe("V19: the login Daueralarm", () => {
     expect(state.screen).toBe("anmeldefenster");
 
     const loggedIn = run(state, press("OK"), press("OK"));
-    expect(loggedIn.screen).toBe("einsatzliste");
+    expect(loggedIn.screen).toBe("truppAnsicht");
     expect(loggedIn.trupps[0]?.einsatzstatus).toBe("anmarsch");
   });
 

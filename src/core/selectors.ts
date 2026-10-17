@@ -127,7 +127,8 @@ export function selectedTrupp(state: State): Trupp {
   return trupp;
 }
 
-// decided in "Define the key-by-screen navigation model", its Trupp-Menü table
+// decided in "Define the key-by-screen navigation model", its Trupp-Menü table, as amended in
+// "Correct the simulator against the real Checkbox": Anmarsch → Rückmarsch directly is gone
 const TRUPP_MENUE_AKTIONEN: Readonly<
   Record<Einsatzstatus, readonly TruppMenueAktion[]>
 > = {
@@ -135,7 +136,6 @@ const TRUPP_MENUE_AKTIONEN: Readonly<
     "truppEinsatz",
     "truppBereitschaft",
     "einsatzzielErreicht",
-    "rueckzugAntreten",
     "flaschendruckAendern",
     "attributeEintragen",
   ],

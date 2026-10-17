@@ -45,7 +45,7 @@ function tickAfter(state: State, elapsedMs: number): Event {
   };
 }
 
-// Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste.
+// Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste once X closes its Trupp-Ansicht.
 function truppInAnmarsch(): State {
   return run(
     createInitialState(SESSION_START),
@@ -54,6 +54,7 @@ function truppInAnmarsch(): State {
     hold(A2),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
@@ -67,6 +68,7 @@ function zweiTrupps(): State {
     press("Down"),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 

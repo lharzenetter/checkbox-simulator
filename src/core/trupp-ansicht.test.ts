@@ -28,6 +28,17 @@ function hold(tally: { tallyId: string; name: string }): Event {
   return { type: "tallyHeld", ...tally };
 }
 
+/** Trupp 01 of A1 and A2 on its Anfangsdruck editor, about to log in to Anmarsch. */
+function anfangsdruckEditor(): State {
+  return run(
+    createInitialState(SESSION_START),
+    hold(A1),
+    press("OK"),
+    hold(A2),
+    press("OK"),
+  );
+}
+
 /** Trupp 01 of A1 and A2, logged in to Bereitschaft, on the Einsatzliste. */
 function truppInBereitschaft(): State {
   return run(
@@ -38,61 +49,87 @@ function truppInBereitschaft(): State {
     press("Down"),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
 /** Trupp 01 of A1 and A2, logged in to Anmarsch, on the Einsatzliste. */
 function truppInAnmarsch(): State {
+  return run(anfangsdruckEditor(), press("OK"), press("X"));
+}
+
+/** The Trupp in Anmarsch reports Einsatzziel erreicht at the estimate; back on the Einsatzliste. */
+function truppAtEinsatzziel(state: State): State {
   return run(
-    createInitialState(SESSION_START),
-    hold(A1),
+    state,
     press("OK"),
-    hold(A2),
+    press("Down"),
+    press("Down"),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
-describe("the Trupp-Ansicht", () => {
-  // decided in "Define the key-by-screen navigation model"
-  it("opens for the selected Trupp on OK on the Einsatzliste", () => {
-    const state = reduce(truppInAnmarsch(), press("OK"));
-    expect(state.screen).toBe("truppAnsicht");
-    expect(state.selectedTruppnummer).toBe(1);
-  });
-
-  // decided in "Define the key-by-screen navigation model"
-  it("returns to the Einsatzliste on X", () => {
-    const state = run(truppInAnmarsch(), press("OK"), press("X"));
-    expect(state.screen).toBe("einsatzliste");
-  });
-
-  // decided in "Define the key-by-screen navigation model"
-  it("opens the Trupp-Menü on OK", () => {
-    const state = run(truppInAnmarsch(), press("OK"), press("OK"));
-    expect(state.screen).toBe("truppMenue");
-  });
-
-  // decided in "Define the key-by-screen navigation model": read-only; the key press only
-  // restarts the [13] timeout
-  it.each<Key>(["Up", "Down", "Check"])("changes nothing else on %s", (key) => {
-    const ansicht = reduce(truppInAnmarsch(), press("OK"));
-    expect(reduce(ansicht, press(key))).toEqual(ansicht);
-  });
-});
+/** The Trupp at the Einsatzziel turns back at the estimate; back on the Einsatzliste. */
+function truppInRueckmarsch(state: State): State {
+  return run(
+    state,
+    press("OK"),
+    press("Down"),
+    press("Down"),
+    press("OK"),
+    press("OK"),
+    press("X"),
+  );
+}
 
 describe("the Trupp-Menü", () => {
   function truppMenue(state: State): State {
-    return run(state, press("OK"), press("OK"));
+    return reduce(state, press("OK"));
   }
 
-  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
+  // decided in "Correct the simulator against the real Checkbox", navigation
+  it("opens for the selected Trupp on OK on the Einsatzliste", () => {
+    const state = truppMenue(truppInAnmarsch());
+    expect(state.screen).toBe("truppMenue");
+    expect(state.selectedTruppnummer).toBe(1);
+  });
+
+  // decided in "Correct the simulator against the real Checkbox", navigation: no Rückzug antreten
+  // straight from Anmarsch
   it("offers the Anmarsch items", () => {
     expect(truppMenueAktionen(truppMenue(truppInAnmarsch()))).toEqual([
       "truppEinsatz",
       "truppBereitschaft",
       "einsatzzielErreicht",
+      "flaschendruckAendern",
+      "attributeEintragen",
+    ]);
+  });
+
+  // decided in "Correct the simulator against the real Checkbox", navigation
+  it("offers the Einsatzziel erreicht items", () => {
+    expect(
+      truppMenueAktionen(truppMenue(truppAtEinsatzziel(truppInAnmarsch()))),
+    ).toEqual([
+      "truppEinsatz",
+      "truppBereitschaft",
       "rueckzugAntreten",
+      "flaschendruckAendern",
+      "attributeEintragen",
+    ]);
+  });
+
+  // decided in "Correct the simulator against the real Checkbox", navigation
+  it("offers the Rückmarsch items", () => {
+    expect(
+      truppMenueAktionen(
+        truppMenue(truppInRueckmarsch(truppAtEinsatzziel(truppInAnmarsch()))),
+      ),
+    ).toEqual([
+      "truppEinsatz",
+      "truppBereitschaft",
       "flaschendruckAendern",
       "attributeEintragen",
     ]);
@@ -127,10 +164,10 @@ describe("the Trupp-Menü", () => {
     );
   });
 
-  // decided in "Define the key-by-screen navigation model"
-  it("returns to the Trupp-Ansicht on X", () => {
+  // decided in "Correct the simulator against the real Checkbox", navigation
+  it("returns to the Einsatzliste on X", () => {
     const state = reduce(truppMenue(truppInAnmarsch()), press("X"));
-    expect(state.screen).toBe("truppAnsicht");
+    expect(state.screen).toBe("einsatzliste");
     expect(state.truppMenue).toBeNull();
   });
 
@@ -144,13 +181,20 @@ describe("the Trupp-Menü", () => {
 /** From the Einsatzliste to `Esz-Zeit ändern` of a Trupp in Anmarsch. */
 const DRUCK_AENDERN: readonly Event[] = [
   press("OK"),
-  press("OK"),
-  ...Array.from({ length: 4 }, () => press("Down")),
+  ...Array.from({ length: 3 }, () => press("Down")),
   press("OK"),
 ];
 
 function restzeitMs(state: State): number | undefined {
   return state.trupps[0]?.restzeitMs;
+}
+
+function realTickAfter(state: State, elapsedMs: number): Event {
+  return {
+    type: "tick",
+    now: state.now,
+    realNow: state.realNow + elapsedMs,
+  };
 }
 
 describe("`Druck ändern` on the Trupp-Menü", () => {
@@ -164,7 +208,7 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
       ...Array.from({ length: 5 }, () => press("Down")),
       press("OK"),
     );
-    expect(entered.screen).toBe("einsatzliste");
+    expect(entered.screen).toBe("truppAnsicht");
     expect(entered.truppMenue).toBeNull();
     expect(restzeitMs(entered)).toBe(21 * 60_000);
     expect(restzeitMs(run(entered, tickAt(9, 54)))).toBe((17 * 60 + 9) * 1000);
@@ -185,6 +229,7 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
     const raised = run(opened, press("Up"), press("OK"));
     expect(restzeitMs(raised)).toBe((20 * 60 + 30) * 1000);
 
+    // the Trupp-Ansicht shown at 10:00 has closed by 11:00
     const kept = run(raised, tickAt(11), ...DRUCK_AENDERN, press("X"));
     expect(kept.screen).toBe("truppMenue");
     expect(kept.truppMenue).toEqual({
@@ -232,7 +277,6 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
     const editor = run(
       truppInBereitschaft(),
       press("OK"),
-      press("OK"),
       press("Down"),
       press("Down"),
       press("OK"),
@@ -249,50 +293,106 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
   });
 });
 
-// timing-and-alarm-rules §9 [13], 9.1: 15 s idle, on real time
-describe("the [13] timeout", () => {
-  function realTickAfter(state: State, elapsedMs: number): Event {
-    return {
-      type: "tick",
-      now: state.now,
-      realNow: state.realNow + elapsedMs,
-    };
-  }
+// decided in "Correct the simulator against the real Checkbox", navigation
+describe("the Trupp-Ansicht", () => {
+  // X on an editor keeps the old Flaschendruck and returns to the Trupp-Menü, so no Ansicht
+  it("is not shown when an editor is left with X", () => {
+    const state = run(truppInAnmarsch(), ...DRUCK_AENDERN, press("X"));
+    expect(state.screen).toBe("truppMenue");
+  });
+
+  it.each([
+    {
+      entry: "Druck ändern",
+      from: truppInAnmarsch,
+      keys: DRUCK_AENDERN,
+    },
+    {
+      entry: "Einsatzziel erreicht",
+      from: truppInAnmarsch,
+      keys: [press("OK"), press("Down"), press("Down"), press("OK")],
+    },
+    {
+      entry: "Rückzug antreten",
+      from: () => truppAtEinsatzziel(truppInAnmarsch()),
+      keys: [press("OK"), press("Down"), press("Down"), press("OK")],
+    },
+    // ASSUMPTION in the reducer: after the login entry too
+    { entry: "the login", from: anfangsdruckEditor, keys: [] },
+  ])("is shown for the Trupp after OK on $entry", ({ from, keys }) => {
+    const state = run(from(), ...keys, press("OK"));
+    expect(state.screen).toBe("truppAnsicht");
+    expect(state.selectedTruppnummer).toBe(1);
+    expect(state.truppMenue).toBeNull();
+  });
 
   function ansicht(): State {
-    return reduce(truppInAnmarsch(), press("OK"));
+    return run(truppInAnmarsch(), ...DRUCK_AENDERN, press("OK"));
   }
 
-  it("returns from the Trupp-Ansicht to the Einsatzliste after 15 s idle", () => {
+  // timing-and-alarm-rules §9.1: 5 s of real time
+  it("returns to the Einsatzliste after 5 s", () => {
     const state = ansicht();
-    expect(reduce(state, realTickAfter(state, 14_999)).screen).toBe(
+    expect(reduce(state, realTickAfter(state, 4_999)).screen).toBe(
       "truppAnsicht",
     );
-    expect(reduce(state, realTickAfter(state, 15_000)).screen).toBe(
+    expect(reduce(state, realTickAfter(state, 5_000)).screen).toBe(
       "einsatzliste",
     );
   });
 
+  // timing-and-alarm-rules §9.1
+  it("runs on real time, not on the sped-up simulated time", () => {
+    const state = ansicht();
+    const tick: Event = {
+      type: "tick",
+      now: state.now + 40_000,
+      realNow: state.realNow + 4_000,
+    };
+    expect(reduce(state, tick).screen).toBe("truppAnsicht");
+  });
+
+  it.each<Key>(["Up", "Down", "OK", "X", "Check"])(
+    "returns to the Einsatzliste on %s, changing nothing else",
+    (key) => {
+      const state = ansicht();
+      const closed = reduce(state, press(key));
+      expect(closed.screen).toBe("einsatzliste");
+      expect(closed.trupps).toBe(state.trupps);
+      expect(closed.selectedTruppnummer).toBe(1);
+    },
+  );
+});
+
+// timing-and-alarm-rules §9 [13], 9.1: 15 s idle, on real time
+describe("the [13] timeout", () => {
+  function menue(): State {
+    return reduce(truppInAnmarsch(), press("OK"));
+  }
+
   it("returns from the Trupp-Menü to the Einsatzliste after 15 s idle", () => {
-    const menue = reduce(ansicht(), press("OK"));
-    const state = reduce(menue, realTickAfter(menue, 15_000));
-    expect(state.screen).toBe("einsatzliste");
-    expect(state.truppMenue).toBeNull();
+    const state = menue();
+    expect(reduce(state, realTickAfter(state, 14_999)).screen).toBe(
+      "truppMenue",
+    );
+    const timedOut = reduce(state, realTickAfter(state, 15_000));
+    expect(timedOut.screen).toBe("einsatzliste");
+    expect(timedOut.truppMenue).toBeNull();
   });
 
   it("runs on real time, not on the sped-up simulated time", () => {
-    const state = ansicht();
+    const state = menue();
     const tick: Event = {
       type: "tick",
       now: state.now + 60_000,
       realNow: state.realNow + 6_000,
     };
-    expect(reduce(state, tick).screen).toBe("truppAnsicht");
+    expect(reduce(state, tick).screen).toBe("truppMenue");
   });
 
   it("restarts on every key press", () => {
-    const menue = reduce(ansicht(), press("OK"));
-    const later = run(menue, realTickAfter(menue, 10_000), press("Down"));
+    const state = menue();
+    const later = run(state, realTickAfter(state, 10_000), press("Down"));
     expect(reduce(later, realTickAfter(later, 14_999)).screen).toBe(
       "truppMenue",
     );
@@ -302,21 +402,21 @@ describe("the [13] timeout", () => {
   });
 
   it("restarts on a key press that does nothing", () => {
-    const state = ansicht();
-    const later = run(state, realTickAfter(state, 10_000), press("Up"));
+    const state = menue();
+    const later = run(state, realTickAfter(state, 10_000), press("Check"));
     expect(reduce(later, realTickAfter(later, 14_999)).screen).toBe(
-      "truppAnsicht",
+      "truppMenue",
     );
   });
 });
 
 // decided in "Define the key-by-screen navigation model", its "Tally on Check" table
 describe.each([
-  { screen: "Trupp-Ansicht", keys: ["OK"] as const },
-  { screen: "Trupp-Menü", keys: ["OK", "OK"] as const },
+  { screen: "Trupp-Ansicht", keys: [...DRUCK_AENDERN, press("OK")] },
+  { screen: "Trupp-Menü", keys: [press("OK")] },
 ])("a Tally on Check on the $screen", ({ keys }) => {
   function opened(): State {
-    return run(truppInAnmarsch(), ...keys.map(press));
+    return run(truppInAnmarsch(), ...keys);
   }
 
   it("starts a login for an Atemschutzträger in no Trupp", () => {

@@ -18,6 +18,7 @@ import {
   P77_MAX_UEBER_SOLL_PROZENT,
   P78_MIN_UNTER_SOLL_PROZENT,
   P81_FLASCHENTYP_2_BAR,
+  TRUPP_ANSICHT_MS,
 } from "./parameters";
 import {
   computeRestzeitMs,
@@ -96,7 +97,7 @@ function handleKeyPress(state: State, key: Key): State {
     case "einsatzliste":
       return handleEinsatzlisteKey(state, key);
     case "truppAnsicht":
-      return handleTruppAnsichtKey(resetIdle(state), key);
+      return handleTruppAnsichtKey(state);
     case "truppMenue":
       return handleTruppMenueKey(resetIdle(state), key);
     case "truppFlaschendruckAendern":
@@ -367,7 +368,8 @@ function toPendingAlarm(
   return { truppnummer, cause };
 }
 
-// decided in "Define the key-by-screen navigation model"
+// decided in "Define the key-by-screen navigation model", as amended in "Correct the simulator
+// against the real Checkbox": OK opens the Trupp-Menü directly
 function handleEinsatzlisteKey(state: State, key: Key): State {
   switch (key) {
     case "Up":
@@ -376,7 +378,13 @@ function handleEinsatzlisteKey(state: State, key: Key): State {
     case "OK":
       return state.selectedTruppnummer === null
         ? state
-        : enterScreen(state, "truppAnsicht");
+        : enterScreen(
+            withTruppMenue(state, {
+              aktion: firstOf(truppMenueAktionen(state)),
+              draftFlaschendruckBar: null,
+            }),
+            "truppMenue",
+          );
     case "X":
     case "Check":
       return state;
@@ -385,29 +393,13 @@ function handleEinsatzlisteKey(state: State, key: Key): State {
   }
 }
 
-// decided in "Define the key-by-screen navigation model": read-only
-function handleTruppAnsichtKey(state: State, key: Key): State {
-  switch (key) {
-    case "OK":
-      return enterScreen(
-        withTruppMenue(state, {
-          aktion: firstOf(truppMenueAktionen(state)),
-          draftFlaschendruckBar: null,
-        }),
-        "truppMenue",
-      );
-    case "X":
-      return enterScreen(state, "einsatzliste");
-    case "Up":
-    case "Down":
-    case "Check":
-      return state;
-    default:
-      return assertNever(key);
-  }
+// decided in "Correct the simulator against the real Checkbox": any key closes it early
+function handleTruppAnsichtKey(state: State): State {
+  return enterScreen(state, "einsatzliste");
 }
 
-// decided in "Define the key-by-screen navigation model"; `Attribute eintragen` is inert
+// decided in "Define the key-by-screen navigation model", as amended in "Correct the simulator
+// against the real Checkbox"; `Attribute eintragen` is inert
 function handleTruppMenueKey(state: State, key: Key): State {
   const truppMenue = requireTruppMenue(state);
   switch (key) {
@@ -418,7 +410,7 @@ function handleTruppMenueKey(state: State, key: Key): State {
         aktion: moveCursor(truppMenueAktionen(state), truppMenue.aktion, key),
       });
     case "X":
-      return enterScreen(withTruppMenue(state, null), "truppAnsicht");
+      return enterScreen(withTruppMenue(state, null), "einsatzliste");
     case "OK":
       return chooseTruppMenueAktion(state, truppMenue);
     case "Check":
@@ -536,8 +528,8 @@ function changeFlaschendruck(
     : Math.max(flaschendruckBar - P76_DRUCK_SPRUNGGROESSE_BAR, 0);
 }
 
-// decided in "Define the key-by-screen navigation model", its pressure editor table: Rückzug
-// antreten shows the Trupp in RÜCKMARSCH, the others return to the Einsatzliste
+// decided in "Correct the simulator against the real Checkbox", navigation: every pressure entry
+// shows the Trupp-Ansicht
 function confirmFlaschendruck(
   state: State,
   truppMenue: TruppMenue,
@@ -547,21 +539,14 @@ function confirmFlaschendruck(
   const entered = enterFlaschendruck(trupp, flaschendruckBar);
   switch (truppMenue.aktion) {
     case "einsatzzielErreicht":
-      return leaveTruppMenue(
-        state,
-        trupp,
-        reachEinsatzziel(entered),
-        "einsatzliste",
-      );
+      return leaveTruppMenue(state, trupp, reachEinsatzziel(entered));
     case "rueckzugAntreten":
-      return leaveTruppMenue(
-        state,
-        trupp,
-        { ...entered, einsatzstatus: "rueckmarsch" },
-        "truppAnsicht",
-      );
+      return leaveTruppMenue(state, trupp, {
+        ...entered,
+        einsatzstatus: "rueckmarsch",
+      });
     case "flaschendruckAendern":
-      return leaveTruppMenue(state, trupp, entered, "einsatzliste");
+      return leaveTruppMenue(state, trupp, entered);
     case "truppEinsatz":
     case "truppBereitschaft":
     case "attributeEintragen":
@@ -573,17 +558,12 @@ function confirmFlaschendruck(
 
 // timing-and-alarm-rules §3.4, 5.14: an entry that takes the Restzeit past an Alarm point fires it
 // on OK
-function leaveTruppMenue(
-  state: State,
-  trupp: Trupp,
-  updated: Trupp,
-  screen: Screen,
-): State {
+function leaveTruppMenue(state: State, trupp: Trupp, updated: Trupp): State {
   const { trupp: checked, fired } = checkAlarms(trupp, updated);
   return raiseAlarms(
     enterScreen(
       withTruppMenue(replaceTrupp(state, trupp, checked), null),
-      screen,
+      "truppAnsicht",
     ),
     fired.map((alarm) => toPendingAlarm(checked.truppnummer, alarm)),
   );
@@ -851,7 +831,9 @@ function handleAnmeldefensterKey(state: State, key: Key): State {
   }
 }
 
-// timing-and-alarm-rules §12.1, 12.8
+// timing-and-alarm-rules §12.1, 12.8.
+// ASSUMPTION: the login's Anfangsdruck counts as a pressure entry, so it shows the Trupp-Ansicht too
+// ("Correct the simulator against the real Checkbox", navigation).
 function logIn(state: State, login: Login): State {
   const trupp: Trupp = {
     truppnummer: login.truppnummer,
@@ -877,7 +859,7 @@ function logIn(state: State, login: Login): State {
       ),
       selectedTruppnummer: trupp.truppnummer,
     },
-    "einsatzliste",
+    "truppAnsicht",
   );
 }
 
@@ -1195,16 +1177,27 @@ function runDisplayTimings(state: State): State {
   if (hasP13TimeoutRunOut(state)) {
     return enterScreen(withTruppMenue(state, null), "einsatzliste");
   }
+  if (hasTruppAnsichtRunOut(state)) {
+    return enterScreen(state, "einsatzliste");
+  }
   return abschaltzeitRestMs(state) === 0 ? enterScreen(state, "aus") : state;
 }
 
 // timing-and-alarm-rules §9 [13], 9.1
-// ASSUMPTION: the pressure editor `Esz-Zeit ändern` has no timeout; [13] names only the Trupp-
-// Ansicht and the Trupp-Menü ("Define the key-by-screen navigation model").
+// ASSUMPTION: the pressure editor `Esz-Zeit ändern` has no timeout; [13] names only the Trupp-Menü
+// ("Correct the simulator against the real Checkbox").
 function hasP13TimeoutRunOut(state: State): boolean {
   return (
-    (state.screen === "truppAnsicht" || state.screen === "truppMenue") &&
+    state.screen === "truppMenue" &&
     state.realNow - state.idleSinceRealMs >= P13_TRUPP_DETAILANSICHT_MS
+  );
+}
+
+// timing-and-alarm-rules §9, 9.1
+function hasTruppAnsichtRunOut(state: State): boolean {
+  return (
+    state.screen === "truppAnsicht" &&
+    state.realNow - state.screenEnteredRealMs >= TRUPP_ANSICHT_MS
   );
 }
 

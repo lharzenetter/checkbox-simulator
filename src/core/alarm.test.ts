@@ -39,7 +39,10 @@ function hold(tally: { tallyId: string; name: string }): Event {
   return { type: "tallyHeld", ...tally };
 }
 
-/** Trupp 01 of A1 and A2, logged in to Anmarsch for 30 min at 300 bar, on the Einsatzliste. */
+/**
+ * Trupp 01 of A1 and A2, logged in to Anmarsch for 30 min at 300 bar, on the Einsatzliste once X
+ * closes its Trupp-Ansicht.
+ */
 function truppInAnmarsch(): State {
   return run(
     createInitialState(SESSION_START),
@@ -48,6 +51,7 @@ function truppInAnmarsch(): State {
     hold(A2),
     press("OK"),
     press("OK"),
+    press("X"),
   );
 }
 
@@ -62,7 +66,7 @@ function endAlarm(): readonly Event[] {
 
 // Opens the Trupp-Menü from the Einsatzliste and chooses the item.
 function chooseItem(state: State, aktion: TruppMenueAktion): State {
-  const menue = run(state, press("OK"), press("OK"));
+  const menue = reduce(state, press("OK"));
   const index = truppMenueAktionen(menue).indexOf(aktion);
   expect(index).toBeGreaterThanOrEqual(0);
   return run(menue, ...presses("Down", index), press("OK"));
@@ -232,8 +236,9 @@ describe("a pressure entry of 0 bar", () => {
     );
     expectAlarmFor(state, 1);
     expect(restzeitOf(state)).toBe(0);
+    // S12 took over from the Trupp-Ansicht the entry opened
     state = run(state, ...endAlarm());
-    expect(state.screen).toBe("einsatzliste");
+    expect(state.screen).toBe("truppAnsicht");
 
     state = reduce(state, tickAt(9, 54));
     expectAlarmFor(state, 1);
@@ -580,8 +585,7 @@ describe("S12 Trupp ALARM", () => {
       truppInAnmarsch(),
       tickAt(9),
       press("OK"),
-      press("OK"),
-      ...Array.from({ length: 4 }, () => press("Down")),
+      ...Array.from({ length: 3 }, () => press("Down")),
       press("OK"),
       press("Down"),
       press("Down"),
@@ -617,9 +621,7 @@ describe("S12 Trupp ALARM", () => {
 
   it("does not let the Trupp-Ansicht time out behind it", () => {
     const restored = run(
-      truppInAnmarsch(),
-      tickAt(9, 50),
-      press("OK"),
+      enter(run(truppInAnmarsch(), tickAt(9, 50)), "flaschendruckAendern", 200),
       tickAt(9, 54),
       tickAt(10, 30),
       ...endAlarm(),
@@ -671,7 +673,6 @@ describe("V6: Alarms in every Einsatzstatus", () => {
   function accept(state: State, downs: number): State {
     return run(
       state,
-      press("OK"),
       press("OK"),
       ...Array.from({ length: downs }, () => press("Down")),
       press("OK"),
@@ -871,14 +872,13 @@ describe("V21: Alarms of several Trupps", () => {
     );
     expect(state.trupps.map((trupp) => trupp.truppnummer)).toEqual([1, 2]);
 
-    // Trupp 01 → Druck ändern, the Trupp-Menü's fifth item, opens at 200; Down to 180, no OK
+    // Trupp 01 → Druck ändern, the Trupp-Menü's fourth item, opens at 200; Down to 180, no OK
     state = run(
       state,
       tickAt(9, 50),
       press("Up"),
       press("OK"),
-      press("OK"),
-      ...Array.from({ length: 4 }, () => press("Down")),
+      ...Array.from({ length: 3 }, () => press("Down")),
       press("OK"),
     );
     expect(state.screen).toBe("truppFlaschendruckAendern");
@@ -1073,31 +1073,5 @@ describe("V10: a pressure entry across the Rückzugsalarm's threshold", () => {
     expect(restzeitOf(state)).toBe((14 * 60 + 59) * 1000);
     state = reduce(state, tickAt(9, 53));
     expectNoAlarm(state);
-  });
-});
-
-// verification-scenarios V11; timing-and-alarm-rules §5.9, 5.10
-describe("V11: Anmarsch straight to Rückmarsch", () => {
-  it("never fires the Rückzugsalarm", () => {
-    let state = enter(
-      run(truppInAnmarsch(), tickAt(6)),
-      "rueckzugAntreten",
-      240,
-    );
-    expectNoAlarm(state);
-    expect(state.trupps[0]?.einsatzstatus).toBe("rueckmarsch");
-    expect(restzeitOf(state)).toBe(24 * 60_000);
-    state = reduce(state, press("X"));
-
-    state = reduce(state, tickAt(9, 54));
-    expectAlarmFor(state, 1);
-    state = run(state, ...endAlarm());
-    // R falls to every Rückzugsalarm threshold a 6-min Anmarsch could have given
-    state = reduce(state, tickAt(19, 47));
-    expectNoAlarm(state);
-    state = run(state, tickAt(19, 48), ...endAlarm(), tickAt(29, 59));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(30));
-    expectAlarmFor(state, 1);
   });
 });
