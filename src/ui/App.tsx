@@ -181,7 +181,7 @@ export function App() {
             <div className={styles.deviceRow}>
               <div className={styles.truppzuordnungSlot}>
                 <Truppzuordnung
-                  entries={truppzuordnung}
+                  rows={truppzuordnung}
                   onWritten={writeTruppzuordnung}
                 />
               </div>

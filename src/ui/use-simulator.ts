@@ -9,7 +9,7 @@ import {
   saveDeviceMemory,
   saveSession,
 } from "../storage/index";
-import type { Truppzuordnung, TruppzuordnungEntry } from "../storage/index";
+import type { Truppzuordnung, TruppzuordnungColumn } from "../storage/index";
 import {
   acceptsDeviceKeys,
   followAlarmSignal,
@@ -75,7 +75,7 @@ export function useSimulator(): {
   readonly truppzuordnung: Truppzuordnung;
   readonly writeTruppzuordnung: (
     truppnummer: number,
-    column: keyof TruppzuordnungEntry,
+    column: TruppzuordnungColumn,
     text: string,
   ) => void;
   readonly truppzuordnungShown: boolean;
@@ -247,7 +247,7 @@ export function useSimulator(): {
     setMuted((current) => !current);
   }, []);
   const writeTruppzuordnung = useCallback(
-    (truppnummer: number, column: keyof TruppzuordnungEntry, text: string) => {
+    (truppnummer: number, column: TruppzuordnungColumn, text: string) => {
       setTruppzuordnung((current) =>
         current.map((written, index) =>
           index === truppnummer - 1 ? { ...written, [column]: text } : written,

@@ -29,13 +29,16 @@ import {
 } from "./guards";
 
 /** What the Trainee wrote on one row of the Truppzuordnung. */
-export interface TruppzuordnungEntry {
+export interface TruppzuordnungRow {
   readonly ort: string;
   readonly auftrag: string;
 }
 
-/** What the Trainee wrote on the Truppzuordnung: one entry per Truppnummer, in order. */
-export type Truppzuordnung = readonly TruppzuordnungEntry[];
+/** One of the two columns the Trainee writes in on the Truppzuordnung. */
+export type TruppzuordnungColumn = keyof TruppzuordnungRow;
+
+/** What the Trainee wrote on the Truppzuordnung: one row per Truppnummer, in order. */
+export type Truppzuordnung = readonly TruppzuordnungRow[];
 
 /** The Truppzuordnung with nothing written on it. */
 export const BLANK_TRUPPZUORDNUNG: Truppzuordnung = Array.from(
@@ -218,10 +221,10 @@ function isTruppzuordnung(value: unknown): value is Truppzuordnung {
     Array.isArray(value) &&
     value.length === P72_ANZAHL_DER_MAXIMALEN_TRUPPS &&
     value.every(
-      (entry) =>
-        isRecord(entry) &&
-        isTruppzuordnungField(entry.ort) &&
-        isTruppzuordnungField(entry.auftrag),
+      (row) =>
+        isRecord(row) &&
+        isTruppzuordnungField(row.ort) &&
+        isTruppzuordnungField(row.auftrag),
     )
   );
 }

@@ -12,4 +12,9 @@ export {
   saveSession,
   TRUPPZUORDNUNG_MAX_LENGTH,
 } from "./session";
-export type { Stores, Truppzuordnung, TruppzuordnungEntry } from "./session";
+export type {
+  Stores,
+  Truppzuordnung,
+  TruppzuordnungColumn,
+  TruppzuordnungRow,
+} from "./session";

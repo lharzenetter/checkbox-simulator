@@ -113,6 +113,7 @@ for (const [layout, width] of [
           `Truppzuordnung Nr. ${String(truppnummer)} not laid out`,
         );
       }
+      // Room for a short Ort or Auftrag such as "1. OG links" without scrolling the field.
       expect(ort.width).toBeGreaterThanOrEqual(80);
       expect(auftrag.width).toBeGreaterThanOrEqual(80);
       expect(auftrag.x).toBeGreaterThanOrEqual(ort.x + ort.width - 1);
