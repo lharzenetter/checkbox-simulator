@@ -526,6 +526,20 @@ describe("the Anfangsdruck editor", () => {
     expect(restzeitAt(...Array<Key>(6).fill("Down"))).toBe(27 * 60_000);
     expect(restzeitAt(...Array<Key>(10).fill("Down"))).toBe(25 * 60_000);
   });
+
+  // timing-and-alarm-rules §3.4: an entry that takes the Restzeit to 00:00:00 fires the
+  // Einsatzzeit Alarm on OK, and the login's Anfangsdruck is such an entry
+  it("raises the Einsatzzeit ALARM on OK when logged in at 0 bar", () => {
+    const state = run(
+      anfangsdruckEditor(),
+      ...Array<Key>(60).fill("Down").map(press),
+      press("OK"),
+    );
+    expect(state.screen).toBe("alarm");
+    expect(state.pendingAlarms.map((alarm) => alarm.cause)).toContain(
+      "einsatzzeit",
+    );
+  });
 });
 
 function loggedIn(

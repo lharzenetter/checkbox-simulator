@@ -920,7 +920,8 @@ function handleZuWenigEinsatzkraefteKey(
 
 // timing-and-alarm-rules §12.1, 12.8.
 // ASSUMPTION: the login's Anfangsdruck counts as a pressure entry, so it shows the Trupp-Ansicht too
-// ("Correct the simulator against the real Checkbox", navigation).
+// ("Correct the simulator against the real Checkbox", navigation) and fires on OK the Alarms an
+// entry down from the full Einsatzzeit passes, such as 00:00:00 at 0 bar (§3.4, 5.9, 5.14).
 function logIn(state: State, login: Login): State {
   const trupp: Trupp = {
     truppnummer: login.truppnummer,
@@ -940,16 +941,23 @@ function logIn(state: State, login: Login): State {
     rueckzugsalarmArmed: true,
     loggedInAtMs: state.now,
   };
-  return enterScreen(
-    {
-      ...state,
-      login: null,
-      trupps: [...state.trupps, trupp].sort(
-        (a, b) => a.truppnummer - b.truppnummer,
-      ),
-      selectedTruppnummer: trupp.truppnummer,
-    },
-    "truppAnsicht",
+  const { trupp: checked, fired } = checkAlarms(
+    { ...trupp, restzeitMs: trupp.einsatzzeitMs },
+    trupp,
+  );
+  return raiseAlarms(
+    enterScreen(
+      {
+        ...state,
+        login: null,
+        trupps: [...state.trupps, checked].sort(
+          (a, b) => a.truppnummer - b.truppnummer,
+        ),
+        selectedTruppnummer: checked.truppnummer,
+      },
+      "truppAnsicht",
+    ),
+    fired.map((alarm) => toPendingAlarm(checked.truppnummer, alarm)),
   );
 }
 
