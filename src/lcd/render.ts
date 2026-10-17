@@ -450,7 +450,8 @@ function drawTruppPanels(
     92,
     RESTZEIT_BOX_Y - RESTZEIT_CLOCK.length - 1,
   );
-  // manual 3.2.3 item 9, 5.5.3: the box is drawn empty until there is a Rückzugsdruck
+  // manual 3.2.3 item 9, 5.5.3; timing-and-alarm-rules §5.7: filled from login, with the
+  // Reservedruck until Einsatzziel erreicht
   drawValueBox(framebuffer, model.rueckzugsdruck, RUECKZUGSDRUCK_BOX_Y);
   drawPictogramOnBox(framebuffer, RUECKZUG_ARROWS, 93, RUECKZUGSDRUCK_BOX_Y);
 }

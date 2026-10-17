@@ -561,8 +561,8 @@ function confirmFlaschendruck(
   }
 }
 
-// timing-and-alarm-rules §3.4, 5.14: an entry that takes the Restzeit past an Alarm point fires it
-// on OK
+// timing-and-alarm-rules §3.4, 5.9, 5.14: an entry that takes the Restzeit past an Alarm point fires
+// it on OK, and one that lifts the estimate above the Rückzugsdruck re-arms the Rückzugsalarm
 function leaveTruppMenue(state: State, trupp: Trupp, updated: Trupp): State {
   const { trupp: checked, fired } = checkAlarms(
     trupp,

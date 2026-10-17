@@ -536,7 +536,7 @@ function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
     layout: "alarm",
     title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ${ALARM_HEADERS[cause]}`,
     ...truppPanelsOf(trupp),
-    rueckzugsdruckLevel: cylinderFillLevel(rueckzugsdruckBar(trupp)),
+    rueckzugsdruckLevel: rueckzugsdruckShare(trupp),
     prompt: ["Alarmende", "mit OK"],
   };
 }
@@ -622,9 +622,15 @@ function timeSplitOf(trupp: Trupp): TimeSplit | null {
     anmarschzeitShare,
     rueckmarschShare: Math.min(
       1 - anmarschzeitShare,
-      cylinderFillLevel(rueckzugsdruckBar(trupp)),
+      rueckzugsdruckShare(trupp),
     ),
   };
+}
+
+// The Rückzugsdruck as a share of `P_N`, which is also the share of the Einsatzzeit it is worth
+// (timing-and-alarm-rules §5.5).
+function rueckzugsdruckShare(trupp: Trupp): number {
+  return cylinderFillLevel(rueckzugsdruckBar(trupp));
 }
 
 function shareOfEinsatzzeit(trupp: Trupp, durationMs: number): number {

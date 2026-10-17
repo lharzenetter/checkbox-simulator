@@ -267,6 +267,32 @@ describe("a pressure entry of 0 bar", () => {
   });
 });
 
+// verification-scenarios V3, its Rückzug row; timing-and-alarm-rules §1.4, 5.5, 5.13
+describe("a pressure entry in Anmarsch", () => {
+  it("moves the Rückzugsalarm with the Restzeit, to 50 bar at 22:03", () => {
+    let state = enter(
+      run(truppInAnmarsch(), tickAt(6, 3)),
+      "flaschendruckAendern",
+      210,
+    );
+    expectNoAlarm(state);
+    expect(restzeitOf(state)).toBe(21 * 60_000);
+    state = run(
+      state,
+      tickAt(9, 54),
+      ...endAlarm(),
+      tickAt(19, 48),
+      ...endAlarm(),
+      tickAt(22, 2),
+    );
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(22, 3));
+    expectAlarmFor(state, 1);
+    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
+    expect(restzeitOf(state)).toBe(5 * 60_000);
+  });
+});
+
 // verification-scenarios V24; timing-and-alarm-rules §1.7, 3.6, 5.9
 describe("a pressure entry on an overdue Trupp", () => {
   it("re-arms Einsatzzeit erreicht and the overdue repeats", () => {
