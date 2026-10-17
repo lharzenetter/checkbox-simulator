@@ -30,7 +30,7 @@ An operator training tool. A single **Trainee** operates the Checkbox and also p
 
 ## 4. Alarm presentation
 
-[Decide how alarms are presented](adr/0013-decide-how-alarms-are-presented.md): one live S12 screen for every Alarm except a Daueralarm, a siren with a blinking LED, one pending Alarm per Trupp with FIFO across Trupps, interruption and return, only OK on S12, audio unlock, mute, and behaviour under pause and reload.
+[Decide how alarms are presented](adr/0013-decide-how-alarms-are-presented.md): one live S12 screen for every Alarm except a Daueralarm, a siren with a blinking LED, FIFO, interruption and return, only OK on S12, audio unlock, mute, and behaviour under pause and reload. [Correct the simulator against the real Checkbox](adr/0018-correct-the-simulator-against-the-real-checkbox.md) amends it: the header names the cause, every Alarm queues on its own, even several of one Trupp, and each takes two OKs, the first silencing it.
 
 ## 5. Trainee interaction
 
@@ -63,7 +63,7 @@ Contradictions found while consolidating, and how each was handled:
 - **Timing rule 2.2** gave the manual's rounded 10 / 20 min as the simulator's example, which contradicts 2.6 (9:54 / 19:48). Reworded.
 - **Timing notation `t_run`** said "wall-clock time". It is simulated time (§9.1). Fixed.
 - **Timing §6 and A7** still read as an open assumption. Now marked out of scope.
-- **The map's gist of the navigation decision** read "Anfangsdruck (300 bar fixed …)". It is the *cylinder type* (`P_N`) that is fixed; the Anfangsdruck is entered from 270 to 330 bar (§1.6). Fixed on the map.
+- **The map's gist of the navigation decision** read "Anfangsdruck (300 bar fixed …)". It is the _cylinder type_ (`P_N`) that is fixed; the Anfangsdruck is entered from 270 to 330 bar (§1.6). Fixed on the map.
 - **Old wording in closed tickets** ("Transponder", keys A–E, "Rückzug" as a status, "Sicherungstrupp") is left as history. The ADRs use the device wording, so two ADR titles differ from their ticket titles (see [ADR 0003](adr/0003-reconcile-the-glossary-with-the-lcds-on-screen-wording.md)).
 - **Superseded parts of the navigation decision** (OK doing nothing on ABMELDEN and the Anmeldefenster; the provisional Tally-on-ALARM row) are applied in the navigation ADR.
 
