@@ -110,6 +110,8 @@ export type ScreenModel =
       readonly atemschutztraeger: readonly string[];
       readonly items: readonly string[];
       readonly selectedIndex: number;
+      /** `Zu wenig Einsatzkräfte!`, in its two lines, boxed over the screen; `null` without it. */
+      readonly meldung: readonly string[] | null;
     }
   | {
       readonly layout: "flaschendruckEditor";
@@ -230,6 +232,9 @@ const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
   sicherheitstruppOk: "Sicherheitstrupp OK",
   flaschendruckAendern: "Druck ändern",
 };
+
+// The real-device photo zu-wenig-einsatzkraefte.jpeg, line by line.
+const ZU_WENIG_EINSATZKRAEFTE = ["Zu wenig", "Einsatzkräfte!"];
 
 // manual 9.1 [72]
 const EINSATZLISTE_ROWS = 6;
@@ -432,6 +437,7 @@ function anmeldefensterModel(login: Login): ScreenModel {
     atemschutztraeger: login.atemschutztraeger.map(formatName),
     items: ANMELDEAKTIONEN.map((aktion) => ANMELDEFENSTER_ITEMS[aktion]),
     selectedIndex: ANMELDEAKTIONEN.indexOf(login.anmeldeaktion),
+    meldung: login.zuWenigEinsatzkraefteShown ? ZU_WENIG_EINSATZKRAEFTE : null,
   };
 }
 
@@ -726,7 +732,12 @@ export function screenText(model: ScreenModel): readonly string[] {
         ...model.items,
       ];
     case "anmeldefenster":
-      return [model.title, ...model.atemschutztraeger, ...model.items];
+      return [
+        model.title,
+        ...model.atemschutztraeger,
+        ...model.items,
+        ...(model.meldung ?? []),
+      ];
     case "flaschendruckEditor":
       return [
         model.truppnummer === null

@@ -808,6 +808,9 @@ export const ANMELDEAKTIONEN: readonly Anmeldeaktion[] = [
 // decided in "Define the key-by-screen navigation model"
 function handleAnmeldefensterKey(state: State, key: Key): State {
   const login = requireLogin(state);
+  if (login.zuWenigEinsatzkraefteShown) {
+    return handleZuWenigEinsatzkraefteKey(state, login, key);
+  }
   switch (key) {
     case "Up":
     case "Down":
@@ -827,6 +830,27 @@ function handleAnmeldefensterKey(state: State, key: Key): State {
         : confirmTrupp(state);
     case "X":
       return discardLogin(state);
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+// timing-and-alarm-rules §7.6: OK and X close only the box, keeping the members.
+// ASSUMPTION: Up, Down and Check are ignored while it shows, as on every box over a screen
+// ("Correct the simulator against the real Checkbox").
+function handleZuWenigEinsatzkraefteKey(
+  state: State,
+  login: Login,
+  key: Key,
+): State {
+  switch (key) {
+    case "OK":
+    case "X":
+      return withLogin(state, { ...login, zuWenigEinsatzkraefteShown: false });
+    case "Up":
+    case "Down":
     case "Check":
       return state;
     default:
@@ -866,23 +890,23 @@ function logIn(state: State, login: Login): State {
   );
 }
 
-// timing-and-alarm-rules §7.5: below [07] OK starts the login Daueralarm and the Anmeldefenster
-// stays
+// timing-and-alarm-rules §7.5: below [07] OK shows `Zu wenig Einsatzkräfte!` over the
+// Anmeldefenster
 function confirmTrupp(state: State): State {
   const login = requireLogin(state);
   return hasEnoughAtemschutztraeger(login)
     ? enterScreen(state, "anfangsdruckEditor")
-    : withLogin(state, soundDaueralarm(state, login));
+    : withLogin(state, { ...login, zuWenigEinsatzkraefteShown: true });
 }
 
 // decided in "Decide when a Daueralarm starts and ends": OK never silences a Daueralarm.
 // ASSUMPTION: nor does it restart one that is sounding, so its wail runs on unbroken; the ADR
 // restarts it only once it has stopped (taken in "Sound the login and logoff Daueralarme",
 // issue #36).
-function soundDaueralarm<T extends Login | Logoff>(state: State, cause: T): T {
-  return cause.daueralarmSinceRealMs === null
-    ? { ...cause, daueralarmSinceRealMs: state.realNow }
-    : cause;
+function soundDaueralarm(state: State, logoff: Logoff): Logoff {
+  return logoff.daueralarmSinceRealMs === null
+    ? { ...logoff, daueralarmSinceRealMs: state.realNow }
+    : logoff;
 }
 
 function hasEnoughAtemschutztraeger(login: Login): boolean {
@@ -955,7 +979,7 @@ function startLogin(state: State, atemschutztraeger: Atemschutztraeger): State {
         anmeldeaktion: "truppOkEinsatz",
         anfangsdruckBar: P81_FLASCHENTYP_2_BAR,
         draftFlaschendruckBar: null,
-        daueralarmSinceRealMs: null,
+        zuWenigEinsatzkraefteShown: false,
       },
     },
     "einsatzzeitWaehlen",
@@ -1120,18 +1144,13 @@ function addAtemschutztraeger(
   ) {
     return state;
   }
-  const joined: Login = {
+  // timing-and-alarm-rules §7.6: a joining Tally closes `Zu wenig Einsatzkräfte!`, and the
+  // Anmeldefenster waits for OK
+  return withLogin(state, {
     ...login,
     atemschutztraeger: [...login.atemschutztraeger, atemschutztraeger],
-  };
-  // timing-and-alarm-rules §7.6: the [07]th member stops the Daueralarm, and the Anmeldefenster
-  // waits for OK
-  return withLogin(
-    state,
-    hasEnoughAtemschutztraeger(joined)
-      ? { ...joined, daueralarmSinceRealMs: null }
-      : joined,
-  );
+    zuWenigEinsatzkraefteShown: false,
+  });
 }
 
 function isInTrupp(

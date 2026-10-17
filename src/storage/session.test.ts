@@ -99,7 +99,7 @@ const MID_EINSATZ: State = {
     anmeldeaktion: "flaschendruckAendern",
     anfangsdruckBar: 300,
     draftFlaschendruckBar: 280,
-    daueralarmSinceRealMs: 70_000,
+    zuWenigEinsatzkraefteShown: true,
   },
   logoff: {
     truppnummer: 2,

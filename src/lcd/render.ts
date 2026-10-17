@@ -57,6 +57,9 @@ export function renderScreen(model: ScreenModel): Framebuffer {
         model.selectedIndex,
       );
       drawLines(framebuffer, model.atemschutztraeger, 14);
+      if (model.meldung !== null) {
+        drawMeldung(framebuffer, model.meldung);
+      }
       break;
     case "flaschendruckEditor":
       drawFlaschendruckEditor(framebuffer, model);
@@ -169,6 +172,22 @@ function drawMenuScreen(
       fillRect(framebuffer, 0, y - 1, LCD_WIDTH, LINE_PITCH);
     }
     drawText(framebuffer, item, 1, y, { inverse: selected });
+  });
+}
+
+// Laid out after the real-device photo zu-wenig-einsatzkraefte.jpeg: a double frame with a shadow
+// to its right and below, over the lower part of the screen, the text centred in its upper half.
+const MELDUNG_Y = 76;
+const MELDUNG_HEIGHT = 44;
+
+function drawMeldung(framebuffer: Framebuffer, lines: readonly string[]): void {
+  // The menu behind must not show at the box's sides.
+  fillRect(framebuffer, 0, MELDUNG_Y - 1, LCD_WIDTH, MELDUNG_HEIGHT + 3, false);
+  drawDoubleFrame(framebuffer, MELDUNG_Y, MELDUNG_HEIGHT);
+  fillRect(framebuffer, LCD_WIDTH - 2, MELDUNG_Y + 1, 1, MELDUNG_HEIGHT);
+  fillRect(framebuffer, 3, MELDUNG_Y + MELDUNG_HEIGHT, LCD_WIDTH - 4, 1);
+  lines.forEach((line, index) => {
+    drawCenteredText(framebuffer, line, MELDUNG_Y + 7 + index * LINE_PITCH);
   });
 }
 

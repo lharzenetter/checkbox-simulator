@@ -413,7 +413,7 @@ function isLogin(value: unknown): value is Login {
     isMemberOf(ANMELDEAKTIONEN, value.anmeldeaktion) &&
     isInteger(value.anfangsdruckBar) &&
     isNullableInteger(value.draftFlaschendruckBar) &&
-    isNullableInteger(value.daueralarmSinceRealMs)
+    typeof value.zuWenigEinsatzkraefteShown === "boolean"
   );
 }
 

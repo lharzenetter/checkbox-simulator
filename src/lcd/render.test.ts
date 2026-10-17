@@ -148,6 +148,20 @@ describe("the LCD framebuffer", () => {
     ).toMatchSnapshot();
   });
 
+  // timing-and-alarm-rules §7.5; real-device photo zu-wenig-einsatzkraefte.jpeg
+  it("draws `Zu wenig Einsatzkräfte!` in a framed box over the Anmeldefenster", () => {
+    expect(
+      toAscii(framebufferAfter(HLF_AT_F, press("OK"), press("OK"))),
+    ).toMatchSnapshot();
+  });
+
+  // timing-and-alarm-rules §8.3; verification-scenarios V28
+  it("draws `Langzeiteinsatz? OK` on the 180 min line", () => {
+    expect(
+      toAscii(framebufferAfter(HLF_AT_F, press("Up"), press("OK"))),
+    ).toMatchSnapshot();
+  });
+
   // manual 5.3, S06 figure, at its 250 bar
   it("draws the Anfangsdruck editor", () => {
     const tenStepsDown = Array.from({ length: 10 }, () => press("Down"));

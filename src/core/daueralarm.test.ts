@@ -155,59 +155,6 @@ describe("V18: the logoff Daueralarm", () => {
   });
 });
 
-// verification scenario V19; timing-and-alarm-rules §7.2, 7.5, 7.6
-describe("V19: the login Daueralarm", () => {
-  /** The Anmeldefenster for 30 min with only A1 joined. */
-  function anmeldefenster(): State {
-    return run(createInitialState(SESSION_START), hold(A1), press("OK"));
-  }
-
-  it("does not sound while the Anmeldefenster only waits", () => {
-    expect(isAlarmSounding(anmeldefenster())).toBe(false);
-  });
-
-  it("starts on `Trupp OK Einsatz` + OK with one member, and the Anmeldefenster stays", () => {
-    const state = reduce(anmeldefenster(), press("OK"));
-    expect(state.screen).toBe("anmeldefenster");
-    expect(isAlarmSounding(state)).toBe(true);
-  });
-
-  it("keeps sounding on a second OK", () => {
-    const state = run(anmeldefenster(), press("OK"), press("OK"));
-    expect(state.screen).toBe("anmeldefenster");
-    expect(isAlarmSounding(state)).toBe(true);
-  });
-
-  it("stops once the second member joins, and the Anmeldefenster waits for OK", () => {
-    const state = run(anmeldefenster(), press("OK"), hold(A2));
-    expect(isAlarmSounding(state)).toBe(false);
-    expect(state.screen).toBe("anmeldefenster");
-
-    const loggedIn = run(state, press("OK"), press("OK"));
-    expect(loggedIn.screen).toBe("truppAnsicht");
-    expect(loggedIn.trupps[0]?.einsatzstatus).toBe("anmarsch");
-  });
-
-  // decided in "Decide when a Daueralarm starts and ends": only [07] members or X end it, and no
-  // Tally joins on the Flaschendruck editor ("Define the key-by-screen navigation model")
-  it("keeps sounding while `Druck ändern` is open and after it returns", () => {
-    const editor = run(anmeldefenster(), press("OK"), press("Up"), press("OK"));
-    expect(editor.screen).toBe("flaschendruckAendern");
-    expect(isAlarmSounding(editor)).toBe(true);
-
-    const back = reduce(editor, press("OK"));
-    expect(back.screen).toBe("anmeldefenster");
-    expect(isAlarmSounding(back)).toBe(true);
-  });
-
-  it("stops on X, which throws the login away and frees the Truppnummer", () => {
-    const state = run(anmeldefenster(), press("OK"), press("X"));
-    expect(isAlarmSounding(state)).toBe(false);
-    expect(state.login).toBeNull();
-    expect(reduce(state, hold(A2)).login?.truppnummer).toBe(1);
-  });
-});
-
 // verification scenario V22; timing-and-alarm-rules §8.2; decided in "Decide how alarms are
 // presented", points 4 and 5
 describe("V22: an Alarm during a Daueralarm", () => {

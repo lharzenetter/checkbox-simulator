@@ -9,7 +9,7 @@ import type {
 
 /**
  * Whether the siren sounds and the LED blinks: while S12 shows an Alarm not yet silenced by its
- * first OK, or while a Daueralarm is active.
+ * first OK, or while the logoff Daueralarm is active.
  */
 // decided in "Decide how alarms are presented", points 2 and 4; timing-and-alarm-rules §8.4.
 // ASSUMPTION: an Alarm that fires while the one shown is silenced queues without sound until the
@@ -24,7 +24,7 @@ export function isAlarmSounding(state: State): boolean {
 
 /**
  * Whether an Alarm is active: S12 shows one its second OK has not yet ended, silenced or not, or
- * a Daueralarm sounds. The simulation runs at real time while one is.
+ * the logoff Daueralarm sounds. The simulation runs at real time while one is.
  */
 // decided in "Drop the simulation to real time while an Alarm sounds", point 1, as amended in
 // "Correct the simulator against the real Checkbox": the lock holds until the second OK
@@ -34,12 +34,10 @@ export function isAlarmActive(state: State): boolean {
   );
 }
 
+// timing-and-alarm-rules §7.5: a login with too few Atemschutzträger sounds nothing, so the
+// logoff Daueralarm is the only one
 function daueralarmSinceRealMs(state: State): number | null {
-  return (
-    state.login?.daueralarmSinceRealMs ??
-    state.logoff?.daueralarmSinceRealMs ??
-    null
-  );
+  return state.logoff?.daueralarmSinceRealMs ?? null;
 }
 
 /**

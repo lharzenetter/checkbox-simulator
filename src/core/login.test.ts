@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createInitialState, isSicherShown, reduce } from "./index";
+import {
+  createInitialState,
+  isAlarmActive,
+  isAlarmLedLit,
+  isAlarmSounding,
+  isSicherShown,
+  reduce,
+} from "./index";
 import type { Event, Key, State } from "./index";
 
 const SESSION_START = { now: 1_000_000, realNow: 500 };
@@ -149,8 +156,8 @@ describe("the Anmeldefenster", () => {
     expect(state.login?.anfangsdruckBar).toBe(300);
   });
 
-  // manual 9.1 [07]: a Trupp needs at least two Atemschutzträger; OK starts the login Daueralarm
-  // instead, covered with V19
+  // manual 9.1 [07]: a Trupp needs at least two Atemschutzträger; OK shows `Zu wenig
+  // Einsatzkräfte!` instead, covered with V19
   it("does not confirm a Trupp of one", () => {
     const state = reduce(anmeldefenster(), press("OK"));
     expect(state.screen).toBe("anmeldefenster");
@@ -177,6 +184,95 @@ describe("the Anmeldefenster", () => {
   it("lets a discarded Atemschutzträger start a new login", () => {
     const discarded = run(anmeldefenster(), hold(A2), press("X"));
     expect(reduce(discarded, hold(A2)).screen).toBe("einsatzzeitWaehlen");
+  });
+});
+
+// verification scenario V19; timing-and-alarm-rules §7.5, 7.6
+describe("V19: too few Atemschutzträger at login", () => {
+  /** The Anmeldefenster for 30 min with only A1 joined. */
+  function anmeldefenster(): State {
+    return run(aus(), hold(A1), press("OK"));
+  }
+
+  function zuWenigEinsatzkraefte(): State {
+    return reduce(anmeldefenster(), press("OK"));
+  }
+
+  function expectSilent(state: State): void {
+    expect(isAlarmSounding(state)).toBe(false);
+    expect(isAlarmActive(state)).toBe(false);
+    expect(isAlarmLedLit(state)).toBe(false);
+  }
+
+  it("shows `Zu wenig Einsatzkräfte!` over the Anmeldefenster on `Trupp OK Einsatz` + OK, with no siren and no LED", () => {
+    const state = zuWenigEinsatzkraefte();
+    expect(state.screen).toBe("anmeldefenster");
+    expect(state.login?.zuWenigEinsatzkraefteShown).toBe(true);
+    expectSilent(state);
+  });
+
+  it("shows the box for `Trupp OK Bereitschaft` and `Sicherheitstrupp OK` too", () => {
+    for (const downs of [1, 2]) {
+      const state = run(
+        anmeldefenster(),
+        ...Array<Key>(downs).fill("Down").map(press),
+        press("OK"),
+      );
+      expect(state.screen).toBe("anmeldefenster");
+      expect(state.login?.zuWenigEinsatzkraefteShown).toBe(true);
+    }
+  });
+
+  it("closes the box when a Tally joins, and the Anmeldefenster waits for OK", () => {
+    const joined = reduce(zuWenigEinsatzkraefte(), hold(A2));
+    expect(joined.screen).toBe("anmeldefenster");
+    expect(joined.login).toMatchObject({
+      zuWenigEinsatzkraefteShown: false,
+      atemschutztraeger: [A1, A2],
+    });
+    expectSilent(joined);
+
+    const loggedIn = run(joined, press("OK"), press("OK"));
+    expect(loggedIn.trupps[0]?.einsatzstatus).toBe("anmarsch");
+  });
+
+  // ASSUMPTION: OK closes only the box and keeps the members (timing-and-alarm-rules §7.6)
+  it("closes only the box on OK, keeping A1 on the Anmeldefenster", () => {
+    const state = run(zuWenigEinsatzkraefte(), press("OK"));
+    expect(state.screen).toBe("anmeldefenster");
+    expect(state.login).toMatchObject({
+      zuWenigEinsatzkraefteShown: false,
+      atemschutztraeger: [A1],
+      anmeldeaktion: "truppOkEinsatz",
+    });
+  });
+
+  // ASSUMPTION: X closes only the box and keeps the members (timing-and-alarm-rules §7.6)
+  it("closes only the box on X; a second X throws the login away and frees the Truppnummer", () => {
+    const closed = run(zuWenigEinsatzkraefte(), press("X"));
+    expect(closed.screen).toBe("anmeldefenster");
+    expect(closed.login).toMatchObject({
+      zuWenigEinsatzkraefteShown: false,
+      atemschutztraeger: [A1],
+    });
+
+    const discarded = reduce(closed, press("X"));
+    expect(discarded.login).toBeNull();
+    expect(reduce(discarded, hold(A2)).login?.truppnummer).toBe(1);
+  });
+
+  // ASSUMPTION: the box takes only OK, X and a joining Tally, like every box over a screen
+  // ("Correct the simulator against the real Checkbox")
+  it("ignores Up, Down and Check while the box shows", () => {
+    const state = zuWenigEinsatzkraefte();
+    for (const key of ["Up", "Down", "Check"] as const) {
+      expect(reduce(state, press(key))).toBe(state);
+    }
+  });
+
+  it("shows the box again on the next OK with still too few", () => {
+    const state = run(zuWenigEinsatzkraefte(), press("OK"), press("OK"));
+    expect(state.login?.zuWenigEinsatzkraefteShown).toBe(true);
   });
 });
 

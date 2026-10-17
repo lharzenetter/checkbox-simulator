@@ -368,6 +368,31 @@ describe("S04 Anmeldefenster", () => {
     expect(model).toMatchObject({ layout: "anmeldefenster", selectedIndex: 0 });
   });
 
+  // timing-and-alarm-rules §7.5; real-device photo zu-wenig-einsatzkraefte.jpeg
+  it("shows `Zu wenig Einsatzkräfte!` in a box over the screen on OK with one member", () => {
+    const model = screenModel(stateAfter(HLF_AT_F, press("OK"), press("OK")));
+    expect(model).toMatchObject({
+      layout: "anmeldefenster",
+      meldung: ["Zu wenig", "Einsatzkräfte!"],
+    });
+    expect(screenText(model)).toEqual([
+      "Trupp 01   30 min",
+      "*HLF AT-F",
+      "Trupp OK Einsatz",
+      "Trupp OK Bereitschaft",
+      "Sicherheitstrupp OK",
+      "Druck ändern",
+      "Zu wenig",
+      "Einsatzkräfte!",
+    ]);
+  });
+
+  it("shows no box while the Anmeldefenster waits", () => {
+    expect(
+      screenModel(stateAfter(HLF_AT_F, press("OK"), HLF_AT_M)),
+    ).toMatchObject({ meldung: null });
+  });
+
   // manual 5.3, Anmeldefenster figure: the header carries the chosen Einsatzzeit
   it("heads a Langzeiteinsatz with its 20 min", () => {
     const model = screenModel(

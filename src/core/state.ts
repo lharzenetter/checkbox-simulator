@@ -119,8 +119,8 @@ export interface Login {
   readonly anfangsdruckBar: number;
   /** The value being edited on `Esz-Zeit ändern`; `null` on every other screen. */
   readonly draftFlaschendruckBar: number | null;
-  /** Real time at which the login Daueralarm started; `null` while it is silent. */
-  readonly daueralarmSinceRealMs: number | null;
+  /** The box `Zu wenig Einsatzkräfte!` shows over the Anmeldefenster. */
+  readonly zuWenigEinsatzkraefteShown: boolean;
 }
 
 /** A Trupp being logged off on ABMELDEN. */
