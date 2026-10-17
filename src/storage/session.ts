@@ -28,16 +28,22 @@ import {
   tryWrite,
 } from "./guards";
 
+/** What the Trainee wrote on one row of the Truppzuordnung. */
+export interface TruppzuordnungEntry {
+  readonly ort: string;
+  readonly auftrag: string;
+}
+
 /** What the Trainee wrote on the Truppzuordnung: one entry per Truppnummer, in order. */
-export type Truppzuordnung = readonly string[];
+export type Truppzuordnung = readonly TruppzuordnungEntry[];
 
 /** The Truppzuordnung with nothing written on it. */
 export const BLANK_TRUPPZUORDNUNG: Truppzuordnung = Array.from(
   { length: P72_ANZAHL_DER_MAXIMALEN_TRUPPS },
-  () => "",
+  () => ({ ort: "", auftrag: "" }),
 );
 
-/** The most characters one Truppzuordnung entry takes. */
+/** The most characters one Ort or one Auftrag on the Truppzuordnung takes. */
 export const TRUPPZUORDNUNG_MAX_LENGTH = 40;
 
 /** Both stores as a page load finds them. */
@@ -53,7 +59,7 @@ const SESSION_KEY = `${KEY_PREFIX}session`;
 
 // Raise on any change to the core's state or the Truppzuordnung: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 4;
+const SESSION_VERSION = 5;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
@@ -213,9 +219,15 @@ function isTruppzuordnung(value: unknown): value is Truppzuordnung {
     value.length === P72_ANZAHL_DER_MAXIMALEN_TRUPPS &&
     value.every(
       (entry) =>
-        typeof entry === "string" && entry.length <= TRUPPZUORDNUNG_MAX_LENGTH,
+        isRecord(entry) &&
+        isTruppzuordnungField(entry.ort) &&
+        isTruppzuordnungField(entry.auftrag),
     )
   );
+}
+
+function isTruppzuordnungField(value: unknown): value is string {
+  return typeof value === "string" && value.length <= TRUPPZUORDNUNG_MAX_LENGTH;
 }
 
 function parseSession(

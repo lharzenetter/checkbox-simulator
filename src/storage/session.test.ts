@@ -120,13 +120,15 @@ const MID_EINSATZ: State = {
   notausschaltung: "alleTrupps",
 };
 
+const BLANK_ROW = { ort: "", auftrag: "" };
+
 const TRUPPZUORDNUNG: Truppzuordnung = [
-  "",
-  "HLF AT – Müller/Schmidt",
-  "",
-  "LF WT",
-  "",
-  "",
+  BLANK_ROW,
+  { ort: "1. OG links", auftrag: "Menschenrettung" },
+  BLANK_ROW,
+  { ort: "", auftrag: "Brandbekämpfung" },
+  { ort: "Keller", auftrag: "" },
+  BLANK_ROW,
 ];
 
 function storageWith(items: Readonly<Record<string, string>>): Storage {
@@ -189,7 +191,7 @@ describe("the running session", () => {
   });
 
   // decided in "Decide what survives a page reload": fortsetzen restores the running session
-  it("comes back with the Truppzuordnung written beside it", () => {
+  it("comes back with the Ort and Auftrag of each Truppzuordnung row written beside it", () => {
     expect(
       loadStores(savedStorage(MID_EINSATZ, TRUPPZUORDNUNG)).truppzuordnung,
     ).toEqual(TRUPPZUORDNUNG);
@@ -231,7 +233,7 @@ describe("the factory reset", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 4,
+      version: 5,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
       nextEinsatznummer: undefined,
@@ -258,16 +260,49 @@ describe("incompatible stored session data", () => {
       sessionJson({ version: 2, truppzuordnung: undefined }),
     ],
     [
+      "has version 4, with a Truppzuordnung of one-field rows",
+      sessionJson({
+        version: 4,
+        truppzuordnung: ["", "HLF AT – Müller/Schmidt", "", "LF WT", "", ""],
+      }),
+    ],
+    [
+      "has a Truppzuordnung of one-field rows",
+      sessionJson({ truppzuordnung: ["", "LF WT", "", "", "", ""] }),
+    ],
+    [
       "has a Truppzuordnung with five rows",
       sessionJson({ truppzuordnung: TRUPPZUORDNUNG.slice(1) }),
     ],
     [
-      "has a Truppzuordnung row that is no text",
-      sessionJson({ truppzuordnung: [1, "", "", "", "", ""] }),
+      "has a Truppzuordnung row without its Auftrag",
+      sessionJson({
+        truppzuordnung: [{ ort: "Keller" }, ...TRUPPZUORDNUNG.slice(1)],
+      }),
     ],
     [
-      "has a Truppzuordnung row longer than 40 characters",
-      sessionJson({ truppzuordnung: ["x".repeat(41), "", "", "", "", ""] }),
+      "has a Truppzuordnung Ort that is no text",
+      sessionJson({
+        truppzuordnung: [{ ort: 1, auftrag: "" }, ...TRUPPZUORDNUNG.slice(1)],
+      }),
+    ],
+    [
+      "has a Truppzuordnung Ort longer than 40 characters",
+      sessionJson({
+        truppzuordnung: [
+          { ort: "x".repeat(41), auftrag: "" },
+          ...TRUPPZUORDNUNG.slice(1),
+        ],
+      }),
+    ],
+    [
+      "has a Truppzuordnung Auftrag longer than 40 characters",
+      sessionJson({
+        truppzuordnung: [
+          { ort: "", auftrag: "x".repeat(41) },
+          ...TRUPPZUORDNUNG.slice(1),
+        ],
+      }),
     ],
     ["has an unknown screen", sessionJson({ screen: "pause" })],
     ["lacks a field", sessionJson({ pendingAlarms: undefined })],

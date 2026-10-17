@@ -17,28 +17,54 @@
   color: var(--ink);
 }
 
+/* Shared by the heading row and the ruled lines, so the columns stay aligned at any width. */
+.heading,
 .line {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  min-height: 36px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr);
   border-bottom: 1px solid var(--ruling);
 }
 
+.heading {
+  border-bottom-width: 2px;
+  font:
+    700 0.85rem/1 system-ui,
+    sans-serif;
+}
+
+.heading > * {
+  padding: 6px 0;
+}
+
+.line {
+  flex: 1;
+  align-items: stretch;
+  min-height: 36px;
+}
+
 .truppnummer {
-  flex: 0 0 36px;
-  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
   border-right: 2px solid var(--margin-line);
+}
+
+.line > .truppnummer {
   font:
     700 1.35rem/1 system-ui,
     sans-serif;
 }
 
-.entry {
-  flex: 1;
+.column {
+  padding-left: 6px;
+}
+
+.column + .column,
+.field + .field {
+  border-left: 1px solid var(--ruling);
+}
+
+.field {
   min-width: 0;
   padding: 4px 6px;
   border: none;
@@ -49,7 +75,7 @@
     sans-serif;
 }
 
-.entry:focus-visible {
+.field:focus-visible {
   outline: 2px solid #6ea8fe;
   outline-offset: -2px;
   border-radius: 2px;
