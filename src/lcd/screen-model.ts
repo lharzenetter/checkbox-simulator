@@ -231,8 +231,6 @@ const ANMELDEFENSTER_ITEMS: Readonly<Record<Anmeldeaktion, string>> = {
 // manual 9.1 [72]
 const EINSATZLISTE_ROWS = 6;
 
-// The header words of the Trupp-Menü figures; decided in "Define the key-by-screen navigation
-// model", its Trupp-Menü table.
 // timing-and-alarm-rules §8.5
 const ALARM_HEADERS: Readonly<Record<AlarmCause, string>> = {
   alarmgrenze1: "ALARM 1",
@@ -242,6 +240,8 @@ const ALARM_HEADERS: Readonly<Record<AlarmCause, string>> = {
   bereitschaft: "BEREITSCHAFT",
 };
 
+// The header words of the Trupp-Menü figures; decided in "Define the key-by-screen navigation
+// model", its Trupp-Menü table.
 const EINSATZSTATUS_HEADERS: Readonly<Record<Einsatzstatus, string>> = {
   bereitschaft: "BEREITSCHAFT",
   anmarsch: "ANMARSCH",
@@ -823,16 +823,16 @@ function formatBar(druckBar: number): string {
   return `${String(druckBar)} bar`;
 }
 
-// ASSUMPTION: whole seconds rounded up, so 00:00:00 first shows when the Einsatzzeit is used
-// up; a negative Restzeit drops the hour's leading digit to fit the 8-character column, as
-// decided in "Define the key-by-screen navigation model".
-// decided in "Define the key-by-screen navigation model": `-0:00:10`
+// A negative Restzeit drops the hour's leading digit to fit the 8-character column, as decided in
+// "Define the key-by-screen navigation model".
 function formatRestzeit(restzeitMs: number): string {
   const full = formatFullRestzeit(restzeitMs);
   return full.startsWith("-") ? `-${full.slice(2)}` : full;
 }
 
-// the real-device photo alarm-rueckzug.jpeg: `-00:00:27`
+// The real-device photo alarm-rueckzug.jpeg shows a negative one in full: `-00:00:27`.
+// ASSUMPTION: whole seconds rounded up, so 00:00:00 first shows when the Einsatzzeit is used
+// up (decided in "Define the key-by-screen navigation model").
 function formatFullRestzeit(restzeitMs: number): string {
   const seconds = Math.ceil(restzeitMs / 1000);
   const magnitude = Math.abs(seconds);

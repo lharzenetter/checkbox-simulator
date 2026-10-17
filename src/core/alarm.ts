@@ -11,7 +11,7 @@ import {
 import { rueckmarschzeitMs } from "./restzeit";
 import type { AlarmCause, Trupp } from "./state";
 
-/** An Alarm that fired, and how far into the run-down from `before` to `after` it was reached. */
+// An Alarm that fired, and how far into the run-down from `before` to `after` it was reached.
 export interface FiredAlarm {
   readonly cause: AlarmCause;
   readonly reachedAfterMs: number;
@@ -20,24 +20,26 @@ export interface FiredAlarm {
 // `trupp` is `after`, with its Rückzugsalarm disarmed once that has fired.
 export interface AlarmCheck {
   readonly trupp: Trupp;
-  /** In the order they were reached, ties in {@link CAUSE_ORDER}. */
+  // In the order they were reached, ties in `CAUSE_RANK` order.
   readonly fired: readonly FiredAlarm[];
 }
 
-// timing-and-alarm-rules §8.2: ties in the order Alarmgrenze, Rückzugsalarm, Einsatzzeit erreicht
-const CAUSE_ORDER: readonly AlarmCause[] = [
-  "alarmgrenze1",
-  "alarmgrenze2",
-  "rueckzugsalarm",
-  "einsatzzeit",
-  "bereitschaft",
-];
+// timing-and-alarm-rules §8.2: ties in the order Alarmgrenze, Rückzugsalarm, Einsatzzeit erreicht.
+// The Bereitschaft Alarm never fires with another, so its rank is arbitrary. Keyed by every
+// member, so a cause added to the core fails the typecheck here.
+const CAUSE_RANK: Readonly<Record<AlarmCause, number>> = {
+  alarmgrenze1: 0,
+  alarmgrenze2: 1,
+  rueckzugsalarm: 2,
+  einsatzzeit: 3,
+  bereitschaft: 4,
+};
 
-/** Orders Alarms reached in one step for the queue: timing-and-alarm-rules §8.2. */
+// Orders Alarms reached in one step for the queue: timing-and-alarm-rules §8.2.
 export function compareFiredAlarms(a: FiredAlarm, b: FiredAlarm): number {
   return (
     a.reachedAfterMs - b.reachedAfterMs ||
-    CAUSE_ORDER.indexOf(a.cause) - CAUSE_ORDER.indexOf(b.cause)
+    CAUSE_RANK[a.cause] - CAUSE_RANK[b.cause]
   );
 }
 
@@ -51,10 +53,10 @@ export function checkAlarms(before: Trupp, after: Trupp): AlarmCheck {
   if (after.einsatzstatus === "bereitschaft") {
     return {
       trupp: after,
-      fired: optional(bereitschaftAlarm(before, after)),
+      fired: listOf(bereitschaftAlarm(before, after)),
     };
   }
-  const rueckzugsalarm = rueckzugsalarmOf(before, after);
+  const rueckzugsalarm = rueckzugsalarmAlarm(before, after);
   return {
     trupp:
       rueckzugsalarm === null
@@ -62,38 +64,36 @@ export function checkAlarms(before: Trupp, after: Trupp): AlarmCheck {
         : { ...after, rueckzugsalarmArmed: false },
     fired: [
       ...alarmgrenzenAlarms(before, after),
-      ...optional(rueckzugsalarm),
-      ...optional(einsatzzeitAlarm(before, after)),
+      ...listOf(rueckzugsalarm),
+      ...listOf(einsatzzeitAlarm(before, after)),
     ].sort(compareFiredAlarms),
   };
 }
 
-function optional(alarm: FiredAlarm | null): readonly FiredAlarm[] {
+function listOf(alarm: FiredAlarm | null): readonly FiredAlarm[] {
   return alarm === null ? [] : [alarm];
-}
-
-function rueckzugsalarmOf(before: Trupp, after: Trupp): FiredAlarm | null {
-  if (!isRueckzugsalarmDue(after)) {
-    return null;
-  }
-  const thresholdMs = rueckmarschzeitMs(after) ?? 0;
-  return {
-    cause: "rueckzugsalarm",
-    reachedAfterMs: Math.max(0, before.restzeitMs - thresholdMs),
-  };
 }
 
 // timing-and-alarm-rules §5.5, 5.6, 5.9, 5.13, 5.14: checked against the current Restzeit, so a
 // Restzeit already at or below the threshold fires at once; disarming it on firing keeps a raise
-// from re-arming it, and only Einsatzziel erreicht arms it, so Rückmarsch never fires it
-function isRueckzugsalarmDue(trupp: Trupp): boolean {
-  const thresholdMs = rueckmarschzeitMs(trupp);
-  return (
-    trupp.rueckzugsalarmArmed &&
-    trupp.einsatzstatus === "einsatzzielErreicht" &&
-    thresholdMs !== null &&
-    trupp.restzeitMs <= thresholdMs
-  );
+// from re-arming it, and only Einsatzziel erreicht arms it, so Rückmarsch never fires it.
+// ASSUMPTION: it is reached where the Restzeit falls to its threshold, or at once if it was there
+// already, which places it among the step's other Alarms; §8.2 orders by "the order their
+// thresholds were crossed" but gives no time for an Alarm already due (taken in issue #49).
+function rueckzugsalarmAlarm(before: Trupp, after: Trupp): FiredAlarm | null {
+  const thresholdMs = rueckmarschzeitMs(after);
+  if (
+    !after.rueckzugsalarmArmed ||
+    after.einsatzstatus !== "einsatzzielErreicht" ||
+    thresholdMs === null ||
+    after.restzeitMs > thresholdMs
+  ) {
+    return null;
+  }
+  return {
+    cause: "rueckzugsalarm",
+    reachedAfterMs: Math.max(0, before.restzeitMs - thresholdMs),
+  };
 }
 
 // timing-and-alarm-rules §4.3, 4.4: every [05] of simulated time since entering Bereitschaft
@@ -122,7 +122,7 @@ function alarmgrenzenAlarms(
   return [
     alarmgrenzeAlarm(before, after, first, "alarmgrenze1"),
     alarmgrenzeAlarm(before, after, second, "alarmgrenze2"),
-  ].flatMap(optional);
+  ].flatMap(listOf);
 }
 
 function alarmgrenzeAlarm(

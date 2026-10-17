@@ -11,7 +11,10 @@ import type {
  * Whether the siren sounds and the LED blinks: while S12 shows an Alarm not yet silenced by its
  * first OK, or while a Daueralarm is active.
  */
-// decided in "Decide how alarms are presented", points 2 and 4; timing-and-alarm-rules §8.4
+// decided in "Decide how alarms are presented", points 2 and 4; timing-and-alarm-rules §8.4.
+// ASSUMPTION: an Alarm that fires while the one shown is silenced queues without sound until the
+// second OK shows it; §8.4 says only that the second OK "shows the next queued Alarm (sounding)"
+// (taken in issue #49).
 export function isAlarmSounding(state: State): boolean {
   return (
     (state.pendingAlarms.length > 0 && !state.alarmSilenced) ||
@@ -26,7 +29,9 @@ export function isAlarmSounding(state: State): boolean {
 // decided in "Drop the simulation to real time while an Alarm sounds", point 1, as amended in
 // "Correct the simulator against the real Checkbox": the lock holds until the second OK
 export function isAlarmActive(state: State): boolean {
-  return state.pendingAlarms.length > 0 || isAlarmSounding(state);
+  return (
+    state.pendingAlarms.length > 0 || daueralarmSinceRealMs(state) !== null
+  );
 }
 
 function daueralarmSinceRealMs(state: State): number | null {

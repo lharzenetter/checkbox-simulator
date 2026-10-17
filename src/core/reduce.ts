@@ -1,5 +1,6 @@
 import { abschaltzeitRestMs } from "./abschaltzeit";
 import { checkAlarms, compareFiredAlarms } from "./alarm";
+import type { FiredAlarm } from "./alarm";
 import { assertNever } from "./assert-never";
 import { lastEinsatzprotokollFirstLine } from "./einsatzprotokoll-strip";
 import type { Event, Key } from "./event";
@@ -359,6 +360,13 @@ function raiseAlarms(state: State, fired: readonly PendingAlarm[]): State {
   );
 }
 
+function toPendingAlarm(
+  truppnummer: number,
+  { cause }: FiredAlarm,
+): PendingAlarm {
+  return { truppnummer, cause };
+}
+
 // decided in "Define the key-by-screen navigation model"
 function handleEinsatzlisteKey(state: State, key: Key): State {
   switch (key) {
@@ -577,7 +585,7 @@ function leaveTruppMenue(
       withTruppMenue(replaceTrupp(state, trupp, checked), null),
       screen,
     ),
-    fired.map(({ cause }) => ({ truppnummer: checked.truppnummer, cause })),
+    fired.map((alarm) => toPendingAlarm(checked.truppnummer, alarm)),
   );
 }
 
@@ -1170,10 +1178,10 @@ function handleTick(state: State, elapsedMs: number): State {
   // sort is stable, so Trupps tie in Truppnummer order
   const fired = checks
     .flatMap(({ trupp, fired: alarms }) =>
-      alarms.map((alarm) => ({ ...alarm, truppnummer: trupp.truppnummer })),
+      alarms.map((alarm) => ({ alarm, truppnummer: trupp.truppnummer })),
     )
-    .sort(compareFiredAlarms)
-    .map(({ truppnummer, cause }) => ({ truppnummer, cause }));
+    .sort((a, b) => compareFiredAlarms(a.alarm, b.alarm))
+    .map(({ alarm, truppnummer }) => toPendingAlarm(truppnummer, alarm));
   return raiseAlarms(runDisplayTimings({ ...state, trupps }), fired);
 }
 
