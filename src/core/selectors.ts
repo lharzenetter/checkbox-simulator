@@ -1,14 +1,32 @@
 import { ALARM_BLINK_PHASE_MS, SICHER_PHASE_MS } from "./parameters";
-import type { Einsatzstatus, State, Trupp, TruppMenueAktion } from "./state";
+import type {
+  AlarmCause,
+  Einsatzstatus,
+  State,
+  Trupp,
+  TruppMenueAktion,
+} from "./state";
 
 /**
- * Whether the siren sounds and the LED blinks: while an Alarm is pending or a Daueralarm is active.
+ * Whether the siren sounds and the LED blinks: while S12 shows an Alarm not yet silenced by its
+ * first OK, or while a Daueralarm is active.
  */
-// decided in "Decide how alarms are presented", points 2 and 4
+// decided in "Decide how alarms are presented", points 2 and 4; timing-and-alarm-rules §8.4
 export function isAlarmSounding(state: State): boolean {
   return (
-    state.pendingAlarms.length > 0 || daueralarmSinceRealMs(state) !== null
+    (state.pendingAlarms.length > 0 && !state.alarmSilenced) ||
+    daueralarmSinceRealMs(state) !== null
   );
+}
+
+/**
+ * Whether an Alarm is active: S12 shows one its second OK has not yet ended, silenced or not, or
+ * a Daueralarm sounds. The simulation runs at real time while one is.
+ */
+// decided in "Drop the simulation to real time while an Alarm sounds", point 1, as amended in
+// "Correct the simulator against the real Checkbox": the lock holds until the second OK
+export function isAlarmActive(state: State): boolean {
+  return state.pendingAlarms.length > 0 || isAlarmSounding(state);
 }
 
 function daueralarmSinceRealMs(state: State): number | null {
@@ -41,7 +59,7 @@ export function isAlarmLedLit(state: State): boolean {
 
 /** The Trupp whose Alarm S12 shows: the first one pending; only valid while one is. */
 export function alarmTrupp(state: State): Trupp {
-  const truppnummer = state.pendingAlarms[0];
+  const truppnummer = state.pendingAlarms[0]?.truppnummer;
   const trupp = state.trupps.find(
     (candidate) => candidate.truppnummer === truppnummer,
   );
@@ -49,6 +67,15 @@ export function alarmTrupp(state: State): Trupp {
     throw new Error(`The ${state.screen} screen has no pending Alarm`);
   }
   return trupp;
+}
+
+/** What fired the Alarm S12 shows; only valid while one is pending. */
+export function alarmCause(state: State): AlarmCause {
+  const alarm = state.pendingAlarms[0];
+  if (alarm === undefined) {
+    throw new Error(`The ${state.screen} screen has no pending Alarm`);
+  }
+  return alarm.cause;
 }
 
 /** The logged-in Trupp whose Atemschutzträger holds the Tally, if any. */

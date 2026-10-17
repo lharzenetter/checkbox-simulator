@@ -3,6 +3,7 @@ import {
   alarmCycleMs,
   alarmTrupp,
   createInitialState,
+  isAlarmActive,
   isAlarmLedLit,
   isAlarmSounding,
   reduce,
@@ -73,6 +74,8 @@ describe("V18: the logoff Daueralarm", () => {
     const state = run(truppInAnmarsch(), hold(A1), press("OK"));
     expect(state.screen).toBe("abmelden");
     expect(isAlarmSounding(state)).toBe(true);
+    // decided in "Drop the simulation to real time while an Alarm sounds", point 1
+    expect(isAlarmActive(state)).toBe(true);
   });
 
   it("keeps sounding on a second OK", () => {
@@ -220,6 +223,7 @@ describe("V22: an Alarm during a Daueralarm", () => {
       press("OK"),
       tickAt(9, 54),
       press("OK"),
+      press("OK"),
       tickAt(10),
       hold(A1),
       press("OK"),
@@ -233,11 +237,25 @@ describe("V22: an Alarm during a Daueralarm", () => {
     expect(isAlarmSounding(state)).toBe(true);
   });
 
-  it("returns to ABMELDEN after OK, with the Daueralarm still sounding", () => {
+  // timing-and-alarm-rules §8.4: the first OK cannot silence the Daueralarm
+  it("stays on S12 after the first OK with the Daueralarm still sounding", () => {
     const state = run(
       logoffDaueralarm(),
       tickAt(10, 24),
       tickAt(10, 25),
+      press("OK"),
+    );
+    expect(state.screen).toBe("alarm");
+    expect(isAlarmSounding(state)).toBe(true);
+  });
+
+  it("returns to ABMELDEN after the second OK, with the Daueralarm still sounding", () => {
+    const state = run(
+      logoffDaueralarm(),
+      tickAt(10, 24),
+      tickAt(10, 25),
+      press("OK"),
+      tickAt(10, 26),
       press("OK"),
     );
     expect(state.screen).toBe("abmelden");
@@ -249,6 +267,7 @@ describe("V22: an Alarm during a Daueralarm", () => {
     const state = run(
       logoffDaueralarm(),
       tickAt(10, 24),
+      press("OK"),
       press("OK"),
       press("OK"),
     );

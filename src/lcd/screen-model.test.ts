@@ -33,10 +33,15 @@ function tickBy(state: State, elapsedMs: number): State {
   });
 }
 
-// OK on S12 acknowledges the Alarm the tick fired and returns to the Einsatzliste.
+// Two OKs on S12 end each Alarm the tick fired, and the last returns to the Einsatzliste
+// (timing-and-alarm-rules §8.4).
 function acknowledged(state: State): State {
   expect(state.screen).toBe("alarm");
-  return reduce(state, press("OK"));
+  let ended = state;
+  while (ended.screen === "alarm") {
+    ended = reduce(reduce(ended, press("OK")), press("OK"));
+  }
+  return ended;
 }
 
 describe("S00 Aus", () => {
@@ -838,14 +843,14 @@ describe("S12 Trupp ALARM", () => {
     press("OK"),
   ] as const;
 
-  // manual 5.5.3, ALARM figure; decided in "Decide how alarms are presented", point 1: no cause
-  // text and no SICHER
-  it("reads as in the figure at the first Alarmgrenze", () => {
+  // manual 5.5.3, ALARM figure; the real-device photo alarm-rueckzug.jpeg; decided in "Correct
+  // the simulator against the real Checkbox": the cause in the header, the Personen-Anzahl in
+  // place of the names, and no SICHER
+  it("reads as in the device photo at the first Alarmgrenze", () => {
     const model = screenModel(tickBy(stateAfter(...TRUPP_01), 594_000));
     expect(screenText(model)).toEqual([
-      "Trupp 01 ALARM",
-      "*HLF AT-F",
-      "*HLF AT-M",
+      "Trupp 01 ALARM 1",
+      "Personen-Anzahl: 2",
       "Druck 201 bar",
       "Restzeit 00:20:06",
       "Alarmende",
@@ -854,21 +859,118 @@ describe("S12 Trupp ALARM", () => {
     expect(model).toMatchObject({ layout: "alarm", fillLevel: 0.67 });
   });
 
-  // manual 5.5.3, ALARM figure; timing-and-alarm-rules §1.2, 1.7
-  it("shows the negative Restzeit and 0 bar while the Alarm stays unacknowledged", () => {
+  // timing-and-alarm-rules §8.5
+  it.each<{ cause: string; header: string; events: () => State }>([
+    {
+      cause: "the second Alarmgrenze",
+      header: "Trupp 01 ALARM 2",
+      events: () =>
+        tickBy(acknowledged(tickBy(stateAfter(...TRUPP_01), 594_000)), 594_000),
+    },
+    {
+      cause: "Einsatzzeit erreicht",
+      header: "Trupp 01 ALARM",
+      events: () =>
+        tickBy(
+          acknowledged(
+            tickBy(
+              acknowledged(tickBy(stateAfter(...TRUPP_01), 594_000)),
+              594_000,
+            ),
+          ),
+          612_000,
+        ),
+    },
+    {
+      cause: "an overdue repeat",
+      header: "Trupp 01 ALARM",
+      events: () =>
+        tickBy(
+          acknowledged(tickBy(stateAfter(...TRUPP_01), 30 * 60_000)),
+          5 * 60_000,
+        ),
+    },
+    {
+      // Einsatzziel erreicht at 0 bar, the Trupp-Menü's third item, fires it first (§8.2)
+      cause: "the Rückzugsalarm",
+      header: "Trupp 01 RÜCKZUG",
+      events: () =>
+        stateAfter(
+          ...TRUPP_01,
+          press("OK"),
+          press("OK"),
+          press("Down"),
+          press("Down"),
+          press("OK"),
+          ...Array.from({ length: 60 }, () => press("Down")),
+          press("OK"),
+        ),
+    },
+    {
+      cause: "the Bereitschaft Alarm",
+      header: "Trupp 01 BEREITSCHAFT",
+      events: () =>
+        tickBy(
+          stateAfter(
+            HLF_AT_F,
+            press("OK"),
+            HLF_AT_M,
+            press("Down"),
+            press("OK"),
+            press("OK"),
+          ),
+          5 * 60_000,
+        ),
+    },
+  ])("names $cause in its header", ({ header, events }) => {
+    const state = events();
+    expect(state.screen).toBe("alarm");
+    expect(screenText(screenModel(state))[0]).toBe(header);
+  });
+
+  // the real-device photo alarm-rueckzug.jpeg: `-00:00:27`, nine characters
+  it("shows the negative Restzeit in full and 0 bar while the Alarm stays unacknowledged", () => {
     const model = screenModel(
       tickBy(tickBy(stateAfter(...TRUPP_01), 30 * 60_000), 10_000),
     );
     expect(screenText(model)).toEqual([
-      "Trupp 01 ALARM",
-      "*HLF AT-F",
-      "*HLF AT-M",
+      "Trupp 01 ALARM 1",
+      "Personen-Anzahl: 2",
       "Druck 0 bar",
-      "Restzeit -0:00:10",
+      "Restzeit -00:00:10",
       "Alarmende",
       "mit OK",
     ]);
     expect(model).toMatchObject({ fillLevel: 0 });
+  });
+
+  // timing-and-alarm-rules §8.4: the screen stays, live and unchanged, after the first OK
+  it("looks the same after the first OK", () => {
+    const alarm = tickBy(stateAfter(...TRUPP_01), 594_000);
+    expect(screenModel(reduce(alarm, press("OK")))).toEqual(screenModel(alarm));
+  });
+
+  // the real-device photo alarm-rueckzug.jpeg: the `R` mark on the cylinder at the Rückzugsdruck
+  it("marks the Rückzugsdruck on the cylinder once there is one", () => {
+    const anmarsch = tickBy(stateAfter(...TRUPP_01), 594_000);
+    expect(screenModel(anmarsch)).toMatchObject({ rueckzugsdruckLevel: null });
+    // Einsatzziel erreicht at 10:00 with the 200 bar the editor opens at: Rückzugsdruck 150 bar
+    const einsatzziel = stateAfter(
+      ...TRUPP_01,
+      { type: "tick", now: FIGURE_UHRZEIT + 5 * 60_000, realNow: 5 * 60_000 },
+      press("OK"),
+      press("OK"),
+      press("Down"),
+      press("Down"),
+      press("OK"),
+      ...Array.from({ length: 10 }, () => press("Down")),
+      press("OK"),
+      { type: "tick", now: FIGURE_UHRZEIT + 594_000, realNow: 594_000 },
+    );
+    expect(einsatzziel.screen).toBe("alarm");
+    expect(screenModel(einsatzziel)).toMatchObject({
+      rueckzugsdruckLevel: 0.5,
+    });
   });
 
   // verification-scenarios V21; timing-and-alarm-rules §8.2; decided in "Decide how alarms are
@@ -895,20 +997,21 @@ describe("S12 Trupp ALARM", () => {
     // Trupp 01's first Alarmgrenze at 9:54, Trupp 02's at 10:24
     const queued = tickBy(tickBy(bothLoggedIn, 564_000), 30_000);
     expect(screenText(screenModel(queued))).toEqual([
-      "Trupp 01 ALARM",
-      "*HLF AT-F",
-      "*HLF AT-M",
+      "Trupp 01 ALARM 1",
+      "Personen-Anzahl: 2",
       "Druck 196 bar",
       "Restzeit 00:19:36",
       "Alarmende",
       "mit OK",
     ]);
 
-    const next = tickBy(reduce(queued, press("OK")), 6_000);
+    const next = tickBy(
+      reduce(reduce(queued, press("OK")), press("OK")),
+      6_000,
+    );
     expect(screenText(screenModel(next))).toEqual([
-      "Trupp 02 ALARM",
-      "*HLF WT-F",
-      "*HLF WT-M",
+      "Trupp 02 ALARM 1",
+      "Personen-Anzahl: 2",
       "Druck 200 bar",
       "Restzeit 00:20:00",
       "Alarmende",
@@ -1126,7 +1229,8 @@ describe("the Einsatzstatus screens", () => {
     const longAnmarsch = stateAfter(
       ...TRUPP_01,
       at(25),
-      press("OK"),
+      // two OKs each for both Alarmgrenzen
+      ...Array.from({ length: 4 }, () => press("OK")),
       ...truppMenueAt(2),
       press("OK"),
       press("OK"),
@@ -1145,7 +1249,8 @@ describe("the Einsatzstatus screens", () => {
     const overdueAnmarsch = stateAfter(
       ...TRUPP_01,
       at(35),
-      press("OK"),
+      // two OKs each for both Alarmgrenzen and Einsatzzeit erreicht
+      ...Array.from({ length: 6 }, () => press("OK")),
       ...truppMenueAt(2),
       press("OK"),
       press("OK"),

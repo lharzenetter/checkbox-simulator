@@ -1,5 +1,6 @@
 import {
   abschaltzeitRestMs,
+  alarmCause,
   alarmTrupp,
   ANMELDEAKTIONEN,
   assertNever,
@@ -19,6 +20,7 @@ import {
   truppMenueAktionen,
 } from "../core/index";
 import type {
+  AlarmCause,
   Anmeldeaktion,
   Login,
   Atemschutztraeger,
@@ -149,13 +151,18 @@ export type ScreenModel =
     }
   | {
       readonly layout: "alarm";
+      /** Names the Alarm's cause. */
       readonly title: string;
-      readonly atemschutztraeger: readonly string[];
+      /** `Personen-Anzahl: N`, in place of the names. */
+      readonly personenAnzahl: string;
       /** The Aktueller Flaschendruck. */
       readonly flaschendruck: string;
+      /** In full, so a negative one takes nine characters. */
       readonly restzeit: string;
       /** The cylinder graphic's fill, 0–1. */
       readonly fillLevel: number;
+      /** The height of the cylinder's `R` mark, 0–1; `null` while there is no Rückzugsdruck. */
+      readonly rueckzugsdruckLevel: number | null;
       /** `null` while the Trupp has no Anmarschzeit. */
       readonly rueckzugsdruck: string | null;
       /** `null` while the Trupp has no Anmarschzeit. */
@@ -226,6 +233,15 @@ const EINSATZLISTE_ROWS = 6;
 
 // The header words of the Trupp-Menü figures; decided in "Define the key-by-screen navigation
 // model", its Trupp-Menü table.
+// timing-and-alarm-rules §8.5
+const ALARM_HEADERS: Readonly<Record<AlarmCause, string>> = {
+  alarmgrenze1: "ALARM 1",
+  alarmgrenze2: "ALARM 2",
+  rueckzugsalarm: "RÜCKZUG",
+  einsatzzeit: "ALARM",
+  bereitschaft: "BEREITSCHAFT",
+};
+
 const EINSATZSTATUS_HEADERS: Readonly<Record<Einsatzstatus, string>> = {
   bereitschaft: "BEREITSCHAFT",
   anmarsch: "ANMARSCH",
@@ -292,7 +308,7 @@ export function screenModel(
     case "abmelden":
       return abmeldenModel(state);
     case "alarm":
-      return alarmModel(alarmTrupp(state));
+      return alarmModel(alarmTrupp(state), alarmCause(state));
     case "notausschaltungAuswahl":
       return notausschaltungAuswahlModel(state);
     case "notausschaltungBestaetigung":
@@ -510,17 +526,21 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
   };
 }
 
-// manual 5.5.3, ALARM figure; decided in "Decide how alarms are presented", point 1: live values,
-// no cause text and no SICHER
-function alarmModel(trupp: Trupp): ScreenModel {
+// manual 5.5.3, ALARM figure, and the real-device photo alarm-rueckzug.jpeg; decided in "Decide
+// how alarms are presented", point 1, and "Correct the simulator against the real Checkbox": live
+// values, the cause in the header, the Personen-Anzahl, and no SICHER
+function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
   const flaschendruckBar = estimateFlaschendruckBar(trupp);
+  const rueckzugsdruck = rueckzugsdruckBar(trupp);
   return {
     layout: "alarm",
-    title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ALARM`,
-    atemschutztraeger: trupp.atemschutztraeger.map(formatName),
+    title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ${ALARM_HEADERS[cause]}`,
+    personenAnzahl: `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`,
     flaschendruck: formatBar(flaschendruckBar),
-    restzeit: formatRestzeit(trupp.restzeitMs),
+    restzeit: formatFullRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
+    rueckzugsdruckLevel:
+      rueckzugsdruck === null ? null : cylinderFillLevel(rueckzugsdruck),
     rueckzugsdruck: formatRueckzugsdruck(trupp),
     timeSplit: timeSplitOf(trupp),
     prompt: ["Alarmende", "mit OK"],
@@ -720,7 +740,7 @@ export function screenText(model: ScreenModel): readonly string[] {
     case "alarm":
       return [
         model.title,
-        ...model.atemschutztraeger,
+        model.personenAnzahl,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
         ...rueckzugsdruckText(model.rueckzugsdruck),
@@ -806,7 +826,14 @@ function formatBar(druckBar: number): string {
 // ASSUMPTION: whole seconds rounded up, so 00:00:00 first shows when the Einsatzzeit is used
 // up; a negative Restzeit drops the hour's leading digit to fit the 8-character column, as
 // decided in "Define the key-by-screen navigation model".
+// decided in "Define the key-by-screen navigation model": `-0:00:10`
 function formatRestzeit(restzeitMs: number): string {
+  const full = formatFullRestzeit(restzeitMs);
+  return full.startsWith("-") ? `-${full.slice(2)}` : full;
+}
+
+// the real-device photo alarm-rueckzug.jpeg: `-00:00:27`
+function formatFullRestzeit(restzeitMs: number): string {
   const seconds = Math.ceil(restzeitMs / 1000);
   const magnitude = Math.abs(seconds);
   const parts = [
@@ -814,7 +841,7 @@ function formatRestzeit(restzeitMs: number): string {
     Math.floor(magnitude / 60) % 60,
     magnitude % 60,
   ].map(twoDigits);
-  return seconds < 0 ? `-${parts.join(":").slice(1)}` : parts.join(":");
+  return seconds < 0 ? `-${parts.join(":")}` : parts.join(":");
 }
 
 // The Uhrzeit is local wall-clock time stored as if it were UTC (see `Clocks` in core), so the

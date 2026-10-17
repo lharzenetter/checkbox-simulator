@@ -23,7 +23,7 @@ test("sound an Alarm at the first Alarmgrenze", async ({ page }) => {
   await page.clock.runFor(1_000);
   await expect(lcd).toHaveAttribute(
     "aria-label",
-    /^Trupp 01 ALARM\n\*HLF AT-F\n\*HLF AT-M\nDruck \d+ bar\nRestzeit 00:20:0\d\nAlarmende\nmit OK$/,
+    /^Trupp 01 ALARM 1\nPersonen-Anzahl: 2\nDruck \d+ bar\nRestzeit 00:20:0\d\nAlarmende\nmit OK$/,
   );
   await expect(led).toHaveAttribute("aria-label", "Alarm-LED blinkt");
 
@@ -32,7 +32,12 @@ test("sound an Alarm at the first Alarmgrenze", async ({ page }) => {
   await expect(led).toHaveAttribute("aria-label", "Alarm-LED blinkt");
 
   await page.keyboard.press("d");
-  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM\n/);
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
+
+  // timing-and-alarm-rules §8.4: the first OK silences, the second ends the Alarm
+  await page.keyboard.press("c");
+  await expect(led).toHaveAttribute("aria-label", "Alarm-LED aus");
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
 
   await page.keyboard.press("c");
   await expect(lcd).toHaveAttribute(
@@ -64,7 +69,7 @@ test("drop to real time while an Alarm sounds", async ({ page }) => {
     "true",
   );
   await page.clock.runFor(60_000);
-  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM\n/);
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
   await expect(speeds.getByRole("button", { name: "1×" })).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -77,6 +82,12 @@ test("drop to real time while an Alarm sounds", async ({ page }) => {
     "aria-pressed",
     "true",
   );
+
+  // the lock holds until the second OK ends the Alarm
+  await page.keyboard.press("c");
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
+  await expect(speeds.getByRole("button", { name: "10×" })).toBeDisabled();
+  await expect(page.getByText("Echtzeit während Alarm")).toBeVisible();
 
   await page.keyboard.press("c");
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);

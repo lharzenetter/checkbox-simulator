@@ -178,9 +178,8 @@ describe("the LCD framebuffer", () => {
             now: FIGURE_UHRZEIT + 31 * 60_000,
             realNow: 31 * 60_000,
           },
-          // one OK per Trupp acknowledges the Alarms the tick fired
-          press("OK"),
-          press("OK"),
+          // two OKs end each of the three Alarms per Trupp the tick fired
+          ...Array.from({ length: 12 }, () => press("OK")),
         ),
       ),
     ).toMatchSnapshot();
@@ -252,7 +251,8 @@ describe("the LCD framebuffer", () => {
             now: FIGURE_UHRZEIT + 14 * 60_000,
             realNow: 14 * 60_000,
           },
-          // acknowledges the first Alarmgrenze's Alarm
+          // two OKs end the first Alarmgrenze's Alarm
+          press("OK"),
           press("OK"),
           press("OK"),
         ),
@@ -414,7 +414,8 @@ describe("the LCD framebuffer", () => {
             now: FIGURE_UHRZEIT + 25 * 60_000,
             realNow: 25 * 60_000,
           },
-          press("OK"),
+          // two OKs each for both Alarmgrenzen
+          ...Array.from({ length: 4 }, () => press("OK")),
           ...TO_EINSATZZIEL,
         ),
       ),

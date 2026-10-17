@@ -9,16 +9,40 @@ import {
   P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT,
 } from "./parameters";
 import { rueckmarschzeitMs } from "./restzeit";
-import type { Trupp } from "./state";
+import type { AlarmCause, Trupp } from "./state";
+
+/** An Alarm that fired, and how far into the run-down from `before` to `after` it was reached. */
+export interface FiredAlarm {
+  readonly cause: AlarmCause;
+  readonly reachedAfterMs: number;
+}
 
 // `trupp` is `after`, with its Rückzugsalarm disarmed once that has fired.
 export interface AlarmCheck {
   readonly trupp: Trupp;
-  readonly hasFired: boolean;
+  /** In the order they were reached, ties in {@link CAUSE_ORDER}. */
+  readonly fired: readonly FiredAlarm[];
 }
 
-// Whether the Trupp, running down from `before` to `after`, reached a point that fires an Alarm,
-// and the Trupp as it stands once that Alarm has fired.
+// timing-and-alarm-rules §8.2: ties in the order Alarmgrenze, Rückzugsalarm, Einsatzzeit erreicht
+const CAUSE_ORDER: readonly AlarmCause[] = [
+  "alarmgrenze1",
+  "alarmgrenze2",
+  "rueckzugsalarm",
+  "einsatzzeit",
+  "bereitschaft",
+];
+
+/** Orders Alarms reached in one step for the queue: timing-and-alarm-rules §8.2. */
+export function compareFiredAlarms(a: FiredAlarm, b: FiredAlarm): number {
+  return (
+    a.reachedAfterMs - b.reachedAfterMs ||
+    CAUSE_ORDER.indexOf(a.cause) - CAUSE_ORDER.indexOf(b.cause)
+  );
+}
+
+// Whether the Trupp, running down from `before` to `after`, reached points that fire Alarms,
+// and the Trupp as it stands once those Alarms have fired.
 // timing-and-alarm-rules §4.7: in Bereitschaft only the Bereitschaft Alarm sounds.
 // ASSUMPTION: an Alarm point a pressure entry passes in Bereitschaft is dropped, not held until
 // `Trupp -> Einsatz`; §4.7 pauses the other Alarms but does not say what happens to one passed
@@ -27,16 +51,35 @@ export function checkAlarms(before: Trupp, after: Trupp): AlarmCheck {
   if (after.einsatzstatus === "bereitschaft") {
     return {
       trupp: after,
-      hasFired: hasReachedBereitschaftInterval(before, after),
+      fired: optional(bereitschaftAlarm(before, after)),
     };
   }
-  const isRueckzugsalarm = isRueckzugsalarmDue(after);
+  const rueckzugsalarm = rueckzugsalarmOf(before, after);
   return {
-    trupp: isRueckzugsalarm ? { ...after, rueckzugsalarmArmed: false } : after,
-    hasFired:
-      isRueckzugsalarm ||
-      hasReachedAlarmgrenze(before, after) ||
-      hasReachedEinsatzzeit(before, after),
+    trupp:
+      rueckzugsalarm === null
+        ? after
+        : { ...after, rueckzugsalarmArmed: false },
+    fired: [
+      ...alarmgrenzenAlarms(before, after),
+      ...optional(rueckzugsalarm),
+      ...optional(einsatzzeitAlarm(before, after)),
+    ].sort(compareFiredAlarms),
+  };
+}
+
+function optional(alarm: FiredAlarm | null): readonly FiredAlarm[] {
+  return alarm === null ? [] : [alarm];
+}
+
+function rueckzugsalarmOf(before: Trupp, after: Trupp): FiredAlarm | null {
+  if (!isRueckzugsalarmDue(after)) {
+    return null;
+  }
+  const thresholdMs = rueckmarschzeitMs(after) ?? 0;
+  return {
+    cause: "rueckzugsalarm",
+    reachedAfterMs: Math.max(0, before.restzeitMs - thresholdMs),
   };
 }
 
@@ -54,25 +97,45 @@ function isRueckzugsalarmDue(trupp: Trupp): boolean {
 }
 
 // timing-and-alarm-rules §4.3, 4.4: every [05] of simulated time since entering Bereitschaft
-function hasReachedBereitschaftInterval(before: Trupp, after: Trupp): boolean {
-  return (
-    Math.floor(
-      after.timeInBereitschaftMs / P05_ALARMINTERVALL_BEREITSCHAFT_MS,
-    ) >
-    Math.floor(before.timeInBereitschaftMs / P05_ALARMINTERVALL_BEREITSCHAFT_MS)
-  );
+function bereitschaftAlarm(before: Trupp, after: Trupp): FiredAlarm | null {
+  const nextMs =
+    (Math.floor(
+      before.timeInBereitschaftMs / P05_ALARMINTERVALL_BEREITSCHAFT_MS,
+    ) +
+      1) *
+    P05_ALARMINTERVALL_BEREITSCHAFT_MS;
+  return after.timeInBereitschaftMs >= nextMs
+    ? {
+        cause: "bereitschaft",
+        reachedAfterMs: nextMs - before.timeInBereitschaftMs,
+      }
+    : null;
 }
 
 // timing-and-alarm-rules §2.2, 2.3, 2.4, 2.6: on the running time, literally, once per Einsatz,
 // in every Einsatzstatus; the running time never goes back, so each is reached only once
-function hasReachedAlarmgrenze(before: Trupp, after: Trupp): boolean {
-  return alarmgrenzenPercent(before.einsatzzeitMs).some((percent) => {
-    const alarmgrenzeMs = (before.einsatzzeitMs * percent) / 100;
-    return (
-      before.runningTimeMs < alarmgrenzeMs &&
-      after.runningTimeMs >= alarmgrenzeMs
-    );
-  });
+function alarmgrenzenAlarms(
+  before: Trupp,
+  after: Trupp,
+): readonly FiredAlarm[] {
+  const [first, second] = alarmgrenzenPercent(before.einsatzzeitMs);
+  return [
+    alarmgrenzeAlarm(before, after, first, "alarmgrenze1"),
+    alarmgrenzeAlarm(before, after, second, "alarmgrenze2"),
+  ].flatMap(optional);
+}
+
+function alarmgrenzeAlarm(
+  before: Trupp,
+  after: Trupp,
+  percent: number,
+  cause: AlarmCause,
+): FiredAlarm | null {
+  const alarmgrenzeMs = (before.einsatzzeitMs * percent) / 100;
+  return before.runningTimeMs < alarmgrenzeMs &&
+    after.runningTimeMs >= alarmgrenzeMs
+    ? { cause, reachedAfterMs: alarmgrenzeMs - before.runningTimeMs }
+    : null;
 }
 
 // timing-and-alarm-rules §3.1, 3.2, 3.3, 3.5, 3.6: at 00:00:00 and each multiple of −[06], anchored
@@ -81,8 +144,15 @@ function hasReachedAlarmgrenze(before: Trupp, after: Trupp): boolean {
 // ASSUMPTION: an entry that raises an overdue Restzeit to exactly 00:00:00 has reached that point
 // already, so it fires nothing and the next Alarm comes at −[06]; §3.6 says only "when it next
 // reaches 00:00:00" (taken in "Repeat overdue and Bereitschaft Alarms", issue #33).
-function hasReachedEinsatzzeit(before: Trupp, after: Trupp): boolean {
-  return overdueStep(after.restzeitMs) > overdueStep(before.restzeitMs);
+function einsatzzeitAlarm(before: Trupp, after: Trupp): FiredAlarm | null {
+  const firstStep = overdueStep(before.restzeitMs) + 1;
+  return overdueStep(after.restzeitMs) >= firstStep
+    ? {
+        cause: "einsatzzeit",
+        reachedAfterMs:
+          before.restzeitMs + firstStep * P06_ALARMINTERVALL_EINSATZZEIT_MS,
+      }
+    : null;
 }
 
 // Comparing step numbers rather than thresholds makes a multi-step jump count once (§3.3).
@@ -92,7 +162,7 @@ function overdueStep(restzeitMs: number): number {
     : Math.floor(-restzeitMs / P06_ALARMINTERVALL_EINSATZZEIT_MS);
 }
 
-function alarmgrenzenPercent(einsatzzeitMs: number): readonly number[] {
+function alarmgrenzenPercent(einsatzzeitMs: number): readonly [number, number] {
   switch (einsatzzeitMs) {
     case P01_EINSATZZEIT_1_MS:
       return [

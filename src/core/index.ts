@@ -27,8 +27,10 @@ export {
   rueckzugsdruckBar,
 } from "./restzeit";
 export {
+  alarmCause,
   alarmCycleMs,
   alarmTrupp,
+  isAlarmActive,
   isAlarmLedLit,
   isAlarmSounding,
   isSicherShown,
@@ -39,10 +41,12 @@ export {
 } from "./selectors";
 export { createInitialState, FACTORY_STORED_EINSATZPROTOKOLLE } from "./state";
 export type {
+  AlarmCause,
   Logoff,
   Anmeldeaktion,
   Login,
   NotausschaltungAktion,
+  PendingAlarm,
   Atemschutztraeger,
   Clocks,
   Einsatzprotokoll,

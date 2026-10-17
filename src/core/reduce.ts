@@ -1,5 +1,5 @@
 import { abschaltzeitRestMs } from "./abschaltzeit";
-import { checkAlarms } from "./alarm";
+import { checkAlarms, compareFiredAlarms } from "./alarm";
 import { assertNever } from "./assert-never";
 import { lastEinsatzprotokollFirstLine } from "./einsatzprotokoll-strip";
 import type { Event, Key } from "./event";
@@ -36,6 +36,7 @@ import type {
   Einsatzprotokoll,
   Login,
   NotausschaltungAktion,
+  PendingAlarm,
   Screen,
   ServiceAktion,
   State,
@@ -308,35 +309,39 @@ function handleAlarmKey(state: State, key: Key): State {
   }
 }
 
-// timing-and-alarm-rules §8.1; decided in "Decide how alarms are presented", point 5
+// timing-and-alarm-rules §8.1, 8.4: the first OK silences the Alarm, the second ends it;
+// decided in "Decide how alarms are presented", point 5
 function acknowledgeAlarm(state: State): State {
-  const [acknowledged, ...pendingAlarms] = state.pendingAlarms;
-  if (acknowledged === undefined) {
+  if (!state.alarmSilenced) {
+    return { ...state, alarmSilenced: true };
+  }
+  const [ended, ...pendingAlarms] = state.pendingAlarms;
+  if (ended === undefined) {
     throw new Error("The ALARM screen has no pending Alarm");
   }
+  const next = { ...state, pendingAlarms, alarmSilenced: false };
   if (pendingAlarms.length > 0) {
-    // S12 stays on screen, so the wail and the LED keep their cycle (point 4)
-    return { ...state, pendingAlarms };
+    // ASSUMPTION: the first OK stopped the signal, so the next Alarm starts its wail afresh, as
+    // one that interrupts a screen does (timing-and-alarm-rules §8.4: "the next queued Alarm
+    // (sounding)").
+    return enterScreen(next, "alarm");
   }
   return state.interruptedScreen === null
     ? enterScreen(
-        { ...state, pendingAlarms, selectedTruppnummer: acknowledged },
+        { ...next, selectedTruppnummer: ended.truppnummer },
         "einsatzliste",
       )
     : enterScreen(
-        { ...state, pendingAlarms, interruptedScreen: null },
+        { ...next, interruptedScreen: null },
         state.interruptedScreen,
       );
 }
 
-// decided in "Decide how alarms are presented", points 4 and 5: one pending Alarm per Trupp, in
-// firing order, and S12 takes over from any screen.
+// decided in "Decide how alarms are presented", points 4 and 5, and timing-and-alarm-rules §8.2:
+// every Alarm queues on its own, first in, first out, and S12 takes over from any screen.
 // ASSUMPTION: an interrupted Einsatzliste counts as nothing interrupted, so the last OK selects the
 // acknowledged Trupp there (point 5's fallback; LCD screen catalogue, S12).
-function raiseAlarms(state: State, truppnummern: readonly number[]): State {
-  const fired = truppnummern.filter(
-    (truppnummer) => !state.pendingAlarms.includes(truppnummer),
-  );
+function raiseAlarms(state: State, fired: readonly PendingAlarm[]): State {
   if (fired.length === 0) {
     return state;
   }
@@ -566,13 +571,13 @@ function leaveTruppMenue(
   updated: Trupp,
   screen: Screen,
 ): State {
-  const { trupp: fired, hasFired } = checkAlarms(trupp, updated);
+  const { trupp: checked, fired } = checkAlarms(trupp, updated);
   return raiseAlarms(
     enterScreen(
-      withTruppMenue(replaceTrupp(state, trupp, fired), null),
+      withTruppMenue(replaceTrupp(state, trupp, checked), null),
       screen,
     ),
-    hasFired ? [fired.truppnummer] : [],
+    fired.map(({ cause }) => ({ truppnummer: checked.truppnummer, cause })),
   );
 }
 
@@ -1161,9 +1166,14 @@ function handleTick(state: State, elapsedMs: number): State {
     checkAlarms(trupp, runDown(trupp, elapsedMs)),
   );
   const trupps = checks.map(({ trupp }) => trupp);
+  // timing-and-alarm-rules §8.2: across Trupps too, in the order the thresholds were reached; the
+  // sort is stable, so Trupps tie in Truppnummer order
   const fired = checks
-    .filter(({ hasFired }) => hasFired)
-    .map(({ trupp }) => trupp.truppnummer);
+    .flatMap(({ trupp, fired: alarms }) =>
+      alarms.map((alarm) => ({ ...alarm, truppnummer: trupp.truppnummer })),
+    )
+    .sort(compareFiredAlarms)
+    .map(({ truppnummer, cause }) => ({ truppnummer, cause }));
   return raiseAlarms(runDisplayTimings({ ...state, trupps }), fired);
 }
 

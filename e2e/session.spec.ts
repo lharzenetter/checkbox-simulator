@@ -46,16 +46,26 @@ test("resume a pending Alarm after a reload", async ({ page }) => {
   await page.getByRole("button", { name: "10×" }).click();
   // 9:54 of simulated time, the first Alarmgrenze, is 59.4 s of real time at 10×
   await page.clock.runFor(60_000);
-  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM\n/);
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
 
   await page.reload();
   await sessionDialog(page).getByRole("button", { name: "Fortsetzen" }).click();
   await expect(page.getByText("Simulation pausiert")).toBeVisible();
-  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM\n/);
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
 
   await page.getByRole("button", { name: /Weiter/ }).click();
   await page.clock.runFor(1_000);
   await expect(led).toHaveAttribute("aria-label", "Alarm-LED blinkt");
+
+  // the first OK survives a reload: the Alarm stays silenced, waiting for the second
+  await page.keyboard.press("c");
+  await expect(led).toHaveAttribute("aria-label", "Alarm-LED aus");
+  await page.reload();
+  await sessionDialog(page).getByRole("button", { name: "Fortsetzen" }).click();
+  await page.getByRole("button", { name: /Weiter/ }).click();
+  await page.clock.runFor(1_000);
+  await expect(lcd).toHaveAttribute("aria-label", /^Trupp 01 ALARM 1\n/);
+  await expect(led).toHaveAttribute("aria-label", "Alarm-LED aus");
   await page.keyboard.press("c");
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
 });

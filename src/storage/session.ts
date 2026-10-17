@@ -1,8 +1,10 @@
 import type {
+  AlarmCause,
   Anmeldeaktion,
   Login,
   Logoff,
   NotausschaltungAktion,
+  PendingAlarm,
   Screen,
   ServiceAktion,
   State,
@@ -51,7 +53,7 @@ const SESSION_KEY = `${KEY_PREFIX}session`;
 
 // Raise on any change to the core's state or the Truppzuordnung: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 3;
+const SESSION_VERSION = 4;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
@@ -107,6 +109,13 @@ const SERVICE_AKTIONEN: Readonly<Record<ServiceAktion, true>> = {
   zeitDatumEinstellen: true,
   kontrast: true,
   testprogramm: true,
+};
+const ALARM_CAUSES: Readonly<Record<AlarmCause, true>> = {
+  alarmgrenze1: true,
+  alarmgrenze2: true,
+  rueckzugsalarm: true,
+  einsatzzeit: true,
+  bereitschaft: true,
 };
 const NOTAUSSCHALTUNG_KEYS: Readonly<Record<"X" | "Check", true>> = {
   X: true,
@@ -190,6 +199,14 @@ function parseSavedSession(
     : null;
 }
 
+function isPendingAlarm(value: unknown): value is PendingAlarm {
+  return (
+    isRecord(value) &&
+    isInteger(value.truppnummer) &&
+    isMemberOf(ALARM_CAUSES, value.cause)
+  );
+}
+
 function isTruppzuordnung(value: unknown): value is Truppzuordnung {
   return (
     Array.isArray(value) &&
@@ -217,6 +234,7 @@ function parseSession(
     trupps,
     selectedTruppnummer,
     pendingAlarms,
+    alarmSilenced,
     interruptedScreen,
     notausschaltungKeysHeld,
     notausschaltungHeldSinceRealMs,
@@ -237,7 +255,8 @@ function parseSession(
     !trupps.every(isTrupp) ||
     !isNullableInteger(selectedTruppnummer) ||
     !Array.isArray(pendingAlarms) ||
-    !pendingAlarms.every(isInteger) ||
+    !pendingAlarms.every(isPendingAlarm) ||
+    typeof alarmSilenced !== "boolean" ||
     !(interruptedScreen === null || isMemberOf(SCREENS, interruptedScreen)) ||
     !Array.isArray(notausschaltungKeysHeld) ||
     !notausschaltungKeysHeld.every((key) =>
@@ -267,6 +286,7 @@ function parseSession(
     selectedTruppnummer,
     einsatzprotokolle,
     pendingAlarms,
+    alarmSilenced,
     interruptedScreen,
     notausschaltungKeysHeld,
     notausschaltungHeldSinceRealMs,
@@ -285,9 +305,10 @@ function isConsistent(state: State): boolean {
     state.trupps.every(({ einsatzzeitMs }) =>
       EINSATZZEITEN_MS.some((offered) => offered === einsatzzeitMs),
     ) &&
-    state.pendingAlarms.every((truppnummer) =>
+    state.pendingAlarms.every(({ truppnummer }) =>
       namesTrupp(state, truppnummer),
     ) &&
+    (state.pendingAlarms.length > 0 || !state.alarmSilenced) &&
     (state.selectedTruppnummer === null ||
       namesTrupp(state, state.selectedTruppnummer)) &&
     hasScreenSubState(state)
@@ -333,6 +354,7 @@ function hasScreenSubState(state: State): boolean {
             screen: state.interruptedScreen,
             interruptedScreen: null,
             pendingAlarms: [],
+            alarmSilenced: false,
           }))
       );
     case "notausschaltungAuswahl":

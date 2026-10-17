@@ -60,6 +60,23 @@ export interface Trupp {
   readonly loggedInAtMs: number;
 }
 
+/**
+ * What fired an Alarm, which S12's header names: an Alarmgrenze, the Rückzugsalarm, Einsatzzeit
+ * erreicht or one of its overdue repeats, or the Bereitschaft Alarm.
+ */
+export type AlarmCause =
+  | "alarmgrenze1"
+  | "alarmgrenze2"
+  | "rueckzugsalarm"
+  | "einsatzzeit"
+  | "bereitschaft";
+
+/** An Alarm waiting for its two OKs. */
+export interface PendingAlarm {
+  readonly truppnummer: number;
+  readonly cause: AlarmCause;
+}
+
 /** The record of one Trupp's Einsatz, written at logoff and at a Notausschaltung. */
 export interface Einsatzprotokoll {
   readonly einsatznummer: number;
@@ -156,8 +173,10 @@ export interface State {
   readonly selectedTruppnummer: number | null;
   /** The device memory's Einsatzprotokolle, oldest first. */
   readonly einsatzprotokolle: readonly Einsatzprotokoll[];
-  /** The Truppnummern with an Alarm waiting for OK, in firing order. */
-  readonly pendingAlarms: readonly number[];
+  /** The Alarms waiting for OK, first in, first out; several may be one Trupp's. */
+  readonly pendingAlarms: readonly PendingAlarm[];
+  /** Whether the first OK has silenced the Alarm S12 shows; the second OK ends it. */
+  readonly alarmSilenced: boolean;
   /** The screen S12 took over from, shown again after the last OK; `null` for the Einsatzliste. */
   readonly interruptedScreen: Screen | null;
   /** Of X and Check, those held down since they were pressed on the Einsatzliste. */
@@ -223,6 +242,7 @@ export function createInitialState(
     selectedTruppnummer: null,
     einsatzprotokolle,
     pendingAlarms: [],
+    alarmSilenced: false,
     interruptedScreen: null,
     notausschaltungKeysHeld: [],
     notausschaltungHeldSinceRealMs: null,

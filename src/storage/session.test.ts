@@ -84,7 +84,8 @@ const TRUPP: Trupp = {
   loggedInAtMs: 3_000_000,
 };
 
-// Every part of the state filled in, as it is with an Alarm pending over a half-done login.
+// Every part of the state filled in, as it is with two Alarms pending over a half-done login, the
+// first silenced by its first OK.
 const MID_EINSATZ: State = {
   ...createInitialState({ now: 5_000_000, realNow: 90_000 }, DEVICE_MEMORY),
   screen: "alarm",
@@ -108,7 +109,11 @@ const MID_EINSATZ: State = {
   truppMenue: { aktion: "rueckzugAntreten", draftFlaschendruckBar: null },
   trupps: [TRUPP, { ...TRUPP, truppnummer: 4, einsatzstatus: "bereitschaft" }],
   selectedTruppnummer: 2,
-  pendingAlarms: [2, 4],
+  pendingAlarms: [
+    { truppnummer: 2, cause: "rueckzugsalarm" },
+    { truppnummer: 4, cause: "bereitschaft" },
+  ],
+  alarmSilenced: true,
   interruptedScreen: "anmeldefenster",
   notausschaltungKeysHeld: ["X"],
   notausschaltungHeldSinceRealMs: null,
@@ -154,7 +159,7 @@ describe("the running session", () => {
   });
 
   // decided in "Decide what survives a page reload"; "Decide how alarms are presented", point 9
-  it("comes back as it was saved, with its pending Alarms and the screen S12 interrupted", () => {
+  it("comes back as it was saved, with its pending Alarms, whether the first OK was given and the screen S12 interrupted", () => {
     expect(loadStores(savedStorage(MID_EINSATZ))).toEqual({
       deviceMemory: DEVICE_MEMORY,
       session: MID_EINSATZ,
@@ -226,7 +231,7 @@ describe("the factory reset", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 3,
+      version: 4,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
       nextEinsatznummer: undefined,
@@ -240,6 +245,14 @@ describe("incompatible stored session data", () => {
     ["is not JSON", "{not json"],
     ["has no version", sessionJson({ version: undefined })],
     ["has an old version", sessionJson({ version: 1 })],
+    [
+      "has version 3, with an Alarm queue of bare Truppnummern",
+      sessionJson({
+        version: 3,
+        pendingAlarms: [2, 4],
+        alarmSilenced: undefined,
+      }),
+    ],
     [
       "has version 2, without the Truppzuordnung",
       sessionJson({ version: 2, truppzuordnung: undefined }),
@@ -280,10 +293,33 @@ describe("incompatible stored session data", () => {
       "has an unknown key held for the Notausschaltung",
       sessionJson({ notausschaltungKeysHeld: ["OK"] }),
     ],
-    ["shows S12 with no Alarm pending", sessionJson({ pendingAlarms: [] })],
+    [
+      "shows S12 with no Alarm pending",
+      sessionJson({ pendingAlarms: [], alarmSilenced: false }),
+    ],
     [
       "has an Alarm pending for no logged-in Trupp",
-      sessionJson({ pendingAlarms: [2, 5] }),
+      sessionJson({
+        pendingAlarms: [{ truppnummer: 5, cause: "alarmgrenze1" }],
+      }),
+    ],
+    [
+      "has an Alarm with an unknown cause",
+      sessionJson({
+        pendingAlarms: [{ truppnummer: 2, cause: "alarmgrenze3" }],
+      }),
+    ],
+    [
+      "has a first OK that is no yes or no",
+      sessionJson({ alarmSilenced: "ja" }),
+    ],
+    [
+      "has a first OK given with no Alarm pending",
+      sessionJson({
+        screen: "anmeldefenster",
+        pendingAlarms: [],
+        alarmSilenced: true,
+      }),
     ],
     [
       "has a Trupp with an Einsatzzeit the device does not offer",

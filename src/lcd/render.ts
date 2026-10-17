@@ -297,6 +297,10 @@ function drawTruppAnsicht(
   model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
+  // ASSUMPTION: only the two names the figure has room for are drawn; a larger Trupp's further
+  // Atemschutzträger are left off (LCD screen catalogue, S11).
+  drawLines(framebuffer, model.atemschutztraeger.slice(0, 2), 13);
+  drawCylinderOne(framebuffer);
   // ASSUMPTION: the Statussymbol, which the figure does not draw, sits right of the names, as
   // issue #30 asks, leaving its box to the Rückzugsdruck (manual 3.2.3 item 9).
   drawStatussymbol(
@@ -328,13 +332,19 @@ function drawAnsichtButton(framebuffer: Framebuffer, label: string): void {
   );
 }
 
-// Laid out after the ALARM figure (manual 5.5.3): the Trupp-Ansicht with `Alarmende mit OK` in
-// place of the `Ansicht` label.
+// Laid out after the ALARM figure (manual 5.5.3) and the real-device photo alarm-rueckzug.jpeg:
+// the Trupp-Ansicht's panels with the Personen-Anzahl, centred between the rules as in the
+// photo, in place of the names, the `R` mark in place of the `1`, and `Alarmende mit OK` in place
+// of the `Ansicht` label.
 function drawAlarm(
   framebuffer: Framebuffer,
   model: Extract<ScreenModel, { layout: "alarm" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
+  drawText(framebuffer, model.personenAnzahl, 1, 18);
+  if (model.rueckzugsdruckLevel !== null) {
+    drawRueckzugsdruckMark(framebuffer, model.rueckzugsdruckLevel);
+  }
   model.prompt.forEach((line, index) => {
     drawText(
       framebuffer,
@@ -401,7 +411,6 @@ function drawTruppPanels(
   framebuffer: Framebuffer,
   model: {
     readonly title: string;
-    readonly atemschutztraeger: readonly string[];
     readonly flaschendruck: string;
     readonly restzeit: string;
     readonly fillLevel: number;
@@ -411,9 +420,6 @@ function drawTruppPanels(
 ): void {
   drawText(framebuffer, model.title, 1, 2);
   fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
-  // ASSUMPTION: only the two names the figure has room for are drawn; a larger Trupp's further
-  // Atemschutzträger are left off (LCD screen catalogue, S11).
-  drawLines(framebuffer, model.atemschutztraeger.slice(0, 2), 13);
   fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
   fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
   drawCylinder(framebuffer, model.fillLevel);
@@ -482,6 +488,7 @@ function drawFlaschendruckEditor(
   drawRightAlignedText(framebuffer, "Restzeit", right, 84);
   drawValueBox(framebuffer, model.restzeit, 95);
   drawCylinder(framebuffer, model.fillLevel);
+  drawCylinderOne(framebuffer);
   // manual 5.3: the editor's figure draws the bar empty
   drawTimeSplitBar(framebuffer, null);
 }
@@ -614,12 +621,33 @@ function drawCylinder(framebuffer: Framebuffer, fillLevel: number): void {
   for (const tickY of tickYs) {
     fillRect(framebuffer, CYLINDER_X + CYLINDER_WIDTH, tickY, 3, 1);
   }
-  // the `1` stands one row below the top tick (issue #41)
+}
+
+// the `1` stands one row below the top tick (issue #41)
+function drawCylinderOne(framebuffer: Framebuffer): void {
   drawText(
     framebuffer,
     "1",
     CYLINDER_X + CYLINDER_WIDTH + 4,
     CYLINDER_BASE_Y - 2 * CYLINDER_TICK_PITCH + 1,
+  );
+}
+
+// The real-device photo alarm-rueckzug.jpeg: a tick at the Rückzugsdruck's height on the
+// cylinder's scale, the `R` beside it.
+function drawRueckzugsdruckMark(
+  framebuffer: Framebuffer,
+  rueckzugsdruckLevel: number,
+): void {
+  const markY =
+    CYLINDER_BASE_Y - Math.round(CYLINDER_BODY_ROWS * rueckzugsdruckLevel);
+  // shorter than the scale's ticks, so the `R` clears the divider
+  fillRect(framebuffer, CYLINDER_X + CYLINDER_WIDTH, markY, 2, 1);
+  drawText(
+    framebuffer,
+    "R",
+    CYLINDER_X + CYLINDER_WIDTH + 3,
+    markY - Math.floor(GLYPH_HEIGHT / 2),
   );
 }
 

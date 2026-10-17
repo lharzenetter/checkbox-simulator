@@ -161,7 +161,7 @@ describe("holding X and Check on the Einsatzliste", () => {
     expect(holding.screen).toBe("einsatzliste");
     const alarm = reduce(holding, tickAfter(holding, 2_000));
     expect(alarm.screen).toBe("alarm");
-    const acknowledged = reduce(alarm, press("OK"));
+    const acknowledged = run(alarm, press("OK"), press("OK"));
     expect(reduce(acknowledged, tickAfter(acknowledged, 2_000)).screen).toBe(
       "einsatzliste",
     );
@@ -222,7 +222,7 @@ describe("S14 Notausschaltung – Auswahl", () => {
     // Trupp 02's first Bereitschaft Alarm (timing-and-alarm-rules §4.3)
     const alarm = reduce(auswahl, tickAfter(auswahl, 5 * 60_000));
     expect(alarm.screen).toBe("alarm");
-    const back = reduce(alarm, press("OK"));
+    const back = run(alarm, press("OK"), press("OK"));
     expect(back.screen).toBe("notausschaltungAuswahl");
     expect(back.notausschaltung).toBe("alleTrupps");
     expect(back.selectedTruppnummer).toBe(2);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { createInitialState, isAlarmSounding, reduce } from "../core/index";
+import { createInitialState, isAlarmActive, reduce } from "../core/index";
 import type { Event, State } from "../core/index";
 import {
   BLANK_TRUPPZUORDNUNG,
@@ -158,20 +158,21 @@ export function useSimulator(): {
     }
   }, [storage, state, truppzuordnung, sessionChoicePending]);
 
-  // The tick loop reads the signal here, so the clock follows it from the next frame on.
-  const alarmSounding = useRef(isAlarmSounding(state));
+  // The tick loop reads the Alarm here, so the clock follows it from the next frame on.
+  const alarmActive = useRef(isAlarmActive(state));
   useEffect(() => {
-    alarmSounding.current = isAlarmSounding(state);
+    alarmActive.current = isAlarmActive(state);
   }, [state]);
 
   useEffect(() => {
     let frame = requestAnimationFrame(tick);
     function tick(): void {
       const realNow = performance.now();
-      const sounding = alarmSounding.current;
-      // Decided in "Drop the simulation to real time while an Alarm sounds", points 1–3.
-      if (sounding !== clock.heldAtRealTime) {
-        setClock((current) => followAlarmSignal(current, sounding, realNow));
+      const active = alarmActive.current;
+      // Decided in "Drop the simulation to real time while an Alarm sounds", points 1–3, held
+      // until the second OK as amended in "Correct the simulator against the real Checkbox".
+      if (active !== clock.heldAtRealTime) {
+        setClock((current) => followAlarmSignal(current, active, realNow));
       }
       dispatchToCore({ type: "tick", ...readClocks(clock, realNow) });
       frame = requestAnimationFrame(tick);

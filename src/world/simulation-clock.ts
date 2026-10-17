@@ -153,19 +153,19 @@ export function stepClockSpeed(
 }
 
 /**
- * Follows the Checkbox's Alarm signal at the real reading `realNow`: while `alarmSounding`,
- * simulated time runs at 1× and the speed cannot change; once it stops, the speed stays at 1×.
- * Decided in "Drop the simulation to real time while an Alarm sounds".
+ * Follows the Checkbox's Alarm at the real reading `realNow`: while `alarmActive`, simulated time
+ * runs at 1× and the speed cannot change; once it ends, the speed stays at 1×. Decided in "Drop
+ * the simulation to real time while an Alarm sounds".
  */
 export function followAlarmSignal(
   clock: SimulationClock,
-  alarmSounding: boolean,
+  alarmActive: boolean,
   realNow: number,
 ): SimulationClock {
-  if (alarmSounding === clock.heldAtRealTime) {
+  if (alarmActive === clock.heldAtRealTime) {
     return clock;
   }
-  if (!alarmSounding) {
+  if (!alarmActive) {
     return { ...clock, heldAtRealTime: false };
   }
   return { ...reanchor(clock, realNow), speed: 1, heldAtRealTime: true };
