@@ -104,8 +104,12 @@ function rueckzugsalarmAlarm(before: Trupp, after: Trupp): FiredAlarm | null {
   };
 }
 
-// timing-and-alarm-rules §4.3, 4.4: every [05] of simulated time since entering Bereitschaft
+// timing-and-alarm-rules §4.3, 4.4, 12.8: every [05] of simulated time since entering
+// Bereitschaft, never for a Sicherheitstrupp
 function bereitschaftAlarm(before: Trupp, after: Trupp): FiredAlarm | null {
+  if (after.sicherheitstrupp) {
+    return null;
+  }
   const nextMs =
     (Math.floor(
       before.timeInBereitschaftMs / P05_ALARMINTERVALL_BEREITSCHAFT_MS,

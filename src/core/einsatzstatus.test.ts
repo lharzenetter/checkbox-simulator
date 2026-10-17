@@ -417,7 +417,11 @@ describe("a Sicherheitstrupp", () => {
     let state = sicherheitstrupp();
     expectSicher(state, "bereitschaft");
 
-    state = chooseItem(run(state, tickAt(4)), "truppEinsatz");
+    // X on `Sicherheitstrupp deaktivieren?` keeps the flag: timing-and-alarm-rules §12.8
+    state = reduce(
+      chooseItem(run(state, tickAt(4)), "truppEinsatz"),
+      press("X"),
+    );
     expectSicher(state, "anmarsch");
 
     state = run(

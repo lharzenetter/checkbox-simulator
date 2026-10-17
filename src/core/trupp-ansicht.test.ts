@@ -235,6 +235,7 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
     expect(kept.truppMenue).toEqual({
       aktion: "flaschendruckAendern",
       draftFlaschendruckBar: null,
+      sicherheitstruppDeaktivierenShown: false,
     });
     expect(restzeitMs(kept)).toBe((19 * 60 + 30) * 1000);
 

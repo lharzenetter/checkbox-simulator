@@ -62,7 +62,7 @@ const SESSION_KEY = `${KEY_PREFIX}session`;
 
 // Raise on any change to the core's state or the Truppzuordnung: older sessions are then wiped with the device memory,
 // never migrated (decided in "Decide what survives a page reload").
-const SESSION_VERSION = 7;
+const SESSION_VERSION = 8;
 
 // Keyed by every member of each union, so a member added to the core fails the typecheck here.
 const SCREENS: Readonly<Record<Screen, true>> = {
@@ -450,7 +450,8 @@ function isTruppMenue(value: unknown): value is TruppMenue {
   return (
     isRecord(value) &&
     isMemberOf(TRUPP_MENUE_AKTIONEN, value.aktion) &&
-    isNullableInteger(value.draftFlaschendruckBar)
+    isNullableInteger(value.draftFlaschendruckBar) &&
+    typeof value.sicherheitstruppDeaktivierenShown === "boolean"
   );
 }
 

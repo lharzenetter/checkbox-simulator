@@ -157,6 +157,8 @@ export interface TruppMenue {
   readonly aktion: TruppMenueAktion;
   /** The value being edited in the Flaschendruck editor; `null` on the Trupp-Menü. */
   readonly draftFlaschendruckBar: number | null;
+  /** The box `Sicherheitstrupp deaktivieren?` shows over the Trupp-Menü. */
+  readonly sicherheitstruppDeaktivierenShown: boolean;
 }
 
 /** The choices of Notausschaltung – Auswahl, top to bottom. */

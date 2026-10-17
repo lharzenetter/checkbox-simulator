@@ -108,7 +108,11 @@ const MID_EINSATZ: State = {
     markedTallyIds: ["3"],
     daueralarmSinceRealMs: null,
   },
-  truppMenue: { aktion: "rueckzugAntreten", draftFlaschendruckBar: null },
+  truppMenue: {
+    aktion: "rueckzugAntreten",
+    draftFlaschendruckBar: null,
+    sicherheitstruppDeaktivierenShown: false,
+  },
   trupps: [
     TRUPP,
     {
@@ -243,7 +247,7 @@ describe("the factory reset", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 7,
+      version: 8,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
       nextEinsatznummer: undefined,
@@ -370,7 +374,19 @@ describe("incompatible stored session data", () => {
     ],
     [
       "has a Trupp-Menü with an unknown item",
-      sessionJson({ truppMenue: { aktion: "x", draftFlaschendruckBar: null } }),
+      sessionJson({
+        truppMenue: { ...MID_EINSATZ.truppMenue, aktion: "x" },
+      }),
+    ],
+    [
+      "has version 7, with a Trupp-Menü that lacks the Sicherheitstrupp box",
+      sessionJson({
+        version: 7,
+        truppMenue: {
+          aktion: "truppEinsatz",
+          draftFlaschendruckBar: null,
+        },
+      }),
     ],
     [
       "has an unknown key held for the Notausschaltung",

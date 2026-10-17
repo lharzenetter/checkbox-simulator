@@ -384,6 +384,7 @@ function handleEinsatzlisteKey(state: State, key: Key): State {
             withTruppMenue(state, {
               aktion: firstOf(truppMenueAktionen(state)),
               draftFlaschendruckBar: null,
+              sicherheitstruppDeaktivierenShown: false,
             }),
             "truppMenue",
           );
@@ -404,6 +405,9 @@ function handleTruppAnsichtKey(state: State): State {
 // against the real Checkbox"; `Attribute eintragen` is inert
 function handleTruppMenueKey(state: State, key: Key): State {
   const truppMenue = requireTruppMenue(state);
+  if (truppMenue.sicherheitstruppDeaktivierenShown) {
+    return handleSicherheitstruppDeaktivierenKey(state, key);
+  }
   switch (key) {
     case "Up":
     case "Down":
@@ -423,18 +427,21 @@ function handleTruppMenueKey(state: State, key: Key): State {
 }
 
 // decided in "Define the key-by-screen navigation model", its Trupp-Menü and pressure editor
-// tables; timing-and-alarm-rules §12.5
+// tables; timing-and-alarm-rules §12.5, 12.8.
+// ASSUMPTION: `Sicherheitstrupp deaktivieren?` asks each time a Sicherheitstrupp leaves
+// Bereitschaft, not only the first time ("Correct the simulator against the real Checkbox").
 function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
+  const trupp = selectedTrupp(state);
   switch (truppMenue.aktion) {
     case "truppEinsatz":
+      return trupp.sicherheitstrupp && trupp.einsatzstatus === "bereitschaft"
+        ? withTruppMenue(state, {
+            ...truppMenue,
+            sicherheitstruppDeaktivierenShown: true,
+          })
+        : sendTrupp(state, trupp, "truppEinsatz");
     case "truppBereitschaft":
-      return enterScreen(
-        withTruppMenue(
-          changeEinsatzstatus(state, selectedTrupp(state), truppMenue.aktion),
-          null,
-        ),
-        "einsatzliste",
-      );
+      return sendTrupp(state, trupp, "truppBereitschaft");
     case "einsatzzielErreicht":
     case "rueckzugAntreten":
     case "flaschendruckAendern":
@@ -442,7 +449,7 @@ function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
         withTruppMenue(state, {
           ...truppMenue,
           draftFlaschendruckBar: snapToFlaschendruckGrid(
-            estimateFlaschendruckBar(selectedTrupp(state)),
+            estimateFlaschendruckBar(trupp),
           ),
         }),
         "truppFlaschendruckAendern",
@@ -452,6 +459,43 @@ function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
     default:
       return assertNever(truppMenue.aktion);
   }
+}
+
+// timing-and-alarm-rules §12.8: X sends the Trupp in still a Sicherheitstrupp, OK as an ordinary
+// Trupp, for good.
+// ASSUMPTION: Up, Down and Check are ignored while it shows, as on every box over a screen
+// ("Correct the simulator against the real Checkbox").
+function handleSicherheitstruppDeaktivierenKey(state: State, key: Key): State {
+  const trupp = selectedTrupp(state);
+  switch (key) {
+    case "X":
+      return sendTrupp(state, trupp, "truppEinsatz");
+    case "OK": {
+      const deactivated = { ...trupp, sicherheitstrupp: false };
+      return sendTrupp(
+        replaceTrupp(state, trupp, deactivated),
+        deactivated,
+        "truppEinsatz",
+      );
+    }
+    case "Up":
+    case "Down":
+    case "Check":
+      return state;
+    default:
+      return assertNever(key);
+  }
+}
+
+function sendTrupp(
+  state: State,
+  trupp: Trupp,
+  aktion: "truppEinsatz" | "truppBereitschaft",
+): State {
+  return enterScreen(
+    withTruppMenue(changeEinsatzstatus(state, trupp, aktion), null),
+    "einsatzliste",
+  );
 }
 
 // timing-and-alarm-rules §4.1, 4.6, 12.3, 12.4, 12.5: `Trupp -> Einsatz` restores the earlier
@@ -947,8 +991,12 @@ function handleTallyHeld(
     case "einsatzliste":
       return routeTally(state, atemschutztraeger);
     case "truppAnsicht":
-    case "truppMenue":
       return routeTallyFromTrupp(state, atemschutztraeger);
+    // ignored while `Sicherheitstrupp deaktivieren?` shows, as decided in issue #52
+    case "truppMenue":
+      return requireTruppMenue(state).sicherheitstruppDeaktivierenShown
+        ? state
+        : routeTallyFromTrupp(state, atemschutztraeger);
     case "anmeldefenster":
       return addAtemschutztraeger(state, atemschutztraeger);
     case "abmelden":
