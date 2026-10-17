@@ -25,7 +25,7 @@ test("sound an Alarm at the first Alarmgrenze", async ({ page }) => {
   await page.clock.runFor(1_000);
   await expect(lcd).toHaveAttribute(
     "aria-label",
-    /^Trupp 01 ALARM 1\nPersonen-Anzahl: 2\nDruck \d+ bar\nRestzeit 00:20:0\d\nAlarmende\nmit OK$/,
+    /^Trupp 01 ALARM 1\nPersonen-Anzahl: 2\nDruck \d+ bar\nRestzeit 00:20:0\d\nRückzugsdruck 50 bar\nAlarmende\nmit OK$/,
   );
   await expect(led).toHaveAttribute("aria-label", "Alarm-LED blinkt");
 

@@ -35,7 +35,7 @@ test("log in a Trupp", async ({ page }) => {
   await page.keyboard.press("c");
   await expect(lcd).toHaveAttribute(
     "aria-label",
-    "Trupp 01 ANMARSCH\nPersonen-Anzahl: 3\nDruck 290 bar\nRestzeit 00:29:00\nAnsicht",
+    "Trupp 01 ANMARSCH\nPersonen-Anzahl: 3\nDruck 290 bar\nRestzeit 00:29:00\nRückzugsdruck 50 bar\nAnsicht",
   );
   await page.keyboard.press("d");
   await expect(lcd).toHaveAttribute(
