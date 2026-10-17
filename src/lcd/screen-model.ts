@@ -515,16 +515,10 @@ function cylinderFillLevel(flaschendruckBar: number): number {
 // manual 3.2.3, Trupp-Ansicht figure, and the real-device photo trupp-ansicht.jpeg; decided in
 // "Correct the simulator against the real Checkbox": the ALARM screen's layout, labelled `Ansicht`
 function truppAnsichtModel(trupp: Trupp): ScreenModel {
-  const flaschendruckBar = estimateFlaschendruckBar(trupp);
   return {
     layout: "truppAnsicht",
     title: truppHeader(trupp),
-    personenAnzahl: formatPersonenAnzahl(trupp),
-    flaschendruck: formatBar(flaschendruckBar),
-    restzeit: formatFullRestzeit(trupp.restzeitMs),
-    fillLevel: cylinderFillLevel(flaschendruckBar),
-    rueckzugsdruck: formatRueckzugsdruck(trupp),
-    timeSplit: timeSplitOf(trupp),
+    ...truppPanelsOf(trupp),
     label: "Ansicht",
   };
 }
@@ -533,20 +527,27 @@ function truppAnsichtModel(trupp: Trupp): ScreenModel {
 // how alarms are presented", point 1, and "Correct the simulator against the real Checkbox": live
 // values, the cause in the header, the Personen-Anzahl, and no SICHER
 function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
-  const flaschendruckBar = estimateFlaschendruckBar(trupp);
   const rueckzugsdruck = rueckzugsdruckBar(trupp);
   return {
     layout: "alarm",
     title: `Trupp ${formatTruppnummer(trupp.truppnummer)} ${ALARM_HEADERS[cause]}`,
-    personenAnzahl: formatPersonenAnzahl(trupp),
+    ...truppPanelsOf(trupp),
+    rueckzugsdruckLevel:
+      rueckzugsdruck === null ? null : cylinderFillLevel(rueckzugsdruck),
+    prompt: ["Alarmende", "mit OK"],
+  };
+}
+
+// The values the Trupp-Ansicht and the ALARM screen share, live.
+function truppPanelsOf(trupp: Trupp) {
+  const flaschendruckBar = estimateFlaschendruckBar(trupp);
+  return {
+    personenAnzahl: `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`,
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatFullRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
-    rueckzugsdruckLevel:
-      rueckzugsdruck === null ? null : cylinderFillLevel(rueckzugsdruck),
     rueckzugsdruck: formatRueckzugsdruck(trupp),
     timeSplit: timeSplitOf(trupp),
-    prompt: ["Alarmende", "mit OK"],
   };
 }
 
@@ -812,10 +813,6 @@ const EINSATZSTATUS_LABELS: Readonly<Record<Einsatzstatus, string>> = {
   einsatzzielErreicht: "Einsatzziel erreicht",
   rueckmarsch: "Rückmarsch",
 };
-
-function formatPersonenAnzahl(trupp: Trupp): string {
-  return `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`;
-}
 
 // The leading `*` is kept as drawn (LCD screen catalogue, gap G15).
 function formatName(atemschutztraeger: Atemschutztraeger): string {

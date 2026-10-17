@@ -295,7 +295,7 @@ describe("`Druck ändern` on the Trupp-Menü", () => {
 
 // decided in "Correct the simulator against the real Checkbox", navigation
 describe("the Trupp-Ansicht", () => {
-  // X on an editor keeps the old Flaschendruck and returns to the Trupp-Menü, so no Ansicht
+  // X on an editor keeps the old Flaschendruck and returns to the Trupp-Menü, so no Trupp-Ansicht
   it("is not shown when an editor is left with X", () => {
     const state = run(truppInAnmarsch(), ...DRUCK_AENDERN, press("X"));
     expect(state.screen).toBe("truppMenue");

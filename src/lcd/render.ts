@@ -303,7 +303,6 @@ function drawTruppAnsicht(
   model: Extract<ScreenModel, { layout: "truppAnsicht" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  drawText(framebuffer, model.personenAnzahl, 1, PERSONEN_ANZAHL_Y);
   drawCylinderOne(framebuffer);
   drawAnsichtButton(framebuffer, model.label);
 }
@@ -329,15 +328,13 @@ function drawAnsichtButton(framebuffer: Framebuffer, label: string): void {
 }
 
 // Laid out after the ALARM figure (manual 5.5.3) and the real-device photo alarm-rueckzug.jpeg:
-// the Trupp-Ansicht's panels with the Personen-Anzahl, centred between the rules as in the
-// photo, in place of the names, the `R` mark in place of the `1`, and `Alarmende mit OK` in place
-// of the `Ansicht` label.
+// the Trupp-Ansicht's panels, with the `R` mark in place of the `1` and `Alarmende mit OK` in
+// place of the `Ansicht` label.
 function drawAlarm(
   framebuffer: Framebuffer,
   model: Extract<ScreenModel, { layout: "alarm" }>,
 ): void {
   drawTruppPanels(framebuffer, model);
-  drawText(framebuffer, model.personenAnzahl, 1, PERSONEN_ANZAHL_Y);
   if (model.rueckzugsdruckLevel !== null) {
     drawRueckzugsdruckMark(framebuffer, model.rueckzugsdruckLevel);
   }
@@ -410,6 +407,7 @@ function drawTruppPanels(
   framebuffer: Framebuffer,
   model: {
     readonly title: string;
+    readonly personenAnzahl: string;
     readonly flaschendruck: string;
     readonly restzeit: string;
     readonly fillLevel: number;
@@ -419,6 +417,7 @@ function drawTruppPanels(
 ): void {
   drawText(framebuffer, model.title, 1, 2);
   fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
+  drawText(framebuffer, model.personenAnzahl, 1, PERSONEN_ANZAHL_Y);
   fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
   fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
   drawCylinder(framebuffer, model.fillLevel);

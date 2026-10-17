@@ -18,7 +18,7 @@ import {
   P77_MAX_UEBER_SOLL_PROZENT,
   P78_MIN_UNTER_SOLL_PROZENT,
   P81_FLASCHENTYP_2_BAR,
-  TRUPP_ANSICHT_MS,
+  TRUPP_ANSICHT_ANZEIGEZEIT_MS,
 } from "./parameters";
 import {
   computeRestzeitMs,
@@ -888,7 +888,9 @@ function hasEnoughAtemschutztraeger(login: Login): boolean {
   );
 }
 
-// decided in "Define the key-by-screen navigation model", its "Tally on Check" table
+// decided in "Define the key-by-screen navigation model", its "Tally on Check" table.
+// ASSUMPTION: a Tally is no key, so it does not close the Trupp-Ansicht of "Correct the simulator
+// against the real Checkbox" but is routed from it as from the Trupp-Menü (taken in issue #50).
 function handleTallyHeld(
   state: State,
   atemschutztraeger: Atemschutztraeger,
@@ -1193,11 +1195,14 @@ function hasP13TimeoutRunOut(state: State): boolean {
   );
 }
 
-// timing-and-alarm-rules §9, 9.1
+// timing-and-alarm-rules §9, 9.1.
+// ASSUMPTION: an Alarm that a pressure entry fires takes over from its Trupp-Ansicht, and the last
+// OK shows that Trupp-Ansicht again for a full 5 s, as entering any screen restarts its display
+// timing (taken in issue #50).
 function hasTruppAnsichtRunOut(state: State): boolean {
   return (
     state.screen === "truppAnsicht" &&
-    state.realNow - state.screenEnteredRealMs >= TRUPP_ANSICHT_MS
+    state.realNow - state.screenEnteredRealMs >= TRUPP_ANSICHT_ANZEIGEZEIT_MS
   );
 }
 

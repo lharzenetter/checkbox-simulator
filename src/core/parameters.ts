@@ -13,7 +13,7 @@ export const ALARM_BLINK_PHASE_MS = 250;
 
 // Nor does the Trupp-Ansicht's display time after a pressure entry: 5 s of real time, as decided in
 // "Correct the simulator against the real Checkbox".
-export const TRUPP_ANSICHT_MS = 5_000;
+export const TRUPP_ANSICHT_ANZEIGEZEIT_MS = 5_000;
 
 // The Notausschaltung's hold has no parameter number either: X + Check "ca. 4 Sekunden",
 // manual 5.9 step 2.
