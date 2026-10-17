@@ -291,16 +291,18 @@ describe("S16 Einsatzprotokoll", () => {
 });
 
 describe("S03 Einsatzzeit wählen", () => {
-  // manual 5.3, login figure; decided in "Define the key-by-screen navigation model"
-  it("reads as in the figure with only 30 and 20 min, cursor on 30", () => {
+  // manual 5.3, login figure; real-device photo einsatzzeit-waehlen.jpeg: the minutes right-aligned
+  // in three places
+  it("reads as on the device with 30, 20 and 180 min, cursor on 30", () => {
     const model = screenModel(stateAfter(HLF_AT_F));
     expect(screenText(model)).toEqual([
       "Neuen Trupp anmelden:",
       "Wähle Einsatzzeit für",
       "Trupp Nr.: 01",
       "*HLF AT-F",
-      "Einsatzzeit  30 min?",
-      "Einsatzzeit  20 min?",
+      "Einsatzzeit 30 min?",
+      "Einsatzzeit 20 min?",
+      "Einsatzzeit180 min?",
     ]);
     expect(model).toMatchObject({
       layout: "einsatzzeitWaehlen",
@@ -311,21 +313,40 @@ describe("S03 Einsatzzeit wählen", () => {
   // manual 5.3 step 3
   it("moves the cursor to 20 min on Down", () => {
     expect(screenModel(stateAfter(HLF_AT_F, press("Down")))).toMatchObject({
-      items: ["Einsatzzeit  30 min?", "Einsatzzeit  20 min?"],
+      items: [
+        "Einsatzzeit 30 min?",
+        "Einsatzzeit 20 min?",
+        "Einsatzzeit180 min?",
+      ],
       selectedIndex: 1,
     });
   });
 
+  // timing-and-alarm-rules §8.3; verification-scenarios V28
+  it("turns the bottom line into `Langzeiteinsatz? OK` on OK at 180 min", () => {
+    expect(
+      screenModel(stateAfter(HLF_AT_F, press("Up"), press("OK"))),
+    ).toMatchObject({
+      items: [
+        "Einsatzzeit 30 min?",
+        "Einsatzzeit 20 min?",
+        "Langzeiteinsatz? OK",
+      ],
+      selectedIndex: 2,
+    });
+  });
+
   // manual 5.3 step 5; decided in "Define the key-by-screen navigation model"
-  it("turns the bottom line into `Langzeiteinsatz? OK` on OK at 20 min", () => {
+  it("turns the 20 min line into `Langzeiteinsatz? OK` on OK at 20 min", () => {
     const model = screenModel(stateAfter(HLF_AT_F, press("Down"), press("OK")));
     expect(screenText(model)).toEqual([
       "Neuen Trupp anmelden:",
       "Wähle Einsatzzeit für",
       "Trupp Nr.: 01",
       "*HLF AT-F",
-      "Einsatzzeit  30 min?",
+      "Einsatzzeit 30 min?",
       "Langzeiteinsatz? OK",
+      "Einsatzzeit180 min?",
     ]);
     expect(model).toMatchObject({ selectedIndex: 1 });
   });

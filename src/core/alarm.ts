@@ -5,8 +5,11 @@ import {
   P05_ALARMINTERVALL_BEREITSCHAFT_MS,
   P06_ALARMINTERVALL_EINSATZZEIT_MS,
   P10_EINSATZZEIT_3_MS,
+  P17_EINSATZZEIT_4_MS,
   P61_ALARMGRENZE_1_EINSATZZEIT_3_PROZENT,
   P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT,
+  P65_ALARMGRENZE_1_EINSATZZEIT_4_PROZENT,
+  P66_ALARMGRENZE_2_EINSATZZEIT_4_PROZENT,
 } from "./parameters";
 import { rueckmarschzeitMs } from "./restzeit";
 import type { AlarmCause, Trupp } from "./state";
@@ -173,6 +176,11 @@ function alarmgrenzenPercent(einsatzzeitMs: number): readonly [number, number] {
       return [
         P61_ALARMGRENZE_1_EINSATZZEIT_3_PROZENT,
         P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT,
+      ];
+    case P17_EINSATZZEIT_4_MS:
+      return [
+        P65_ALARMGRENZE_1_EINSATZZEIT_4_PROZENT,
+        P66_ALARMGRENZE_2_EINSATZZEIT_4_PROZENT,
       ];
     default:
       throw new Error(`No Einsatzzeit lasts ${String(einsatzzeitMs)} ms`);

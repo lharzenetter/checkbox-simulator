@@ -75,14 +75,31 @@ describe("Einsatzzeit wählen", () => {
     });
   });
 
-  // decided in "Define the key-by-screen navigation model"
-  it("moves between 30 and 20 min with Up and Down", () => {
-    expect(run(aus(), hold(A1), press("Down")).login?.einsatzzeitMs).toBe(
-      20 * 60_000,
-    );
-    expect(
-      run(aus(), hold(A1), press("Down"), press("Up")).login?.einsatzzeitMs,
-    ).toBe(30 * 60_000);
+  // decided in "Correct the simulator against the real Checkbox": 30, 20 and 180 min
+  it("moves between 30, 20 and 180 min with Up and Down, wrapping", () => {
+    function einsatzzeitAfter(...keys: readonly Key[]): number | undefined {
+      return run(aus(), hold(A1), ...keys.map(press)).login?.einsatzzeitMs;
+    }
+    expect(einsatzzeitAfter("Down")).toBe(20 * 60_000);
+    expect(einsatzzeitAfter("Down", "Down")).toBe(180 * 60_000);
+    expect(einsatzzeitAfter("Down", "Down", "Down")).toBe(30 * 60_000);
+    expect(einsatzzeitAfter("Up")).toBe(180 * 60_000);
+  });
+
+  // timing-and-alarm-rules §8.3, 9 ([17] = 180); verification-scenarios V28
+  it("asks for the Langzeiteinsatz on OK at 180 min and logs a 3-hour Trupp in", () => {
+    const asking = run(aus(), hold(A1), press("Up"), press("OK"));
+    expect(asking.screen).toBe("einsatzzeitWaehlen");
+    expect(asking.login?.awaitingLangzeiteinsatzOk).toBe(true);
+    const anmeldefenster = reduce(asking, press("OK"));
+    expect(anmeldefenster.screen).toBe("anmeldefenster");
+    const trupp = run(anmeldefenster, hold(A2), press("OK"), press("OK"))
+      .trupps[0];
+    expect(trupp).toMatchObject({
+      einsatzzeitMs: 180 * 60_000,
+      einsatzstatus: "anmarsch",
+      restzeitMs: 3 * 60 * 60_000,
+    });
   });
 
   // decided in "Define the key-by-screen navigation model"

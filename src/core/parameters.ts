@@ -31,16 +31,21 @@ export const P01_EINSATZZEIT_1_MS = 30 * 60_000;
 export const P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 2;
 export const P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER = 6;
 export const P10_EINSATZZEIT_3_MS = 20 * 60_000;
+// [17] = 180 from the real Checkbox: "Correct the simulator against the real Checkbox".
+export const P17_EINSATZZEIT_4_MS = 180 * 60_000;
 export const P05_ALARMINTERVALL_BEREITSCHAFT_MS = 5 * 60_000;
 // The manual calls [06] "Alarmintervall Regelzeit"; Regelzeit is the glossary's Einsatzzeit.
 export const P06_ALARMINTERVALL_EINSATZZEIT_MS = 5 * 60_000;
 
-// Alarmgrenzen #1 and #2 of Einsatzzeit #1 ([03], [04]) and #3 ([61], [62]); #3 and #4 of each
-// default to 0 (off), timing-and-alarm-rules §9.
+// Alarmgrenzen #1 and #2 of Einsatzzeit #1 ([03], [04]), #3 ([61], [62]) and #4 ([65], [66]); #3
+// and #4 of each default to 0 (off), and Einsatzzeit #4 has no Prozentmodus,
+// timing-and-alarm-rules §9.
 export const P03_ALARMGRENZE_1_EINSATZZEIT_1_PROZENT = 33;
 export const P04_ALARMGRENZE_2_EINSATZZEIT_1_PROZENT = 66;
 export const P61_ALARMGRENZE_1_EINSATZZEIT_3_PROZENT = 33;
 export const P62_ALARMGRENZE_2_EINSATZZEIT_3_PROZENT = 66;
+export const P65_ALARMGRENZE_1_EINSATZZEIT_4_PROZENT = 33;
+export const P66_ALARMGRENZE_2_EINSATZZEIT_4_PROZENT = 66;
 export const P13_TRUPP_DETAILANSICHT_MS = 15_000;
 export const P42_RESERVEDRUCK_BAR = 50;
 export const P73_DRUCK_VERGROESSERBAR_BAR = 5;

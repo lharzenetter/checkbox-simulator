@@ -404,11 +404,13 @@ function text(content: string): EinsatzprotokollRow {
   return { kind: "text", text: content };
 }
 
+// The real-device photo einsatzzeit-waehlen.jpeg right-aligns the minutes in three places, so
+// `180` runs into the word ("Correct the simulator against the real Checkbox").
 function einsatzzeitWaehlenModel(login: Login): ScreenModel {
   const items = EINSATZZEITEN_MS.map((einsatzzeitMs) =>
     login.awaitingLangzeiteinsatzOk && einsatzzeitMs === login.einsatzzeitMs
       ? LANGZEITEINSATZ_ITEM
-      : `Einsatzzeit  ${formatMinutes(einsatzzeitMs)} min?`,
+      : `Einsatzzeit${formatMinutes(einsatzzeitMs).padStart(3)} min?`,
   );
   return {
     layout: "einsatzzeitWaehlen",

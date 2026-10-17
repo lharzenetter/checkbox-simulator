@@ -374,6 +374,35 @@ describe("a 20-min Trupp", () => {
   });
 });
 
+// verification-scenarios V28; timing-and-alarm-rules §2.2, 2.6, 9 ([17], [65], [66])
+describe("a 180-min Trupp", () => {
+  function truppFor180Min(): State {
+    return run(
+      createInitialState(SESSION_START),
+      hold(A1),
+      press("Up"),
+      press("OK"),
+      press("OK"),
+      hold(A2),
+      press("OK"),
+      press("OK"),
+    );
+  }
+
+  it("sounds `ALARM 1` at 59:24 and `ALARM 2` at 118:48", () => {
+    let state = run(truppFor180Min(), tickAt(59, 23));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(59, 24));
+    expectAlarmFor(state, 1);
+    expect(state.pendingAlarms[0]?.cause).toBe("alarmgrenze1");
+    state = run(state, ...endAlarm(), tickAt(118, 47));
+    expectNoAlarm(state);
+    state = reduce(state, tickAt(118, 48));
+    expectAlarmFor(state, 1);
+    expect(state.pendingAlarms[0]?.cause).toBe("alarmgrenze2");
+  });
+});
+
 // verification-scenarios V12; timing-and-alarm-rules §4.1, 4.3, 4.4, 4.5, 4.6, 12.1, 12.4
 describe("a Trupp logged in to Bereitschaft", () => {
   function truppInBereitschaft(): State {

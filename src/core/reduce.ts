@@ -10,6 +10,7 @@ import {
   P01_EINSATZZEIT_1_MS,
   P10_EINSATZZEIT_3_MS,
   P13_TRUPP_DETAILANSICHT_MS,
+  P17_EINSATZZEIT_4_MS,
   P07_MINIMALE_ANZAHL_DER_TRUPPMITGLIEDER,
   P08_MAXIMALE_ANZAHL_DER_TRUPPMITGLIEDER,
   P72_ANZAHL_DER_MAXIMALEN_TRUPPS,
@@ -631,11 +632,13 @@ function moveSelection(state: State, key: "Up" | "Down"): State {
   };
 }
 
-// #2 and #4 are not offered, decided in "Define the key-by-screen navigation model".
+// #2 is not offered, decided in "Define the key-by-screen navigation model"; #4 is, decided in
+// "Correct the simulator against the real Checkbox".
 /** The Einsatzzeiten Einsatzzeit wählen offers, top to bottom. */
 export const EINSATZZEITEN_MS = [
   P01_EINSATZZEIT_1_MS,
   P10_EINSATZZEIT_3_MS,
+  P17_EINSATZZEIT_4_MS,
 ] as const;
 
 // decided in "Define the key-by-screen navigation model"
