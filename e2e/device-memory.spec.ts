@@ -68,7 +68,8 @@ test("name the Fahrzeuge and keep the device memory", async ({ page }) => {
   const lcd = page.getByRole("img");
   await page.getByRole("button", { name: "Taste Check" }).click();
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Nordhafen\n/);
-  for (const key of ["1", "c", "2", "c", "c"]) {
+  // X closes the login's Trupp-Ansicht, and OK opens the Trupp-Menü with the names
+  for (const key of ["1", "c", "2", "c", "c", "d"]) {
     await page.keyboard.press(key);
   }
   await page.keyboard.press("c");

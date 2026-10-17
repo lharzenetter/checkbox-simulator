@@ -30,7 +30,14 @@ test("log in a Trupp", async ({ page }) => {
   await page.keyboard.press("b");
   await expect(lcd).toHaveAttribute("aria-label", /Restzeit 00:29:00/);
 
+  // decided in "Correct the simulator against the real Checkbox": the login entry shows the
+  // Trupp-Ansicht, and any key closes it
   await page.keyboard.press("c");
+  await expect(lcd).toHaveAttribute(
+    "aria-label",
+    "Trupp 01 ANMARSCH\nPersonen-Anzahl: 3\nDruck 290 bar\nRestzeit 00:29:00\nAnsicht",
+  );
+  await page.keyboard.press("d");
   await expect(lcd).toHaveAttribute(
     "aria-label",
     /^FF-Musterstadt\nB1- \+ \d\d:\d\d:\d\d\n01 markiert {2}3× Anmarsch {2}00:29:00$/,

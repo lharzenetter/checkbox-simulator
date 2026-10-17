@@ -2,8 +2,9 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { openSimulator } from "./first-launch";
 
+// X closes the Trupp-Ansicht the login shows.
 async function logInTrupp(page: Page): Promise<void> {
-  for (const key of ["1", "c", "2", "c", "c"]) {
+  for (const key of ["1", "c", "2", "c", "c", "d"]) {
     await page.keyboard.press(key);
   }
 }

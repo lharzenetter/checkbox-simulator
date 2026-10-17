@@ -15,6 +15,8 @@ async function logInTrupp01(page: Page): Promise<void> {
   await page.keyboard.press("2");
   await page.keyboard.press("c");
   await page.keyboard.press("c");
+  // any key closes the Trupp-Ansicht the login shows
+  await page.keyboard.press("d");
   await expect(page.getByRole("img")).toHaveAttribute(
     "aria-label",
     /^FF-Musterstadt\n/,

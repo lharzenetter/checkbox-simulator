@@ -13,6 +13,8 @@ test("log off a Trupp", async ({ page }) => {
   await page.keyboard.press("2");
   await page.keyboard.press("c");
   await page.keyboard.press("c");
+  // any key closes the Trupp-Ansicht the login shows
+  await page.keyboard.press("d");
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
   await expect(roster).toContainText("Trupp 01");
 

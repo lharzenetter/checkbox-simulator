@@ -13,6 +13,8 @@ test("sound an Alarm at the first Alarmgrenze", async ({ page }) => {
   await page.keyboard.press("2");
   await page.keyboard.press("c");
   await page.keyboard.press("c");
+  // any key closes the Trupp-Ansicht the login shows
+  await page.keyboard.press("d");
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
   await expect(led).toHaveAttribute("aria-label", "Alarm-LED aus");
 
@@ -59,6 +61,8 @@ test("drop to real time while an Alarm sounds", async ({ page }) => {
   await page.keyboard.press("2");
   await page.keyboard.press("c");
   await page.keyboard.press("c");
+  // any key closes the Trupp-Ansicht the login shows
+  await page.keyboard.press("d");
   await expect(lcd).toHaveAttribute("aria-label", /^FF-Musterstadt\n/);
 
   // `→` reaches the clock before the Alarm, so its having no effect below is the lock.
