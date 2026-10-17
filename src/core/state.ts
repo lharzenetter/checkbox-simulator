@@ -51,11 +51,17 @@ export interface Trupp {
   readonly anfangsdruckBar: number;
   /** Simulated time the Einsatz has run, Bereitschaft excluded: `t_run`, timing-and-alarm-rules. */
   readonly runningTimeMs: number;
-  /** The running time at which the current Anmarsch began. */
-  readonly anmarschBeganAtRunningTimeMs: number;
   /** Simulated time since the Trupp entered its current Bereitschaft; 0 outside Bereitschaft. */
   readonly timeInBereitschaftMs: number;
-  /** `t_A` of the current Anmarsch, once it reported Einsatzziel erreicht; `null` before. */
+  /**
+   * The Einsatzstatus the Trupp left for its current Bereitschaft; `null` outside Bereitschaft and
+   * for a Trupp that started in it.
+   */
+  readonly einsatzstatusBeforeBereitschaft: Exclude<
+    Einsatzstatus,
+    "bereitschaft"
+  > | null;
+  /** `t_A`, once the Trupp reported Einsatzziel erreicht; `null` before. */
   readonly anmarschzeitMs: number | null;
   /** Set at Einsatzziel erreicht; `null` until it is first reached. */
   readonly anmarschdruckBar: number | null;

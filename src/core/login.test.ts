@@ -507,7 +507,7 @@ describe("the Anfangsdruck editor", () => {
         anfangsdruckBar: 300,
         runningTimeMs: 0,
         timeInBereitschaftMs: 0,
-        anmarschBeganAtRunningTimeMs: 0,
+        einsatzstatusBeforeBereitschaft: null,
         anmarschzeitMs: null,
         anmarschdruckBar: null,
         // armed from login (timing-and-alarm-rules §5.13)

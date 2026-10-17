@@ -78,7 +78,7 @@ const TRUPP: Trupp = {
   restzeitMs: -10_000,
   anfangsdruckBar: 300,
   runningTimeMs: 30 * 60_000 + 10_000,
-  anmarschBeganAtRunningTimeMs: 0,
+  einsatzstatusBeforeBereitschaft: null,
   timeInBereitschaftMs: 0,
   anmarschzeitMs: null,
   anmarschdruckBar: null,
@@ -109,7 +109,15 @@ const MID_EINSATZ: State = {
     daueralarmSinceRealMs: null,
   },
   truppMenue: { aktion: "rueckzugAntreten", draftFlaschendruckBar: null },
-  trupps: [TRUPP, { ...TRUPP, truppnummer: 4, einsatzstatus: "bereitschaft" }],
+  trupps: [
+    TRUPP,
+    {
+      ...TRUPP,
+      truppnummer: 4,
+      einsatzstatus: "bereitschaft",
+      einsatzstatusBeforeBereitschaft: "einsatzzielErreicht",
+    },
+  ],
   selectedTruppnummer: 2,
   pendingAlarms: [
     { truppnummer: 2, cause: "rueckzugsalarm" },
@@ -235,7 +243,7 @@ describe("the factory reset", () => {
 describe("incompatible stored session data", () => {
   function sessionJson(changes: Readonly<Record<string, unknown>>): string {
     return JSON.stringify({
-      version: 6,
+      version: 7,
       ...MID_EINSATZ,
       einsatzprotokolle: undefined,
       nextEinsatznummer: undefined,
@@ -277,6 +285,19 @@ describe("incompatible stored session data", () => {
             ...TRUPP,
             anfangsdruckBar: undefined,
             anmarschdruckBar: undefined,
+          },
+        ],
+      }),
+    ],
+    [
+      "has version 6, with Trupps that lack the Einsatzstatus before Bereitschaft",
+      sessionJson({
+        version: 6,
+        trupps: [
+          {
+            ...TRUPP,
+            einsatzstatusBeforeBereitschaft: undefined,
+            anmarschBeganAtRunningTimeMs: 0,
           },
         ],
       }),
@@ -324,6 +345,18 @@ describe("incompatible stored session data", () => {
     [
       "has a Trupp with an unknown Einsatzstatus",
       sessionJson({ trupps: [{ ...TRUPP, einsatzstatus: "pause" }] }),
+    ],
+    [
+      "has a Trupp that left Bereitschaft for Bereitschaft",
+      sessionJson({
+        trupps: [
+          {
+            ...TRUPP,
+            einsatzstatus: "bereitschaft",
+            einsatzstatusBeforeBereitschaft: "bereitschaft",
+          },
+        ],
+      }),
     ],
     [
       "has a Trupp without its Restzeit",

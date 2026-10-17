@@ -454,8 +454,8 @@ function chooseTruppMenueAktion(state: State, truppMenue: TruppMenue): State {
   }
 }
 
-// timing-and-alarm-rules §4.1, 4.6, 5.15, 12.3, 12.4, 12.5: Bereitschaft is a safe area, so
-// `Trupp -> Einsatz` starts a new Anmarsch, and choosing the current status changes nothing
+// timing-and-alarm-rules §4.1, 4.6, 12.3, 12.4, 12.5: `Trupp -> Einsatz` restores the earlier
+// Einsatzstatus and resets nothing, and choosing the current status changes nothing
 function changeEinsatzstatus(
   state: State,
   trupp: Trupp,
@@ -469,15 +469,15 @@ function changeEinsatzstatus(
           ...trupp,
           einsatzstatus: "bereitschaft",
           timeInBereitschaftMs: 0,
+          einsatzstatusBeforeBereitschaft: trupp.einsatzstatus,
         });
   }
   return isBereitschaft
     ? replaceTrupp(state, trupp, {
         ...trupp,
-        einsatzstatus: "anmarsch",
+        einsatzstatus: trupp.einsatzstatusBeforeBereitschaft ?? "anmarsch",
         timeInBereitschaftMs: 0,
-        anmarschBeganAtRunningTimeMs: trupp.runningTimeMs,
-        anmarschzeitMs: null,
+        einsatzstatusBeforeBereitschaft: null,
       })
     : state;
 }
@@ -593,13 +593,13 @@ function rearmRueckzugsalarm(trupp: Trupp): Trupp {
     : trupp;
 }
 
-// timing-and-alarm-rules §5.4, 5.7, 5.15: `t_A` is measured from the start of the current
-// Anmarsch; the Anmarschdruck always runs from the Anfangsdruck
+// timing-and-alarm-rules §4.6, 5.4, 5.7, 5.15: Bereitschaft pauses `t_run`, so `t_A` is the
+// running time at Einsatzziel erreicht; the Anmarschdruck always runs from the Anfangsdruck
 function reachEinsatzziel(trupp: Trupp, flaschendruckBar: number): Trupp {
   return {
     ...trupp,
     einsatzstatus: "einsatzzielErreicht",
-    anmarschzeitMs: trupp.runningTimeMs - trupp.anmarschBeganAtRunningTimeMs,
+    anmarschzeitMs: trupp.runningTimeMs,
     anmarschdruckBar: trupp.anfangsdruckBar - flaschendruckBar,
   };
 }
@@ -888,7 +888,7 @@ function logIn(state: State, login: Login): State {
     anfangsdruckBar: login.anfangsdruckBar,
     runningTimeMs: 0,
     timeInBereitschaftMs: 0,
-    anmarschBeganAtRunningTimeMs: 0,
+    einsatzstatusBeforeBereitschaft: null,
     anmarschzeitMs: null,
     anmarschdruckBar: null,
     // timing-and-alarm-rules §5.13

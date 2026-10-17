@@ -289,54 +289,64 @@ describe.each<{ einsatzstatus: Einsatzstatus; reach: (state: State) => State }>(
   });
 });
 
-// verification scenario V13, its transitions; timing-and-alarm-rules §4.1, 4.6, 5.15, 12.4
+// verification scenario V13, its transitions; timing-and-alarm-rules §4.1, 4.5, 4.6, 12.4
 describe("`Trupp -> Einsatz` from Bereitschaft", () => {
-  it("starts a new Anmarsch whose Anmarschzeit is measured from this start", () => {
+  it("restores Einsatzziel erreicht to a Trupp that entered Bereitschaft at its Einsatzziel", () => {
     let state = enter(
       run(truppInAnmarsch(), tickAt(4)),
       "einsatzzielErreicht",
-      160,
+      260,
     );
-    expect(restzeitOf(state)).toBe(minutes(16));
-    expect(state.trupps[0]?.anmarschzeitMs).toBe(minutes(4));
-
-    // 300 → 160 bar gives a Rückzugsdruck of 280 bar, so the Rückzugsalarm fires on OK
-    // (timing-and-alarm-rules §5.7, 5.14)
-    state = run(state, press("OK"), press("OK"));
-    state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
-    expect(restzeitOf(state)).toBe(minutes(12));
+    expect(restzeitOf(state)).toBe(minutes(26));
+    state = chooseItem(run(state, press("X"), tickAt(8)), "truppBereitschaft");
+    expect(restzeitOf(state)).toBe(minutes(22));
 
     // the Bereitschaft Alarm at 13:00 (timing-and-alarm-rules §4.3)
     state = run(state, tickAt(13), press("OK"), press("OK"));
     state = chooseItem(run(state, tickAt(14)), "truppEinsatz");
     expect(state.screen).toBe("einsatzliste");
-    expect(einsatzstatusOf(state)).toBe("anmarsch");
-    expect(state.trupps[0]?.anmarschzeitMs).toBeNull();
-    expect(restzeitOf(state)).toBe(minutes(12));
+    expect(einsatzstatusOf(state)).toBe("einsatzzielErreicht");
+    expect(state.trupps[0]?.anmarschzeitMs).toBe(minutes(4));
+    expect(restzeitOf(state)).toBe(minutes(22));
 
     // the Alarmgrenze at t_run 9:54 is shifted by the 6 min in Bereitschaft
-    state = run(state, tickAt(15, 54), press("OK"), press("OK"));
-    state = accept(run(state, tickAt(16)), "einsatzzielErreicht");
-    expect(restzeitOf(state)).toBe(minutes(10));
-    expect(state.trupps[0]?.anmarschzeitMs).toBe(minutes(2));
+    expect(run(state, tickAt(15, 53)).pendingAlarms).toEqual([]);
+    expect(run(state, tickAt(15, 54)).pendingAlarms).toEqual([
+      { truppnummer: 1, cause: "alarmgrenze1" },
+    ]);
   });
 
-  // manual 5.6.3; timing-and-alarm-rules §4.1, 4.6: the earlier status is never restored
-  it("leads from a Bereitschaft entered in Rückmarsch to Anmarsch", () => {
+  // timing-and-alarm-rules §4.6, 5.4, 12.4
+  it("restores Anmarsch with the Anmarschzeit counted so far", () => {
+    let state = chooseItem(
+      run(truppInAnmarsch(), tickAt(4)),
+      "truppBereitschaft",
+    );
+    // OK the Bereitschaft Alarm at 9:00 (timing-and-alarm-rules §4.3)
+    state = run(state, tickAt(9), press("OK"), press("OK"));
+    state = chooseItem(run(state, tickAt(10)), "truppEinsatz");
+    expect(einsatzstatusOf(state)).toBe("anmarsch");
+
+    state = accept(run(state, tickAt(12)), "einsatzzielErreicht");
+    expect(state.trupps[0]?.anmarschzeitMs).toBe(minutes(6));
+  });
+
+  // verification scenario V26; timing-and-alarm-rules §4.6, 12.4, 12.6
+  it("restores Rückmarsch to a Trupp that entered Bereitschaft in Rückmarsch", () => {
     const einsatzziel = run(
-      accept(run(truppInAnmarsch(), tickAt(1)), "einsatzzielErreicht"),
+      enter(run(truppInAnmarsch(), tickAt(3)), "einsatzzielErreicht", 270),
       press("X"),
     );
     const rueckmarsch = run(
-      accept(run(einsatzziel, tickAt(2)), "rueckzugAntreten"),
+      enter(run(einsatzziel, tickAt(5)), "rueckzugAntreten", 250),
       press("X"),
     );
-    const bereitschaft = chooseItem(rueckmarsch, "truppBereitschaft");
-    const state = chooseItem(run(bereitschaft, tickAt(3)), "truppEinsatz");
-    expect(einsatzstatusOf(state)).toBe("anmarsch");
-    expect(restzeitOf(reduce(state, tickAt(4)))).toBe(
-      (restzeitOf(state) ?? 0) - minutes(1),
-    );
+    expect(restzeitOf(rueckmarsch)).toBe(minutes(25));
+    let state = chooseItem(run(rueckmarsch, tickAt(6)), "truppBereitschaft");
+    state = chooseItem(run(state, tickAt(9)), "truppEinsatz");
+    expect(einsatzstatusOf(state)).toBe("rueckmarsch");
+    expect(restzeitOf(state)).toBe(minutes(24));
+    expect(restzeitOf(reduce(state, tickAt(9, 30)))).toBe(minutes(23, 30));
   });
 
   // verification scenario V12, its transition; timing-and-alarm-rules §12.1, 12.4
