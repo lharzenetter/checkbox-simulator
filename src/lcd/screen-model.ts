@@ -138,7 +138,7 @@ export type ScreenModel =
       readonly layout: "truppAnsicht";
       readonly title: string;
       /** `Personen-Anzahl: N`, in place of the names. */
-      readonly personenAnzahl: string;
+      readonly atemschutztraegerAnzahl: string;
       /** The Aktueller Flaschendruck. */
       readonly flaschendruck: string;
       /** In full, so a negative one takes nine characters. */
@@ -155,7 +155,7 @@ export type ScreenModel =
       /** Names the Alarm's cause. */
       readonly title: string;
       /** `Personen-Anzahl: N`, in place of the names. */
-      readonly personenAnzahl: string;
+      readonly atemschutztraegerAnzahl: string;
       /** The Aktueller Flaschendruck. */
       readonly flaschendruck: string;
       /** In full, so a negative one takes nine characters. */
@@ -555,7 +555,7 @@ function alarmModel(trupp: Trupp, cause: AlarmCause): ScreenModel {
 function truppPanelsOf(trupp: Trupp) {
   const flaschendruckBar = estimateFlaschendruckBar(trupp);
   return {
-    personenAnzahl: `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`,
+    atemschutztraegerAnzahl: `Personen-Anzahl: ${String(trupp.atemschutztraeger.length)}`,
     flaschendruck: formatBar(flaschendruckBar),
     restzeit: formatFullRestzeit(trupp.restzeitMs),
     fillLevel: cylinderFillLevel(flaschendruckBar),
@@ -758,7 +758,7 @@ export function screenText(model: ScreenModel): readonly string[] {
     case "truppAnsicht":
       return [
         model.title,
-        model.personenAnzahl,
+        model.atemschutztraegerAnzahl,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
         `Rückzugsdruck ${model.rueckzugsdruck}`,
@@ -767,7 +767,7 @@ export function screenText(model: ScreenModel): readonly string[] {
     case "alarm":
       return [
         model.title,
-        model.personenAnzahl,
+        model.atemschutztraegerAnzahl,
         `Druck ${model.flaschendruck}`,
         `Restzeit ${model.restzeit}`,
         `Rückzugsdruck ${model.rueckzugsdruck}`,

@@ -445,14 +445,14 @@ const RESTZEIT_BOX_Y = 73;
 const RUECKZUGSDRUCK_BOX_Y = 94;
 
 // centred between the rules, as in the photos alarm-rueckzug.jpeg and trupp-ansicht.jpeg
-const PERSONEN_ANZAHL_Y = 18;
+const ATEMSCHUTZTRAEGER_ANZAHL_Y = 18;
 
 // The parts the Trupp-Ansicht and ALARM figures share (manual 3.2.3, 5.5.3).
 function drawTruppPanels(
   framebuffer: Framebuffer,
   model: {
     readonly title: string;
-    readonly personenAnzahl: string;
+    readonly atemschutztraegerAnzahl: string;
     readonly flaschendruck: string;
     readonly restzeit: string;
     readonly fillLevel: number;
@@ -462,7 +462,12 @@ function drawTruppPanels(
 ): void {
   drawText(framebuffer, model.title, 1, 2);
   fillRect(framebuffer, 0, 11, LCD_WIDTH, 1);
-  drawText(framebuffer, model.personenAnzahl, 1, PERSONEN_ANZAHL_Y);
+  drawText(
+    framebuffer,
+    model.atemschutztraegerAnzahl,
+    1,
+    ATEMSCHUTZTRAEGER_ANZAHL_Y,
+  );
   fillRect(framebuffer, 0, 32, LCD_WIDTH, 1);
   fillRect(framebuffer, ANSICHT_DIVIDER_X, 33, 1, LCD_HEIGHT - 33);
   drawCylinder(framebuffer, model.fillLevel);
