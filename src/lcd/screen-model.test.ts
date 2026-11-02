@@ -44,33 +44,11 @@ function acknowledged(state: State): State {
   return ended;
 }
 
-describe("S00 Aus", () => {
-  // manual 5.12
-  it("shows a blank display", () => {
-    const model = screenModel(stateAfter());
-    expect(model.layout).toBe("aus");
-    expect(screenText(model)).toEqual([]);
-  });
-});
-
 describe("S01 Startdisplay", () => {
   it("heads the screen with the Trainee's Feuerwehrname", () => {
     expect(
       screenText(screenModel(stateAfter(press("Check")), "FF-Übersee"))[0],
     ).toBe("FF-Übersee");
-  });
-
-  // manual 5.2, Startdisplay figure
-  it("reads as in the figure", () => {
-    expect(screenText(screenModel(stateAfter(press("Check"))))).toEqual([
-      "FF-Musterstadt",
-      "V04.02.23  #12345",
-      "B1- + 88%",
-      "12.04.17     11:11:00",
-      "OK für SERVICE",
-      "oder TALLY auflegen",
-      "sonst Ende in  >  25",
-    ]);
   });
 
   it("shows the running Uhrzeit", () => {
@@ -291,20 +269,9 @@ describe("S16 Einsatzprotokoll", () => {
 });
 
 describe("S03 Einsatzzeit wählen", () => {
-  // manual 5.3, login figure; real-device photo einsatzzeit-waehlen.jpeg: the minutes right-aligned
-  // in three places
-  it("reads as on the device with 30, 20 and 180 min, cursor on 30", () => {
-    const model = screenModel(stateAfter(HLF_AT_F));
-    expect(screenText(model)).toEqual([
-      "Neuen Trupp anmelden:",
-      "Wähle Einsatzzeit für",
-      "Trupp Nr.: 01",
-      "*HLF AT-F",
-      "Einsatzzeit 30 min?",
-      "Einsatzzeit 20 min?",
-      "Einsatzzeit 180 min?",
-    ]);
-    expect(model).toMatchObject({
+  // manual 5.3, login figure
+  it("opens with the cursor on 30 min", () => {
+    expect(screenModel(stateAfter(HLF_AT_F))).toMatchObject({
       layout: "einsatzzeitWaehlen",
       selectedIndex: 0,
     });
@@ -354,18 +321,10 @@ describe("S03 Einsatzzeit wählen", () => {
 
 describe("S04 Anmeldefenster", () => {
   // manual 5.3, Anmeldefenster figure
-  it("reads as in the figure, cursor on `Trupp OK Einsatz`", () => {
-    const model = screenModel(stateAfter(HLF_AT_F, press("OK"), HLF_AT_M));
-    expect(screenText(model)).toEqual([
-      "Trupp 01   30 min",
-      "*HLF AT-F",
-      "*HLF AT-M",
-      "Trupp OK Einsatz",
-      "Trupp OK Bereitschaft",
-      "Sicherheitstrupp OK",
-      "Druck ändern",
-    ]);
-    expect(model).toMatchObject({ layout: "anmeldefenster", selectedIndex: 0 });
+  it("opens with the cursor on `Trupp OK Einsatz`", () => {
+    expect(
+      screenModel(stateAfter(HLF_AT_F, press("OK"), HLF_AT_M)),
+    ).toMatchObject({ layout: "anmeldefenster", selectedIndex: 0 });
   });
 
   // timing-and-alarm-rules §7.5; real-device photo zu-wenig-einsatzkraefte.jpeg
@@ -453,15 +412,8 @@ describe("S06 Anfangsdruck editor", () => {
   }
 
   // manual 5.3, S06 figure
-  it("opens at the cylinder's 300 bar with the full Einsatzzeit", () => {
-    const model = screenModel(anfangsdruckEditor());
-    expect(screenText(model)).toEqual([
-      "Trupp Nr.: 01",
-      "Flasche: 300 bar",
-      "Druck 300 bar",
-      "Restzeit 00:30:00",
-    ]);
-    expect(model).toMatchObject({
+  it("opens with a full cylinder", () => {
+    expect(screenModel(anfangsdruckEditor())).toMatchObject({
       layout: "flaschendruckEditor",
       fillLevel: 1,
     });
@@ -507,16 +459,9 @@ describe("S07 Einsatzliste", () => {
       : undefined;
   }
 
-  // manual 5.3, Einsatzliste figure with one Trupp; decided in "Define the key-by-screen
-  // navigation model"
-  it("shows the new Trupp selected, in Anmarsch, with its Restzeit", () => {
-    const model = screenModel(einsatzliste());
-    expect(screenText(model)).toEqual([
-      "FF-Musterstadt",
-      "B1- + 11:11:00",
-      "01 markiert  2× Anmarsch  00:30:00",
-    ]);
-    expect(model).toMatchObject({
+  // manual 5.3, Einsatzliste figure with one Trupp; the scenario "a Trupp logs in" reads its text
+  it("draws the new Trupp's Statussymbol in the first of six rows", () => {
+    expect(screenModel(einsatzliste())).toMatchObject({
       layout: "einsatzliste",
       rows: [
         {
@@ -946,21 +891,11 @@ describe("S12 Trupp ALARM", () => {
     press("OK"),
   ] as const;
 
-  // manual 5.5.3, ALARM figure; the real-device photo alarm-rueckzug.jpeg; decided in "Correct
-  // the simulator against the real Checkbox": the cause in the header, the Personen-Anzahl in
-  // place of the names, and no SICHER
-  it("reads as in the device photo at the first Alarmgrenze", () => {
-    const model = screenModel(tickBy(stateAfter(...TRUPP_01), 594_000));
-    expect(screenText(model)).toEqual([
-      "Trupp 01 ALARM 1",
-      "Personen-Anzahl: 2",
-      "Druck 201 bar",
-      "Restzeit 00:20:06",
-      "Rückzugsdruck 50 bar",
-      "Alarmende",
-      "mit OK",
-    ]);
-    expect(model).toMatchObject({ layout: "alarm", fillLevel: 0.67 });
+  // manual 5.5.3, ALARM figure
+  it("fills the cylinder two thirds at the first Alarmgrenze", () => {
+    expect(screenModel(tickBy(stateAfter(...TRUPP_01), 594_000))).toMatchObject(
+      { layout: "alarm", fillLevel: 0.67 },
+    );
   });
 
   // timing-and-alarm-rules §8.5

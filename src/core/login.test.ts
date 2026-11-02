@@ -32,16 +32,6 @@ function aus(): State {
 }
 
 describe("starting a login", () => {
-  // decided in "Define the key-by-screen navigation model"
-  it("opens Einsatzzeit wählen when a Tally is held to Check while Aus", () => {
-    const state = run(aus(), hold(A1));
-    expect(state.screen).toBe("einsatzzeitWaehlen");
-    expect(state.login).toMatchObject({
-      truppnummer: 1,
-      atemschutztraeger: [A1],
-    });
-  });
-
   it("opens Einsatzzeit wählen from the Startdisplay", () => {
     expect(run(aus(), press("Check"), hold(A1)).screen).toBe(
       "einsatzzeitWaehlen",
@@ -55,13 +45,6 @@ describe("starting a login", () => {
 });
 
 describe("Einsatzzeit wählen", () => {
-  // decided in "Define the key-by-screen navigation model"
-  it("opens the Anmeldefenster for 30 min on OK", () => {
-    const state = run(aus(), hold(A1), press("OK"));
-    expect(state.screen).toBe("anmeldefenster");
-    expect(state.login?.einsatzzeitMs).toBe(30 * 60_000);
-  });
-
   // manual 5.3 step 5, timing-and-alarm-rules §8.3: an Einsatzzeit other than 30 min needs a second OK
   it("asks for the Kurzzeiteinsatz on OK at 20 min and opens the Anmeldefenster on a second OK", () => {
     const asking = run(aus(), hold(A1), press("Down"), press("OK"));
@@ -128,12 +111,6 @@ describe("the Anmeldefenster", () => {
     return run(aus(), hold(A1), press("OK"));
   }
 
-  // manual 5.3 step 6
-  it("adds each further Tally held to Check as an Atemschutzträger", () => {
-    const state = run(anmeldefenster(), hold(A2), hold(B1));
-    expect(state.login?.atemschutztraeger).toEqual([A1, A2, B1]);
-  });
-
   // decided in "Define the key-by-screen navigation model"
   it("ignores a Tally that is already in the Trupp", () => {
     const state = run(anmeldefenster(), hold(A2));
@@ -147,13 +124,6 @@ describe("the Anmeldefenster", () => {
       ...["2", "3", "4", "5", "6"].map((id) => hold({ tallyId: id, name: id })),
     );
     expect(reduce(six, hold({ tallyId: "7", name: "7" }))).toBe(six);
-  });
-
-  // decided in "Define the key-by-screen navigation model"
-  it("opens the Anfangsdruck editor at 300 bar on `Trupp OK Einsatz` + OK", () => {
-    const state = run(anmeldefenster(), hold(A2), press("OK"));
-    expect(state.screen).toBe("anfangsdruckEditor");
-    expect(state.login?.anfangsdruckBar).toBe(300);
   });
 
   // manual 9.1 [07]: a Trupp needs at least two Atemschutzträger; OK shows `Zu wenig

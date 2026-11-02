@@ -2,9 +2,11 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "lib": ["ES2023"],
+    // DOM because `acceptance/` imports the LCD only through its layer entry, which re-exports the
+    // canvas painter.
+    "lib": ["ES2023", "DOM"],
     "types": ["node"],
     "resolveJsonModule": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "e2e"]
+  "include": ["vite.config.ts", "playwright.config.ts", "e2e", "acceptance"]
 }

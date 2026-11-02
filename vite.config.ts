@@ -12,6 +12,6 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   plugins: [react()],
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "acceptance/**/*.test.ts"],
   },
 }));

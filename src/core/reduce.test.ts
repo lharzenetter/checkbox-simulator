@@ -25,15 +25,6 @@ function poweredOn(): State {
 }
 
 describe("powering on", () => {
-  it("starts switched off", () => {
-    expect(createInitialState(SESSION_START).screen).toBe("aus");
-  });
-
-  // manual 5.2
-  it("wakes to the Startdisplay when Check is pressed", () => {
-    expect(poweredOn().screen).toBe("startdisplay");
-  });
-
   it.each<Key>(["Up", "Down", "OK", "X"])(
     "stays switched off when %s is pressed",
     (key) => {
