@@ -22,14 +22,14 @@ pnpm, Vitest, Playwright, ESLint + Prettier.
 
 One Vite app, one folder per layer under `src/`:
 
-| Folder     | Holds                                                                     | May import       | Browser APIs |
-| ---------- | ------------------------------------------------------------------------- | ---------------- | ------------ |
-| `core/`    | Device reducer: `state + event → state`                                   | nothing          | no           |
-| `world/`   | Tally roster, Atemschutzträger, simulation clock (speed, pause)           | `core`           | no           |
-| `lcd/`     | Screen model → 1-bit framebuffer (pure), plus a thin canvas painter       | `core`           | painter only |
-| `audio/`   | Siren synthesis (Web Audio)                                               | `core`           | yes          |
-| `storage/` | Browser-storage persistence and the incompatible-data wipe                | `core`, `world`  | yes          |
-| `ui/`      | React: front panel, roster, clock controls; wires everything together     | everything       | yes          |
+| Folder     | Holds                                                                 | May import      | Browser APIs |
+| ---------- | --------------------------------------------------------------------- | --------------- | ------------ |
+| `core/`    | Device reducer: `state + event → state`                               | nothing         | no           |
+| `world/`   | Tally roster, Atemschutzträger, simulation clock (speed, pause)       | `core`          | no           |
+| `lcd/`     | Screen model → 1-bit framebuffer (pure), plus a thin canvas painter   | `core`          | painter only |
+| `audio/`   | Siren synthesis (Web Audio)                                           | `core`          | yes          |
+| `storage/` | Browser-storage persistence and the incompatible-data wipe            | `core`, `world` | yes          |
+| `ui/`      | React: front panel, roster, clock controls; wires everything together | everything      | yes          |
 
 - Imports point one way only, as in the table. Only `ui/` imports React.
 - `core/` has no DOM, no `Date.now()`, no timers and no randomness.
@@ -38,6 +38,8 @@ One Vite app, one folder per layer under `src/`:
 - Enforcement: ESLint `no-restricted-imports` per folder, and a separate `tsconfig` for `core`,
   `world` and the pure part of `lcd` with `lib: ["ES2022"]` and no `DOM`, so a stray `window`
   fails the typecheck.
+- `acceptance/` and `e2e/` are test-only and exempt from the layer table. `acceptance/` imports
+  the layers only through their `index.ts`.
 
 ## The device core
 
@@ -62,6 +64,15 @@ One Vite app, one folder per layer under `src/`:
 
 ## Testing
 
+- A use case is stated once, as a scenario in `acceptance/scenarios/`, through
+  `{ trainee, see, time }` (decided in "State use cases as acceptance scenarios with swappable
+  drivers"). Core, world and screen-model tests cover detail the screen can't show.
+- Double loop: new behaviour starts with a failing scenario that cites its rule, then the
+  red/green loop in `core/`, `world/` or `lcd/`.
+- A scenario imports no runner and observes only what the Trainee sees: the LCD text and the
+  Alarm-LED. No call returns raw state. Trainee steps are physical (keys, Tallys, clock
+  controls); recipes such as `logIn` are composed from them in `acceptance/`.
+- Every step and observation is async, so a Playwright driver can run the same scenario.
 - `core/`, `world/` and `lcd/` are written test-first (red, green, refactor) for every
   behaviour change.
 - Tests drive the public API only: `reduce` and selectors, the screen model. Never test
@@ -70,11 +81,12 @@ One Vite app, one folder per layer under `src/`:
   `vi.useFakeTimers` in core tests.
 - Test names describe behaviour in domain language; glossary terms keep their umlauts in the
   name string: `it("fires the Rückzugsalarm once per Anmarsch leg")`.
-- A test for a rule from the manual or `docs/research/` cites it in a comment:
-  `// manual 5.4.2`, `// timing-and-alarm-rules §6`.
-- The LCD is asserted on its screen model, plus a few framebuffer snapshots per screen layout.
+- A test or scenario for a rule from the manual, `docs/research/`, an ADR or a ticket cites it
+  in a comment: `// manual 5.4.2`, `// timing-and-alarm-rules §6`, `// #42`.
+- The LCD's layout detail is asserted on its screen model, plus a few framebuffer snapshots per
+  screen layout.
 - React components get thin tests only where they hold logic. Playwright covers a handful of
-  smoke flows: power on, log in a Trupp, alarm, log off.
+  smoke flows until the Playwright driver runs the scenarios.
 - No coverage percentage gate; test-first replaces it.
 - Test files sit next to the code: `restzeit.ts` → `restzeit.test.ts`.
 
