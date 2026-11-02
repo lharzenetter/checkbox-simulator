@@ -89,17 +89,6 @@ function enter(
   );
 }
 
-describe("the Alarmgrenzen", () => {
-  // verification-scenarios V1; timing-and-alarm-rules §2.2, 2.6
-  it("fire the first Alarmgrenze at 9:54 of a 30-min Einsatzzeit", () => {
-    const before = run(truppInAnmarsch(), tickAt(9, 53));
-    expect(isAlarmSounding(before)).toBe(false);
-    const at = reduce(before, tickAt(9, 54));
-    expect(isAlarmSounding(at)).toBe(true);
-    expect(at.screen).toBe("alarm");
-  });
-});
-
 function restzeitOf(state: State): number | undefined {
   return state.trupps[0]?.restzeitMs;
 }
@@ -175,18 +164,6 @@ describe("an untouched Trupp running out", () => {
       tickAt(15),
     );
     expectNoAlarm(state);
-  });
-
-  // decided in "Decide how alarms are presented", point 3: an Alarm sounds until OK
-  it("keeps sounding until OK", () => {
-    const state = run(truppInAnmarsch(), tickAt(9, 54), tickAt(12));
-    expectAlarmFor(state, 1);
-  });
-
-  // decided in "Decide how alarms are presented", point 1: S12 is live
-  it("keeps the Restzeit running while the Alarm sounds", () => {
-    const state = run(truppInAnmarsch(), tickAt(9, 54), tickAt(12));
-    expect(restzeitOf(state)).toBe(18 * 60_000);
   });
 });
 
@@ -674,12 +651,6 @@ describe("an overdue 20-min Trupp in Bereitschaft", () => {
 
 // decided in "Decide how alarms are presented", points 5 and 6
 describe("S12 Trupp ALARM", () => {
-  it("returns to the Einsatzliste with the Trupp selected after its second OK", () => {
-    const state = run(truppInAnmarsch(), tickAt(9, 54), ...endAlarm());
-    expect(state.screen).toBe("einsatzliste");
-    expect(state.selectedTruppnummer).toBe(1);
-  });
-
   it.each<Key>(["Up", "Down", "X", "Check"])("ignores %s", (key) => {
     const alarm = run(truppInAnmarsch(), tickAt(9, 54));
     expect(reduce(alarm, press(key))).toBe(alarm);
@@ -909,7 +880,7 @@ describe("Alarms fired in one tick", () => {
 describe("V27: the two OKs of an Alarm", () => {
   const B1 = { tallyId: "b1", name: "HLF WT-F" };
 
-  it("silence the signal with the first OK and end the Alarm with the second", () => {
+  it("silence the signal with the first OK, keeping S12 live and deaf to other keys", () => {
     let state = run(truppInAnmarsch(), tickAt(9, 54));
     expectAlarmFor(state, 1);
     expect(isAlarmLedLit(state)).toBe(true);
@@ -926,10 +897,7 @@ describe("V27: the two OKs of an Alarm", () => {
     state = run(state, press("Up"), press("Down"), press("X"), hold(B1));
     expect(state).toBe(silenced);
 
-    state = run(state, tickAt(10, 10), press("OK"));
-    expectNoAlarm(state);
-    expect(state.screen).toBe("einsatzliste");
-    expect(state.selectedTruppnummer).toBe(1);
+    // the second OK is the scenario "the first OK silences Alarm 1 and the second ends it"
   });
 
   // decided in "Correct the simulator against the real Checkbox": the speed stays locked at 1×

@@ -119,6 +119,34 @@ export default defineConfig(
     },
   },
   {
+    // Scenarios run on any driver, so they reach the layers only through their entries, and every
+    // step and observation is awaited. Decided in "State use cases as acceptance scenarios with
+    // swappable drivers", point 9.
+    files: ["acceptance/**/*.ts"],
+    languageOptions: { globals: globals.node },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/require-await": "error",
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: String.raw`^(\.\./)+src/(${LAYER_NAMES.join("|")})/(?!index$).+`,
+              message:
+                "Import a layer only through its public entry, src/<layer>/index.ts.",
+            },
+            {
+              regex: "^react(-dom)?(/|$)",
+              message: "Scenarios observe the screen, not React.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["**/*.test.{ts,tsx}", "e2e/**/*.ts"],
     rules: { "@typescript-eslint/consistent-type-assertions": "off" },
   },
