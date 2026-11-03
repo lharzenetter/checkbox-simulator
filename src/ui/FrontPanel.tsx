@@ -1,6 +1,7 @@
 import type { DragEvent, PointerEvent, MouseEvent, ReactNode } from "react";
 import { isAlarmLedLit, isAlarmSounding } from "../core/index";
-import type { Event, Key, State } from "../core/index";
+import type { Key, State } from "../core/index";
+import type { DeviceInput } from "../world/index";
 import { keyShortcutsFor } from "./keyboard-bindings";
 import { Lcd } from "./Lcd";
 import { TALLY_DRAG_TYPE } from "./TallyRoster";
@@ -14,7 +15,7 @@ export function FrontPanel({
 }: {
   state: State;
   feuerwehrname: string;
-  dispatch: (event: Event) => void;
+  dispatch: (input: DeviceInput) => void;
   onTallyDropped: (tallyId: string) => void;
 }) {
   function press(key: Key): void {

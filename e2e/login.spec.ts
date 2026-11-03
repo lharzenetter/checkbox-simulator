@@ -4,6 +4,8 @@ import { openSimulator } from "./first-launch";
 test("log in a Trupp", async ({ page }) => {
   await page.clock.install();
   await openSimulator(page);
+  // Real time stops, so the exact Restzeit below does not depend on how fast the browser is.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1_000));
   const lcd = page.getByRole("img");
   const roster = page.getByRole("region", { name: "Atemschutzträger" });
 
@@ -44,6 +46,7 @@ test("log in a Trupp", async ({ page }) => {
   );
   await expect(roster).toContainText("Trupp 01");
 
-  await page.clock.runFor(60_000);
+  // Half a second over the minute, so the last animation frame falls past it.
+  await page.clock.runFor(60_500);
   await expect(lcd).toHaveAttribute("aria-label", /00:28:00$/);
 });

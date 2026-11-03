@@ -31,11 +31,7 @@ function tap(index: number): Event {
 
 // The LCD text the Checkbox reads off a tapped Tally.
 function lcdName(tally: RosterTally, fahrzeuge: Fahrzeuge): string {
-  const event = tallyHeld(tally, fahrzeuge);
-  if (event.type !== "tallyHeld") {
-    throw new Error("Tapping a Tally holds it on Check");
-  }
-  return event.name;
+  return tallyHeld(tally, fahrzeuge).name;
 }
 
 function stateAfter(...events: readonly Event[]): State {

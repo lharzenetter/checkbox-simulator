@@ -118,7 +118,8 @@ One Vite app, one folder per layer under `src/`:
 
 ## React UI
 
-- One hook, `useSimulator()`, owns the core state via `useReducer(reduce)`, drives `tick` from
+- One hook, `useSimulator()`, owns the core state and the simulation clock via
+  `useReducer(reduceSimulator)` from `world/`, drives `tick` from
   `requestAnimationFrame`, persists through `storage/`, and hands components state and
   `dispatch`. No Redux, Zustand or broad Context.
 - Function components only, props typed inline.

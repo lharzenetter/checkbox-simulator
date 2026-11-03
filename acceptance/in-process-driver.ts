@@ -1,25 +1,14 @@
-import {
-  createInitialState,
-  FACTORY_FEUERWEHRNAME,
-  isAlarmActive,
-  isAlarmSounding,
-  reduce,
-} from "../src/core/index";
-import type { Event, Key, State } from "../src/core/index";
+import { FACTORY_FEUERWEHRNAME, isAlarmSounding } from "../src/core/index";
+import type { Key } from "../src/core/index";
 import { screenModel, screenText } from "../src/lcd/index";
 import {
-  acceptsDeviceKeys,
   DEFAULT_FAHRZEUGE,
-  followAlarmSignal,
-  pauseClock,
-  playClock,
-  readClocks,
+  reduceSimulator,
   rosterTallys,
-  setClockSpeed,
-  startSimulationClock,
+  startSimulator,
   tallyHeld,
 } from "../src/world/index";
-import type { SimulationClock } from "../src/world/index";
+import type { DeviceInput, SimulatorEvent } from "../src/world/index";
 import type { Span, LineSeen, TallyName, Window } from "./window";
 
 // Real time between two ticks: a few animation frames, short enough that every Alarmgrenze
@@ -30,63 +19,31 @@ const TICK_MS = 50;
 // figure of manual 5.2.
 const START_UHRZEIT = Date.UTC(2017, 3, 12, 11, 11, 0);
 
-interface Simulator {
-  readonly realMs: number;
-  readonly clock: SimulationClock;
-  readonly state: State;
-}
-
 /**
  * A fresh simulator run in-process through `core`, `world` and the LCD screen model: first-launch
  * defaults accepted, the default Roster, Checkbox off. Decided in "State use cases as acceptance
  * scenarios with swappable drivers", points 2 and 7.
  */
 export function inProcessWindow(): Window {
-  const clock = startSimulationClock({ realNow: 0, uhrzeit: START_UHRZEIT });
-  let simulator: Simulator = {
-    realMs: 0,
-    clock,
-    state: createInitialState(readClocks(clock, 0)),
-  };
+  let realMs = 0;
+  let simulator = startSimulator({ realNow: realMs, uhrzeit: START_UHRZEIT });
 
-  // Like the UI, the clock follows the Alarm the device state shows; decided in "Drop the
-  // simulation to real time while an Alarm sounds".
-  function dispatch(event: Event): void {
-    const state = reduce(simulator.state, event);
-    simulator = {
-      ...simulator,
-      state,
-      clock: followAlarmSignal(
-        simulator.clock,
-        isAlarmActive(state),
-        simulator.realMs,
-      ),
-    };
+  // The same reducer the UI's useSimulator runs, so the pause and the drop to real time are not
+  // restated here.
+  function dispatch(event: SimulatorEvent): void {
+    simulator = reduceSimulator(simulator, event);
   }
 
-  // While paused the device keys and Tallys do nothing, but a release always gets through.
-  function dispatchFromTrainee(event: Event): void {
-    if (event.type === "keyReleased" || acceptsDeviceKeys(simulator.clock)) {
-      dispatch(event);
-    }
+  function give(input: DeviceInput): void {
+    dispatch({ type: "inputGiven", input, realNow: realMs });
   }
 
   function letTimePass(span: Span): void {
-    const endMs = simulator.realMs + spanMs(span);
-    while (simulator.realMs < endMs) {
-      const realMs = Math.min(simulator.realMs + TICK_MS, endMs);
-      simulator = { ...simulator, realMs };
-      dispatch({ type: "tick", ...readClocks(simulator.clock, realMs) });
+    const endMs = realMs + spanMs(span);
+    while (realMs < endMs) {
+      realMs = Math.min(realMs + TICK_MS, endMs);
+      dispatch({ type: "timePassed", realNow: realMs });
     }
-  }
-
-  function updateClock(
-    update: (clock: SimulationClock, realNow: number) => SimulationClock,
-  ): void {
-    simulator = {
-      ...simulator,
-      clock: update(simulator.clock, simulator.realMs),
-    };
   }
 
   function lcdLines(): readonly string[] {
@@ -97,30 +54,30 @@ export function inProcessWindow(): Window {
     trainee: {
       press: (key: Key) =>
         step(() => {
-          dispatchFromTrainee({ type: "keyPressed", key });
-          dispatchFromTrainee({ type: "keyReleased", key });
+          give({ type: "keyPressed", key });
+          give({ type: "keyReleased", key });
         }),
       hold: (key: Key, span: Span) =>
         step(() => {
-          dispatchFromTrainee({ type: "keyPressed", key });
+          give({ type: "keyPressed", key });
           letTimePass(span);
-          dispatchFromTrainee({ type: "keyReleased", key });
+          give({ type: "keyReleased", key });
         }),
       holdTally: (tally: TallyName) =>
         step(() => {
-          dispatchFromTrainee(tallyEvent(tally));
+          give(tallyEvent(tally));
         }),
       setSpeed: (speed) =>
         step(() => {
-          updateClock((clock, realNow) => setClockSpeed(clock, speed, realNow));
+          dispatch({ type: "speedChosen", speed, realNow: realMs });
         }),
       pause: () =>
         step(() => {
-          updateClock(pauseClock);
+          dispatch({ type: "paused", realNow: realMs });
         }),
       play: () =>
         step(() => {
-          updateClock(playClock);
+          dispatch({ type: "played", realNow: realMs });
         }),
     },
     see: {
@@ -171,7 +128,7 @@ function spanMs({ minutes = 0, seconds = 0 }: Span): number {
   return (minutes * 60 + seconds) * 1000;
 }
 
-function tallyEvent({ fahrzeug, role }: TallyName): Event {
+function tallyEvent({ fahrzeug, role }: TallyName): DeviceInput {
   const named = DEFAULT_FAHRZEUGE.find(
     (candidate) => candidate.kurzname === fahrzeug,
   );

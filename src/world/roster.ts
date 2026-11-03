@@ -86,7 +86,10 @@ export function rosterTallys(fahrzeuge: Fahrzeuge): readonly RosterTally[] {
 }
 
 /** The event of tapping a Roster Tally on Check; the Checkbox reads the LCD text stored on it. */
-export function tallyHeld(tally: RosterTally, fahrzeuge: Fahrzeuge): Event {
+export function tallyHeld(
+  tally: RosterTally,
+  fahrzeuge: Fahrzeuge,
+): Extract<Event, { readonly type: "tallyHeld" }> {
   const fahrzeug = fahrzeuge.find(
     (candidate) => candidate.id === tally.fahrzeugId,
   );

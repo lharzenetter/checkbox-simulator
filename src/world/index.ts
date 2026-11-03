@@ -36,3 +36,5 @@ export {
   stepClockSpeed,
 } from "./simulation-clock";
 export type { SimulationClock, Speed } from "./simulation-clock";
+export { reduceSimulator, resumeSimulator, startSimulator } from "./simulator";
+export type { DeviceInput, Simulator, SimulatorEvent } from "./simulator";

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { createInitialState, isAlarmActive, reduce } from "../core/index";
-import type { Event, State } from "../core/index";
+import type { State } from "../core/index";
 import {
   BLANK_TRUPPZUORDNUNG,
   discardSession,
@@ -11,17 +10,17 @@ import {
 } from "../storage/index";
 import type { Truppzuordnung, TruppzuordnungColumn } from "../storage/index";
 import {
-  acceptsDeviceKeys,
-  followAlarmSignal,
-  pauseClock,
-  playClock,
-  readClocks,
-  resumeSimulationClock,
-  setClockSpeed,
-  stepClockSpeed,
-  startSimulationClock,
+  reduceSimulator,
+  resumeSimulator,
+  startSimulator,
 } from "../world/index";
-import type { Fahrzeuge, SimulationClock, Speed } from "../world/index";
+import type {
+  DeviceInput,
+  Fahrzeuge,
+  SimulationClock,
+  SimulatorEvent,
+  Speed,
+} from "../world/index";
 
 // The core's Uhrzeit is local wall-clock time counted as if it were UTC (see `Clocks`).
 function localTimeOfDay(): number {
@@ -51,6 +50,10 @@ function browserStorage(): Storage {
   }
 }
 
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
 /** The names the Trainee sets: the Feuerwehrname on the LCD and the Fahrzeuge. */
 export interface Names {
   readonly feuerwehrname: string;
@@ -59,7 +62,7 @@ export interface Names {
 
 export function useSimulator(): {
   readonly state: State;
-  readonly dispatch: (event: Event) => void;
+  readonly dispatch: (input: DeviceInput) => void;
   readonly clock: SimulationClock;
   readonly pause: () => void;
   readonly play: () => void;
@@ -111,26 +114,17 @@ export function useSimulator(): {
   const [truppzuordnungShown, setTruppzuordnungShown] = useState(
     deviceMemory.truppzuordnungShown,
   );
-  const [clock, setClock] = useState(() =>
-    savedSession === null
-      ? startSimulationClock({
-          realNow: performance.now(),
-          uhrzeit: localTimeOfDay(),
-        })
-      : resumeSimulationClock({
-          realNow: performance.now(),
-          clocks: { now: savedSession.now, realNow: savedSession.realNow },
-        }),
-  );
-  const [state, dispatchToCore] = useReducer(
-    reduce,
-    clock,
-    (startedClock) =>
-      savedSession ??
-      createInitialState(
-        readClocks(startedClock, performance.now()),
-        deviceMemory,
-      ),
+  const [{ clock, state }, dispatchToSimulator] = useReducer(
+    reduceSimulator,
+    savedSession,
+    (saved) =>
+      saved === null
+        ? startSimulator({
+            realNow: performance.now(),
+            uhrzeit: localTimeOfDay(),
+            stored: deviceMemory,
+          })
+        : resumeSimulator({ realNow: performance.now(), state: saved }),
   );
 
   useEffect(() => {
@@ -162,82 +156,52 @@ export function useSimulator(): {
     }
   }, [storage, state, truppzuordnung, sessionChoicePending]);
 
-  // The tick loop reads the Alarm here, so the clock follows it from the next frame on.
-  const alarmActive = useRef(isAlarmActive(state));
-  useEffect(() => {
-    alarmActive.current = isAlarmActive(state);
-  }, [state]);
-
+  // The simulator follows the Alarm itself, so the loop only reports real time passing.
   useEffect(() => {
     let frame = requestAnimationFrame(tick);
     function tick(): void {
-      const realNow = performance.now();
-      const active = alarmActive.current;
-      // Decided in "Drop the simulation to real time while an Alarm sounds", points 1–3, held
-      // until the second OK as amended in "Correct the simulator against the real Checkbox".
-      if (active !== clock.heldAtRealTime) {
-        setClock((current) => followAlarmSignal(current, active, realNow));
-      }
-      dispatchToCore({ type: "tick", ...readClocks(clock, realNow) });
+      dispatchToSimulator({ type: "timePassed", realNow: performance.now() });
       frame = requestAnimationFrame(tick);
     }
     return () => {
       cancelAnimationFrame(frame);
     };
-  }, [clock]);
+  }, []);
 
-  const dispatch = useCallback(
-    (event: Event) => {
-      // A release always gets through, so a key let go while paused is not held on play.
-      if (
-        event.type !== "tick" &&
-        event.type !== "keyReleased" &&
-        !acceptsDeviceKeys(clock)
-      ) {
-        return;
-      }
-      dispatchToCore(event);
-    },
-    [clock],
-  );
-
-  // Read real time outside the updater, which React may call twice.
-  const updateClock = useCallback(
-    (
-      update: (current: SimulationClock, realNow: number) => SimulationClock,
-    ) => {
-      const realNow = performance.now();
-      setClock((current) => update(current, realNow));
+  // Read real time here, not in the reducer, which React may call twice.
+  const dispatchAtRealTime = useCallback(
+    (event: DistributiveOmit<SimulatorEvent, "realNow">) => {
+      dispatchToSimulator({ ...event, realNow: performance.now() });
     },
     [],
   );
+  const dispatch = useCallback(
+    (input: DeviceInput) => {
+      dispatchAtRealTime({ type: "inputGiven", input });
+    },
+    [dispatchAtRealTime],
+  );
   const pause = useCallback(() => {
-    updateClock(pauseClock);
-  }, [updateClock]);
+    dispatchAtRealTime({ type: "paused" });
+  }, [dispatchAtRealTime]);
   const play = useCallback(() => {
-    updateClock(playClock);
-  }, [updateClock]);
+    dispatchAtRealTime({ type: "played" });
+  }, [dispatchAtRealTime]);
   const setSpeed = useCallback(
     (speed: Speed) => {
-      updateClock((current, realNow) => setClockSpeed(current, speed, realNow));
+      dispatchAtRealTime({ type: "speedChosen", speed });
     },
-    [updateClock],
+    [dispatchAtRealTime],
   );
   const stepSpeed = useCallback(
     (direction: "faster" | "slower") => {
-      updateClock((current, realNow) =>
-        stepClockSpeed(current, direction, realNow),
-      );
+      dispatchAtRealTime({ type: "speedStepped", direction });
     },
-    [updateClock],
+    [dispatchAtRealTime],
   );
   const togglePause = useCallback(() => {
-    updateClock((current, realNow) =>
-      current.paused
-        ? playClock(current, realNow)
-        : pauseClock(current, realNow),
-    );
-  }, [updateClock]);
+    dispatchAtRealTime({ type: "pauseToggled" });
+  }, [dispatchAtRealTime]);
 
   const setNames = useCallback((named: Names) => {
     setNamesState(named);
