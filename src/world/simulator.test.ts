@@ -105,8 +105,7 @@ describe("the simulator", () => {
     expect(simulator.clock.speed).toBe(2);
   });
 
-  // decided in "Drop the simulation to real time while an Alarm sounds", point 1; point 5 accepts
-  // a late drop, which following on the firing tick avoids
+  // decided in "Drop the simulation to real time while an Alarm sounds", points 1 and 5
   it("drops to 1× on the tick the Alarm starts", () => {
     const alarm = run(
       truppInAnmarsch(),
