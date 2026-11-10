@@ -4,20 +4,20 @@ import { screenModel, screenText } from "../src/lcd/index";
 import {
   DEFAULT_FAHRZEUGE,
   reduceSimulator,
-  rosterTallys,
   startSimulator,
   tallyHeld,
 } from "../src/world/index";
 import type { DeviceInput, SimulatorEvent } from "../src/world/index";
-import type { Span, LineSeen, TallyName, Window } from "./window";
-
-// Real time between two ticks: a few animation frames, short enough that every Alarmgrenze
-// fires on the tick that reaches it, at whole seconds even at 10×.
-const TICK_MS = 50;
-
-// Any fixed Uhrzeit keeps the scenarios repeatable: 12.04.17 11:11:00, as in the Startdisplay
-// figure of manual 5.2.
-const START_UHRZEIT = Date.UTC(2017, 3, 12, 11, 11, 0);
+import {
+  expectAlarmLed,
+  expectLcdReads,
+  expectLcdShows,
+  rosterTally,
+  spanMs,
+  START_UHRZEIT,
+  TICK_MS,
+} from "./drivers";
+import type { Span, TallyName, Window } from "./window";
 
 /**
  * A fresh simulator run in-process through `core`, `world` and the LCD screen model: first-launch
@@ -65,7 +65,7 @@ export function inProcessWindow(): Window {
         }),
       holdTally: (tally: TallyName) =>
         step(() => {
-          give(tallyEvent(tally));
+          give(tallyHeld(rosterTally(tally), DEFAULT_FAHRZEUGE));
         }),
       setSpeed: (speed) =>
         step(() => {
@@ -115,71 +115,11 @@ export function inProcessWindow(): Window {
   };
 }
 
-// Async though everything here is synchronous, so a Playwright driver can sit behind the same
+// Async though everything here is synchronous, so the Playwright driver sits behind the same
 // Window; a failing observation rejects rather than throws.
 function step(run: () => void): Promise<void> {
   return new Promise((resolve) => {
     run();
     resolve();
   });
-}
-
-function spanMs({ minutes = 0, seconds = 0 }: Span): number {
-  return (minutes * 60 + seconds) * 1000;
-}
-
-function tallyEvent({ fahrzeug, role }: TallyName): DeviceInput {
-  const named = DEFAULT_FAHRZEUGE.find(
-    (candidate) => candidate.kurzname === fahrzeug,
-  );
-  const tally = rosterTallys(DEFAULT_FAHRZEUGE).find(
-    (candidate) =>
-      candidate.fahrzeugId === named?.id && candidate.role === role,
-  );
-  if (named === undefined || tally === undefined) {
-    throw new Error(`The Roster has no Tally ${fahrzeug} ${role}`);
-  }
-  return tallyHeld(tally, DEFAULT_FAHRZEUGE);
-}
-
-function matches(text: string, line: LineSeen): boolean {
-  return typeof line === "string" ? text === line : line.test(text);
-}
-
-function describeLcd(lines: readonly LineSeen[]): string {
-  return lines.length === 0
-    ? "Display aus"
-    : lines.map((line) => `  ${String(line)}`).join("\n");
-}
-
-function expectLcdReads(
-  shown: readonly string[],
-  expected: readonly LineSeen[],
-): void {
-  const same =
-    shown.length === expected.length &&
-    expected.every((line, index) => matches(shown[index] ?? "", line));
-  if (!same) {
-    throw new Error(
-      `The LCD read:\n${describeLcd(shown)}\ninstead of:\n${describeLcd(expected)}`,
-    );
-  }
-}
-
-function expectLcdShows(shown: readonly string[], line: LineSeen): void {
-  if (!shown.some((text) => matches(text, line))) {
-    throw new Error(
-      `The LCD showed no line ${String(line)}; it read:\n${describeLcd(shown)}`,
-    );
-  }
-}
-
-function expectAlarmLed(blinking: boolean, expected: boolean): void {
-  if (blinking !== expected) {
-    throw new Error(
-      blinking
-        ? "The Alarm-LED was blinking, not off"
-        : "The Alarm-LED was off, not blinking",
-    );
-  }
 }

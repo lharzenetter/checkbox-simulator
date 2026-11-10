@@ -72,7 +72,8 @@ One Vite app, one folder per layer under `src/`:
 - A scenario imports no runner and observes only what the Trainee sees: the LCD text and the
   Alarm-LED. No call returns raw state. Trainee steps are physical (keys, Tallys, clock
   controls); recipes such as `logIn` are composed from them in `acceptance/`.
-- Every step and observation is async, so a Playwright driver can run the same scenario.
+- Every step and observation is async, so the Playwright driver runs the same scenario. Both
+  drivers run every scenario: `pnpm test` in-process, `pnpm test:e2e` through the UI.
 - `core/`, `world/` and `lcd/` are written test-first (red, green, refactor) for every
   behaviour change.
 - Tests drive the public API only: `reduce` and selectors, the screen model. Never test
@@ -85,8 +86,9 @@ One Vite app, one folder per layer under `src/`:
   in a comment: `// manual 5.4.2`, `// timing-and-alarm-rules §6`, `// #42`.
 - The LCD's layout detail is asserted on its screen model, plus a few framebuffer snapshots per
   screen layout.
-- React components get thin tests only where they hold logic. Playwright covers a handful of
-  smoke flows until the Playwright driver runs the scenarios.
+- React components get thin tests only where they hold logic. `e2e/` holds the flows not yet stated
+  as scenarios and those no scenario can state: storage, settings, the keyboard map, the mute
+  toggle.
 - No coverage percentage gate; test-first replaces it.
 - Test files sit next to the code: `restzeit.ts` → `restzeit.test.ts`.
 
