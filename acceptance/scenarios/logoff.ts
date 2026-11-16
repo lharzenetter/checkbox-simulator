@@ -1,4 +1,4 @@
-import { logIn, logOff } from "../recipes";
+import { acceptFlaschendruck, logIn, logOff } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -162,16 +162,6 @@ async function truppInBereitschaft(window: Window): Promise<void> {
   await window.trainee.press("X");
 }
 
-// The Trupp-Menü's third item moves the Trupp on; OK accepts its Flaschendruck as it stands.
-async function moveOn({ trainee }: Window): Promise<void> {
-  await trainee.press("OK");
-  await trainee.press("Down");
-  await trainee.press("Down");
-  await trainee.press("OK");
-  await trainee.press("OK");
-  await trainee.press("X");
-}
-
 // timing-and-alarm-rules §12.7; verification-scenarios V17
 for (const { einsatzstatus, reach, row } of [
   {
@@ -183,7 +173,7 @@ for (const { einsatzstatus, reach, row } of [
     einsatzstatus: "Einsatzziel erreicht",
     reach: async (window: Window) => {
       await truppInAnmarsch(window);
-      await moveOn(window);
+      await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     },
     row: "01 markiert  2× Einsatzziel erreicht  00:26:00",
   },
@@ -191,8 +181,12 @@ for (const { einsatzstatus, reach, row } of [
     einsatzstatus: "Rückmarsch",
     reach: async (window: Window) => {
       await truppInAnmarsch(window);
-      await moveOn(window);
-      await moveOn(window);
+      await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
+      await acceptFlaschendruck(
+        window,
+        "Rückzug antreten",
+        "Einsatzziel erreicht",
+      );
     },
     row: "01 markiert  2× Rückmarsch  00:26:00",
   },
