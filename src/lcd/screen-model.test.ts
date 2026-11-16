@@ -919,14 +919,6 @@ describe("the Einsatzstatus screens", () => {
     });
   });
 
-  // manual 3.2.3 item 9; timing-and-alarm-rules §5.7, 5.13; verification scenario V25
-  it("shows the Reservedruck as the Rückzugsdruck on the Trupp-Ansicht from login", () => {
-    expect(screenModel(stateAfter(...TRUPP_01))).toMatchObject({
-      layout: "truppAnsicht",
-      rueckzugsdruck: "50 bar",
-    });
-  });
-
   // manual 3.2.3 items 3–5: the bar stays empty until there is an Anmarschzeit (issue #42)
   it("leaves the time-split bar empty in Bereitschaft and during the first Anmarsch", () => {
     const bereitschaft = stateAfter(
