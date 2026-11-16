@@ -63,6 +63,16 @@ export function inProcessWindow(): Window {
           letTimePass(span);
           give({ type: "keyReleased", key });
         }),
+      holdTogether: (keys: readonly [Key, Key], span: Span) =>
+        step(() => {
+          for (const key of keys) {
+            give({ type: "keyPressed", key });
+          }
+          letTimePass(span);
+          for (const key of keys) {
+            give({ type: "keyReleased", key });
+          }
+        }),
       holdTally: (tally: TallyName) =>
         step(() => {
           give(tallyHeld(rosterTally(tally), DEFAULT_FAHRZEUGE));

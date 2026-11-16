@@ -6,6 +6,16 @@ export async function powerOn({ trainee }: Window): Promise<void> {
 }
 
 /**
+ * Opens the Einsatzprotokoll screen from Aus: Check wakes the Startdisplay, OK opens SERVICE with
+ * the bar on `Einsatzprotokoll`, and OK opens it. Manual 5.10.
+ */
+export async function openEinsatzprotokoll(window: Window): Promise<void> {
+  await powerOn(window);
+  await window.trainee.press("OK");
+  await window.trainee.press("OK");
+}
+
+/**
  * Logs a Trupp of these Tallys in to Anmarsch for 30 min at the cylinder's 300 bar, ending on its
  * Trupp-Ansicht: the first Tally opens Einsatzzeit wählen, OK takes 30 min, the others join on the
  * Anmeldefenster, OK on `Trupp OK Einsatz` and OK on the Anfangsdruck. Manual 5.3.

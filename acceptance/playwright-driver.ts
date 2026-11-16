@@ -81,6 +81,22 @@ export async function playwrightWindow(page: Page): Promise<Window> {
         await letTimePass(span);
         await page.mouse.up();
       },
+      // One mouse cannot hold two Keys, so each Key gets its own pointer, as two fingers would.
+      holdTogether: async (keys: readonly [Key, Key], span: Span) => {
+        for (const [index, key] of keys.entries()) {
+          await keyButton(key).dispatchEvent("pointerdown", {
+            pointerId: index + 1,
+            button: 0,
+          });
+        }
+        await letTimePass(span);
+        for (const [index, key] of keys.entries()) {
+          await keyButton(key).dispatchEvent("pointerup", {
+            pointerId: index + 1,
+            button: 0,
+          });
+        }
+      },
       holdTally: async (tally: TallyName) => {
         const code = roleCode(rosterTally(tally));
         await page

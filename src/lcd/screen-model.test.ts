@@ -69,15 +69,8 @@ describe("S01 Startdisplay", () => {
 
 describe("S02 SERVICE", () => {
   // manual 5.2, SERVICE figure
-  it("reads as in the figure, cursor on the first item", () => {
+  it("opens with the bar on the first item", () => {
     const model = screenModel(stateAfter(press("Check"), press("OK")));
-    expect(screenText(model)).toEqual([
-      "SERVICE",
-      "Einsatzprotokoll",
-      "Zeit/Datum einstellen",
-      "Kontrast",
-      "Testprogramm",
-    ]);
     expect(model).toMatchObject({ layout: "service", selectedIndex: 0 });
   });
 
@@ -196,46 +189,6 @@ describe("S16 Einsatzprotokoll", () => {
     ]);
   });
 
-  it("shows a window spanning two Einsatzprotokolle", () => {
-    const model = einsatzprotokollScreen(
-      [
-        einsatzprotokoll(1, ["ALT A", "ALT B"]),
-        einsatzprotokoll(2, ["NEU A", "NEU B"]),
-      ],
-      ...Array.from({ length: 10 }, () => press("Down")),
-    );
-    expect(asFigure(model)).toEqual([
-      "Einsatz von: 15:30:00",
-      "        bis: 15:45:00",
-      "davon aktiv: 00:10:00",
-      RULE,
-      "Protokoll Ende",
-      "Einsatzprotokoll",
-      RULE,
-      " Einsatz Nr:    00001",
-      "     Datum:  01.01.14",
-      "TruppNr/EZT:   01/030",
-      RULE,
-      "Einsatzkräfte:",
-      "ALT A",
-      "ALT B",
-      RULE,
-    ]);
-  });
-
-  // ASSUMPTION: the Notausschaltung line ("Show the Einsatzprotokolle on the LCD"); manual p. 31
-  it("shows Notausschaltung before Protokoll Ende for a Trupp a Notausschaltung ended", () => {
-    const model = einsatzprotokollScreen(
-      [einsatzprotokoll(1, ["A", "B"], true)],
-      press("Down"),
-    );
-    expect(asFigure(model).slice(-3)).toEqual([
-      RULE,
-      "Notausschaltung",
-      "Protokoll Ende",
-    ]);
-  });
-
   it("shows a 20 min Einsatzzeit as `020`", () => {
     const model = einsatzprotokollScreen([
       {
@@ -247,23 +200,13 @@ describe("S16 Einsatzprotokoll", () => {
     expect(asFigure(model)[4]).toBe("TruppNr/EZT:   06/020");
   });
 
-  // ASSUMPTION: `Kein Protokoll` ("Show the Einsatzprotokolle on the LCD")
-  it("shows its title and Kein Protokoll with no Einsatzprotokoll stored", () => {
-    const model = einsatzprotokollScreen([]);
-    expect(asFigure(model)).toEqual([
+  // ASSUMPTION: `Kein Protokoll` ("Show the Einsatzprotokolle on the LCD"); the rule under the
+  // title is layout detail
+  it("rules off its title above Kein Protokoll", () => {
+    expect(asFigure(einsatzprotokollScreen([]))).toEqual([
       "Einsatzprotokoll",
       RULE,
       "Kein Protokoll",
-    ]);
-    expect(screenText(model)).toEqual(["Einsatzprotokoll", "Kein Protokoll"]);
-  });
-
-  it("reads its text lines without the rules", () => {
-    const model = einsatzprotokollScreen([einsatzprotokoll(1, ["A", "B"])]);
-    expect(screenText(model).slice(0, 3)).toEqual([
-      "Einsatzprotokoll",
-      "Einsatz Nr: 00001",
-      "Datum: 01.01.14",
     ]);
   });
 });

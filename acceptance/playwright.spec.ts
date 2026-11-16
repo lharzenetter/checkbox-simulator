@@ -8,6 +8,7 @@ import "./scenarios/logoff";
 import "./scenarios/sicherheitstrupp";
 import "./scenarios/daueralarm";
 import "./scenarios/einsatzstatus";
+import "./scenarios/einsatzprotokolle";
 
 for (const { name, run } of scenarios()) {
   test(name, async ({ page }) => {
