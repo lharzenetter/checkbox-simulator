@@ -1,10 +1,5 @@
 import type { Key } from "../../src/core/index";
-import {
-  logIn,
-  logInToBereitschaft,
-  logOff,
-  openEinsatzprotokoll,
-} from "../recipes";
+import { logIn, logOff, openEinsatzprotokoll } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -284,7 +279,9 @@ scenario(
 // Trupp 01 in Anmarsch and Trupp 02 logged in to Bereitschaft, markiert, on the Einsatzliste.
 async function anmarschAndBereitschaft(window: Window): Promise<void> {
   await truppInAnmarsch(window);
-  await logInToBereitschaft(window, [LF_AT_F, LF_AT_M]);
+  await logIn(window, [LF_AT_F, LF_AT_M], {
+    anmeldeaktion: "Trupp OK Bereitschaft",
+  });
   await window.trainee.press("X");
 }
 
