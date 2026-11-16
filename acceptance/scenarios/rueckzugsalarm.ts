@@ -1,4 +1,5 @@
-import { logIn } from "../recipes";
+import { chooseInTruppMenue, logIn } from "../recipes";
+import type { Einsatzstatus, TruppMenueItem } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -49,47 +50,16 @@ async function nextAlarmAfter(
   await see.alarmLed().isBlinking();
 }
 
-type Item =
-  | "Trupp -> Einsatz"
-  | "Trupp -> Bereitschaft"
-  | "Einsatzziel erreicht"
-  | "Rückzug antreten"
-  | "Druck ändern";
-
-// decided in "Define the key-by-screen navigation model", its Trupp-Menü table: both status items
-// come first, then the one that depends on the Einsatzstatus, then Druck ändern; in Bereitschaft
-// there is no third item, so Druck ändern moves up one
-const POSITION: Readonly<Record<Item, number>> = {
-  "Trupp -> Einsatz": 0,
-  "Trupp -> Bereitschaft": 1,
-  "Einsatzziel erreicht": 2,
-  "Rückzug antreten": 2,
-  "Druck ändern": 3,
-};
-
-// OK on the Einsatzliste opens the Trupp-Menü with the cursor on its first item.
-async function choose(
-  { trainee }: Window,
-  item: Item,
-  position = POSITION[item],
-): Promise<void> {
-  await trainee.press("OK");
-  for (let down = 0; down < position; down++) {
-    await trainee.press("Down");
-  }
-  await trainee.press("OK");
-}
-
 // The editor opens at the snapped estimate, `fromBar`; Up and Down move it in 5 bar steps
 // (manual 5.4, parameters [73] and [76]); OK enters `toBar`.
 async function enter(
   window: Window,
-  item: Item,
+  item: TruppMenueItem,
+  einsatzstatus: Einsatzstatus,
   { fromBar, toBar }: { readonly fromBar: number; readonly toBar: number },
-  position = POSITION[item],
 ): Promise<void> {
   const { trainee, see } = window;
-  await choose(window, item, position);
+  await chooseInTruppMenue(window, item, einsatzstatus);
   await see.lcd().shows(`Druck ${String(fromBar)} bar`);
   const steps = (toBar - fromBar) / 5;
   for (let step = 0; step < Math.abs(steps); step++) {
@@ -184,7 +154,10 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 6, 3);
 
-    await enter(window, "Druck ändern", { fromBar: 235, toBar: 210 });
+    await enter(window, "Druck ändern", "Anmarsch", {
+      fromBar: 235,
+      toBar: 210,
+    });
     await see.alarmLed().isOff();
     await see.lcd().shows("Restzeit 00:21:00");
     await trainee.press("X");
@@ -241,7 +214,10 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 6);
 
-    await enter(window, "Einsatzziel erreicht", { fromBar: 240, toBar: 240 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 240,
+      toBar: 240,
+    });
     await see
       .lcd()
       .reads([
@@ -281,7 +257,10 @@ scenario(
     const { trainee, see, time } = window;
     await truppInAnmarsch(window);
     await simulated(window, 6);
-    await enter(window, "Einsatzziel erreicht", { fromBar: 240, toBar: 215 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 240,
+      toBar: 215,
+    });
     await see.lcd().shows("Rückzugsdruck 170 bar");
     await trainee.press("X");
 
@@ -330,7 +309,7 @@ for (const { anfangsdruck, toBar, rueckzugsdruck } of [
       await onEinsatzliste(window);
       await simulated(window, 2);
 
-      await enter(window, "Einsatzziel erreicht", {
+      await enter(window, "Einsatzziel erreicht", "Anmarsch", {
         fromBar: anfangsdruck - 20,
         toBar,
       });
@@ -348,7 +327,10 @@ scenario(
     const { trainee, see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 2);
-    await enter(window, "Einsatzziel erreicht", { fromBar: 280, toBar: 280 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 280,
+      toBar: 280,
+    });
     await see.lcd().shows("Restzeit 00:28:00");
     await trainee.press("X");
 
@@ -379,7 +361,10 @@ scenario(
     await onEinsatzliste(window);
     await simulated(window, 2);
 
-    await enter(window, "Einsatzziel erreicht", { fromBar: 270, toBar: 270 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 270,
+      toBar: 270,
+    });
     await see.lcd().shows("Restzeit 00:18:00");
     await see.lcd().shows("Rückzugsdruck 60 bar");
     await trainee.press("X");
@@ -410,13 +395,16 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 8);
 
-    await choose(window, "Einsatzziel erreicht");
+    await chooseInTruppMenue(window, "Einsatzziel erreicht", "Anmarsch");
     await trainee.press("X");
     await trainee.press("X");
     await see.alarmLed().isOff();
     await see.lcd().shows("01 markiert  2× Anmarsch  00:22:00");
 
-    await enter(window, "Einsatzziel erreicht", { fromBar: 220, toBar: 200 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 220,
+      toBar: 200,
+    });
     await see.alarmLed().isBlinking();
     await see.lcd().reads(
       rueckzugScreen({
@@ -450,7 +438,10 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 3);
 
-    await enter(window, "Einsatzziel erreicht", { fromBar: 270, toBar: 150 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 270,
+      toBar: 150,
+    });
     await see.alarmLed().isBlinking();
     await see.lcd().reads(
       rueckzugScreen({
@@ -470,7 +461,10 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 5);
 
-    await enter(window, "Einsatzziel erreicht", { fromBar: 250, toBar: 0 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 250,
+      toBar: 0,
+    });
     await see.lcd().reads(
       rueckzugScreen({
         druck: 0,
@@ -500,12 +494,18 @@ scenario(
     const { trainee, see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 5);
-    await enter(window, "Einsatzziel erreicht", { fromBar: 250, toBar: 250 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 250,
+      toBar: 250,
+    });
     await see.lcd().shows("Rückzugsdruck 100 bar");
     await trainee.press("X");
     await simulated(window, 2);
 
-    await enter(window, "Druck ändern", { fromBar: 230, toBar: 95 });
+    await enter(window, "Druck ändern", "Einsatzziel erreicht", {
+      fromBar: 230,
+      toBar: 95,
+    });
     await see.alarmLed().isBlinking();
     await see.lcd().reads(
       rueckzugScreen({
@@ -518,7 +518,10 @@ scenario(
     await trainee.press("X");
     await simulated(window, 0, 30);
 
-    await enter(window, "Druck ändern", { fromBar: 90, toBar: 105 });
+    await enter(window, "Druck ändern", "Einsatzziel erreicht", {
+      fromBar: 90,
+      toBar: 105,
+    });
     await see.alarmLed().isOff();
     await see.lcd().shows("Restzeit 00:10:30");
     await trainee.press("X");
@@ -535,7 +538,10 @@ scenario(
     await trainee.press("X");
     await simulated(window, 0, 30);
 
-    await enter(window, "Druck ändern", { fromBar: 95, toBar: 90 });
+    await enter(window, "Druck ändern", "Einsatzziel erreicht", {
+      fromBar: 95,
+      toBar: 90,
+    });
     await see.alarmLed().isOff();
     await see.lcd().shows("Restzeit 00:09:00");
     await trainee.press("X");
@@ -558,8 +564,10 @@ scenario(
     await onEinsatzliste(window);
     await simulated(window, 2);
 
-    // in Bereitschaft, Druck ändern is the Trupp-Menü's third item
-    await enter(window, "Druck ändern", { fromBar: 300, toBar: 50 }, 2);
+    await enter(window, "Druck ändern", "Bereitschaft", {
+      fromBar: 300,
+      toBar: 50,
+    });
     await see.alarmLed().isOff();
     await see.lcd().shows("Restzeit 00:05:00");
     await trainee.press("X");
@@ -568,7 +576,7 @@ scenario(
     await simulated(window, 2, 59);
     await see.alarmLed().isOff();
 
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.alarmLed().isOff();
     await trainee.setSpeed(1);
     await time.passes({ seconds: 1 });
@@ -585,17 +593,24 @@ scenario(
     const { trainee, see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 4);
-    await enter(window, "Einsatzziel erreicht", { fromBar: 260, toBar: 260 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 260,
+      toBar: 260,
+    });
     await see.lcd().shows("Rückzugsdruck 80 bar");
     await trainee.press("X");
 
     await simulated(window, 4);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(
+      window,
+      "Trupp -> Bereitschaft",
+      "Einsatzziel erreicht",
+    );
     // the Bereitschaft Alarm, 5 min after 8:00
     await simulated(window, 5);
     await acknowledge(window);
     await simulated(window, 1);
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     // the Alarmgrenzen at 15:54 and 25:48
     await simulated(window, 1, 54);
@@ -622,19 +637,26 @@ scenario(
     const { trainee, see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 4);
-    await enter(window, "Einsatzziel erreicht", { fromBar: 260, toBar: 160 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 260,
+      toBar: 160,
+    });
     await see.lcd().shows("Trupp 01 RÜCKZUG");
     await acknowledge(window);
     await trainee.press("X");
 
     await simulated(window, 4);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(
+      window,
+      "Trupp -> Bereitschaft",
+      "Einsatzziel erreicht",
+    );
     // the Bereitschaft Alarm, 5 min after 8:00
     await simulated(window, 5);
     await see.lcd().shows("Trupp 01 BEREITSCHAFT");
     await acknowledge(window);
     await simulated(window, 1);
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     // the next Alarm is the first Alarmgrenze, moved by the 6 min in Bereitschaft to 15:54
     await nextAlarmAfter(window, 1, 54);
@@ -649,13 +671,19 @@ scenario("a Trupp in Rückmarsch sounds no Rückzugsalarm", async (window) => {
   const { trainee, see } = window;
   await truppInAnmarsch(window);
   await simulated(window, 3);
-  await enter(window, "Einsatzziel erreicht", { fromBar: 270, toBar: 270 });
+  await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+    fromBar: 270,
+    toBar: 270,
+  });
   await trainee.press("X");
 
   await simulated(window, 6, 54);
   await acknowledge(window);
   await simulated(window, 2, 6);
-  await enter(window, "Rückzug antreten", { fromBar: 180, toBar: 180 });
+  await enter(window, "Rückzug antreten", "Einsatzziel erreicht", {
+    fromBar: 180,
+    toBar: 180,
+  });
   await see.lcd().shows("Rückzugsdruck 60 bar");
   await trainee.press("X");
 
@@ -676,16 +704,22 @@ scenario(
     const { trainee } = window;
     await truppInAnmarsch(window);
     await simulated(window, 3);
-    await enter(window, "Einsatzziel erreicht", { fromBar: 270, toBar: 270 });
+    await enter(window, "Einsatzziel erreicht", "Anmarsch", {
+      fromBar: 270,
+      toBar: 270,
+    });
     await trainee.press("X");
     await simulated(window, 2);
-    await enter(window, "Rückzug antreten", { fromBar: 250, toBar: 250 });
+    await enter(window, "Rückzug antreten", "Einsatzziel erreicht", {
+      fromBar: 250,
+      toBar: 250,
+    });
     await trainee.press("X");
 
     await simulated(window, 1);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Rückmarsch");
     await simulated(window, 3);
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     // the Alarmgrenzen at 12:54 and 22:48
     await simulated(window, 3, 54);
