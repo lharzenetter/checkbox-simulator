@@ -1,5 +1,10 @@
 import type { Key } from "../../src/core/index";
-import { logIn, logOff } from "../recipes";
+import {
+  logIn,
+  logInToBereitschaft,
+  logOff,
+  openEinsatzprotokoll,
+} from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -278,15 +283,9 @@ scenario(
 
 // Trupp 01 in Anmarsch and Trupp 02 logged in to Bereitschaft, markiert, on the Einsatzliste.
 async function anmarschAndBereitschaft(window: Window): Promise<void> {
-  const { trainee } = window;
   await truppInAnmarsch(window);
-  await trainee.holdTally(LF_AT_F);
-  await trainee.press("OK");
-  await trainee.holdTally(LF_AT_M);
-  await trainee.press("Down");
-  await trainee.press("OK");
-  await trainee.press("OK");
-  await trainee.press("X");
+  await logInToBereitschaft(window, [LF_AT_F, LF_AT_M]);
+  await window.trainee.press("X");
 }
 
 // decided in "Decide how alarms are presented", points 4 and 5: S12 takes over and the second OK
@@ -313,15 +312,6 @@ scenario(
     await see.lcd().reads([/^FF-Musterstadt$/, /^B1- \+ /]);
   },
 );
-
-// The Checkbox, off after the Abschaltzeit, woken to SERVICE → `Einsatzprotokoll`; manual 5.10.
-async function openEinsatzprotokolle(window: Window): Promise<void> {
-  const { trainee, time } = window;
-  await time.passes({ seconds: 25 });
-  await trainee.press("Check");
-  await trainee.press("OK");
-  await trainee.press("OK");
-}
 
 // manual 5.10 figure, as far as the LCD shows it: a Trupp of a Fahrzeug's AT-F and AT-M, logged
 // in at 11:11:00 and ended 4 s later
@@ -350,13 +340,14 @@ function einsatzprotokoll(
 scenario(
   "the Notausschaltung of the markiert Trupp writes its Einsatzprotokoll",
   async (window) => {
-    const { trainee, see } = window;
+    const { trainee, see, time } = window;
     await truppInAnmarsch(window);
     await openNotausschaltung(window);
     await trainee.press("OK");
     await trainee.press("OK");
 
-    await openEinsatzprotokolle(window);
+    await time.passes({ seconds: 25 });
+    await openEinsatzprotokoll(window);
     await see.lcd().reads(einsatzprotokoll("00001", "01", "HLF"));
   },
 );
@@ -366,14 +357,15 @@ scenario(
 scenario(
   "the Notausschaltung of all Trupps writes an Einsatzprotokoll for each",
   async (window) => {
-    const { trainee, see } = window;
+    const { trainee, see, time } = window;
     await twoTrupps(window);
     await openNotausschaltung(window);
     await trainee.press("Down");
     await trainee.press("OK");
     await trainee.press("OK");
 
-    await openEinsatzprotokolle(window);
+    await time.passes({ seconds: 25 });
+    await openEinsatzprotokoll(window);
     await see.lcd().reads(einsatzprotokoll("00002", "02", "LF"));
 
     // Down scrolls one line, so the newer record's 16 lines, its rules included, bring the older
