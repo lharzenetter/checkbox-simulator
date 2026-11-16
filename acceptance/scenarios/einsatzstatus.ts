@@ -1,4 +1,5 @@
-import { logIn } from "../recipes";
+import { acceptFlaschendruck, chooseInTruppMenue, logIn } from "../recipes";
+import type { Einsatzstatus } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -21,37 +22,6 @@ async function simulated(
   await time.passes({ seconds: (minutes * 60 + seconds) / 10 });
 }
 
-type Item =
-  | "Trupp -> Einsatz"
-  | "Trupp -> Bereitschaft"
-  | "Einsatzziel erreicht"
-  | "Rückzug antreten";
-
-// decided in "Define the key-by-screen navigation model", its Trupp-Menü table: both status items
-// come first, the one that depends on the Einsatzstatus third
-const POSITION: Readonly<Record<Item, number>> = {
-  "Trupp -> Einsatz": 0,
-  "Trupp -> Bereitschaft": 1,
-  "Einsatzziel erreicht": 2,
-  "Rückzug antreten": 2,
-};
-
-// OK on the Einsatzliste opens the Trupp-Menü with the cursor on its first item.
-async function choose({ trainee }: Window, item: Item): Promise<void> {
-  await trainee.press("OK");
-  for (let down = 0; down < POSITION[item]; down++) {
-    await trainee.press("Down");
-  }
-  await trainee.press("OK");
-}
-
-// Chooses the item and accepts the Flaschendruck its editor opens at; X closes the Trupp-Ansicht.
-async function accept(window: Window, item: Item): Promise<void> {
-  await choose(window, item);
-  await window.trainee.press("OK");
-  await window.trainee.press("X");
-}
-
 // The first OK silences the Alarm and the second ends it; both leave the simulation at 1×.
 async function acknowledge({ trainee }: Window): Promise<void> {
   await trainee.press("OK");
@@ -68,7 +38,7 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 5, 4);
 
-    await choose(window, "Einsatzziel erreicht");
+    await chooseInTruppMenue(window, "Einsatzziel erreicht", "Anmarsch");
     await window.see
       .lcd()
       .reads([
@@ -90,7 +60,7 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 5);
 
-    await choose(window, "Einsatzziel erreicht");
+    await chooseInTruppMenue(window, "Einsatzziel erreicht", "Anmarsch");
     await trainee.press("OK");
     await see
       .lcd()
@@ -124,7 +94,7 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 8);
 
-    await choose(window, "Einsatzziel erreicht");
+    await chooseInTruppMenue(window, "Einsatzziel erreicht", "Anmarsch");
     await trainee.press("Down");
     await trainee.press("X");
     await see
@@ -153,10 +123,14 @@ scenario(
     const { trainee, see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 5);
-    await accept(window, "Einsatzziel erreicht");
+    await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     await simulated(window, 1);
 
-    await choose(window, "Rückzug antreten");
+    await chooseInTruppMenue(
+      window,
+      "Rückzug antreten",
+      "Einsatzziel erreicht",
+    );
     await see.lcd().shows("Rückzug antreten");
     await trainee.press("OK");
     await see
@@ -183,10 +157,14 @@ scenario(
     const { trainee, see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 3);
-    await accept(window, "Einsatzziel erreicht");
+    await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     await simulated(window, 1);
 
-    await choose(window, "Rückzug antreten");
+    await chooseInTruppMenue(
+      window,
+      "Rückzug antreten",
+      "Einsatzziel erreicht",
+    );
     await trainee.press("Down");
     await trainee.press("X");
     await see.lcd().shows("Trupp 01 EINSATZ");
@@ -211,7 +189,7 @@ for (const { einsatzstatus, reach, title, restzeit, third } of [
     einsatzstatus: "Einsatzziel erreicht",
     reach: async (window: Window) => {
       await truppInAnmarsch(window);
-      await accept(window, "Einsatzziel erreicht");
+      await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     },
     title: "Trupp 01 EINSATZ",
     restzeit: "Restzeit 00:29:00",
@@ -221,8 +199,12 @@ for (const { einsatzstatus, reach, title, restzeit, third } of [
     einsatzstatus: "Rückmarsch",
     reach: async (window: Window) => {
       await truppInAnmarsch(window);
-      await accept(window, "Einsatzziel erreicht");
-      await accept(window, "Rückzug antreten");
+      await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
+      await acceptFlaschendruck(
+        window,
+        "Rückzug antreten",
+        "Einsatzziel erreicht",
+      );
     },
     title: "Trupp 01 RÜCKMARSCH",
     restzeit: "Restzeit 00:29:00",
@@ -272,13 +254,17 @@ scenario(
     const { see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 3);
-    await accept(window, "Einsatzziel erreicht");
-    await accept(window, "Rückzug antreten");
+    await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
+    await acceptFlaschendruck(
+      window,
+      "Rückzug antreten",
+      "Einsatzziel erreicht",
+    );
 
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Rückmarsch");
     await see.lcd().shows("01 markiert  2× Rückmarsch  00:27:00");
 
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Rückmarsch");
     await see.lcd().shows("01 markiert  2× Bereitschaft  00:27:00");
   },
 );
@@ -292,7 +278,7 @@ scenario(
     await truppInAnmarsch(window);
     await simulated(window, 3);
 
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Anmarsch");
     await see
       .lcd()
       .reads([
@@ -302,11 +288,11 @@ scenario(
       ]);
 
     await simulated(window, 3);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
     await see.lcd().shows("01 markiert  2× Bereitschaft  00:24:00");
 
     await simulated(window, 3);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Bereitschaft");
     await see
       .lcd()
       .reads([
@@ -329,16 +315,24 @@ for (const { einsatzstatus, reach } of [
   { einsatzstatus: "Anmarsch", reach: () => Promise.resolve() },
   {
     einsatzstatus: "Einsatzziel erreicht",
-    reach: (window: Window) => accept(window, "Einsatzziel erreicht"),
+    reach: (window: Window) =>
+      acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch"),
   },
   {
     einsatzstatus: "Rückmarsch",
     reach: async (window: Window) => {
-      await accept(window, "Einsatzziel erreicht");
-      await accept(window, "Rückzug antreten");
+      await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
+      await acceptFlaschendruck(
+        window,
+        "Rückzug antreten",
+        "Einsatzziel erreicht",
+      );
     },
   },
-]) {
+] satisfies {
+  readonly einsatzstatus: Einsatzstatus;
+  readonly reach: (window: Window) => Promise<void>;
+}[]) {
   scenario(
     `\`Trupp -> Bereitschaft\` from ${einsatzstatus} stops the Restzeit`,
     async (window) => {
@@ -348,7 +342,7 @@ for (const { einsatzstatus, reach } of [
       await reach(window);
       await see.lcd().shows(`01 markiert  2× ${einsatzstatus}  00:26:00`);
 
-      await choose(window, "Trupp -> Bereitschaft");
+      await chooseInTruppMenue(window, "Trupp -> Bereitschaft", einsatzstatus);
       await see
         .lcd()
         .reads([
@@ -371,11 +365,15 @@ scenario(
     const { trainee, see, time } = window;
     await truppInAnmarsch(window);
     await simulated(window, 4);
-    await accept(window, "Einsatzziel erreicht");
+    await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     await see.lcd().shows("01 markiert  2× Einsatzziel erreicht  00:26:00");
 
     await simulated(window, 4);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(
+      window,
+      "Trupp -> Bereitschaft",
+      "Einsatzziel erreicht",
+    );
     await see.lcd().shows("01 markiert  2× Bereitschaft  00:22:00");
 
     // the Bereitschaft Alarm, 5 min after 8:00
@@ -384,7 +382,7 @@ scenario(
     await acknowledge(window);
 
     await simulated(window, 1);
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see
       .lcd()
       .reads([
@@ -409,14 +407,14 @@ scenario(
     const { see } = window;
     await truppInAnmarsch(window);
     await simulated(window, 4);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
 
     // the Bereitschaft Alarm, 5 min after 4:00
     await simulated(window, 5);
     await acknowledge(window);
     await simulated(window, 1);
 
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.lcd().shows("01 markiert  2× Anmarsch  00:26:00");
 
     await simulated(window, 1);
@@ -432,15 +430,19 @@ scenario(
     await truppInAnmarsch(window);
     // 300 → 270 bar at 3:00 and 250 bar at 5:00, each accepted at the estimate
     await simulated(window, 3);
-    await accept(window, "Einsatzziel erreicht");
+    await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     await simulated(window, 2);
-    await accept(window, "Rückzug antreten");
+    await acceptFlaschendruck(
+      window,
+      "Rückzug antreten",
+      "Einsatzziel erreicht",
+    );
     await see.lcd().shows("01 markiert  2× Rückmarsch  00:25:00");
 
     await simulated(window, 1);
-    await choose(window, "Trupp -> Bereitschaft");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Rückmarsch");
     await simulated(window, 3);
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.lcd().shows("01 markiert  2× Rückmarsch  00:24:00");
 
     await simulated(window, 0, 30);
@@ -477,7 +479,7 @@ scenario(
     await acknowledge(window);
     await simulated(window, 1);
 
-    await choose(window, "Trupp -> Einsatz");
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.lcd().shows("01 markiert  2× Anmarsch  00:30:00");
 
     await simulated(window, 1);
