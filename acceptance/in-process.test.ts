@@ -4,6 +4,7 @@ import { scenarios } from "./scenario";
 import "./scenarios/power-on";
 import "./scenarios/login";
 import "./scenarios/alarm";
+import "./scenarios/logoff";
 
 for (const { name, run } of scenarios()) {
   it(name, () => run(inProcessWindow()));

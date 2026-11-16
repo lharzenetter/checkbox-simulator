@@ -22,3 +22,18 @@ export async function logIn(
   await trainee.press("OK");
   await trainee.press("OK");
 }
+
+/**
+ * Logs a Trupp off: each of its Atemschutzträger holds their Tally to Check, which marks them on
+ * ABMELDEN, and OK logs the Trupp off. Pass every Atemschutzträger of the Trupp; with one missing,
+ * OK leaves the Trupp on ABMELDEN. Manual 5.8.
+ */
+export async function logOff(
+  { trainee }: Window,
+  atemschutztraeger: readonly [TallyName, ...TallyName[]],
+): Promise<void> {
+  for (const tally of atemschutztraeger) {
+    await trainee.holdTally(tally);
+  }
+  await trainee.press("OK");
+}

@@ -80,14 +80,8 @@ function truppInBereitschaft(): State {
 }
 
 describe("opening ABMELDEN", () => {
-  // manual 5.8 step 1; decided in "Define the key-by-screen navigation model"
-  it("opens ABMELDEN for the Trupp with the member marked when their Tally is held to Check", () => {
-    const state = reduce(truppInAnmarsch(), hold(A2));
-    expect(state.screen).toBe("abmelden");
-    expect(state.logoff?.truppnummer).toBe(1);
-    expect(state.logoff?.markedTallyIds).toEqual([A2.tallyId]);
-  });
-  // decided in "Define the key-by-screen navigation model": logoffs still work while 6 Trupps run
+  // decided in "Define the key-by-screen navigation model": logoffs still work while 6 Trupps run;
+  // the default Roster's 8 Tallys can't run six Trupps, so no scenario states this yet
   it("opens ABMELDEN while six Trupps run", () => {
     let state = truppInAnmarsch();
     for (let trupp = 2; trupp <= 6; trupp++) {
@@ -106,12 +100,6 @@ describe("opening ABMELDEN", () => {
 });
 
 describe("marking on ABMELDEN", () => {
-  // manual 5.8 steps 2–3
-  it("marks each further member of the Trupp", () => {
-    const state = run(truppInAnmarsch(), hold(A2), hold(A1));
-    expect(state.logoff?.markedTallyIds).toEqual([A2.tallyId, A1.tallyId]);
-  });
-
   // decided in "Define the key-by-screen navigation model"
   it("ignores an Atemschutzträger of another Trupp or of none", () => {
     const abmelden = run(
@@ -134,33 +122,9 @@ describe("marking on ABMELDEN", () => {
 });
 
 describe("leaving ABMELDEN", () => {
-  // timing-and-alarm-rules §12.7: no logoff with anyone missing; OK starts the logoff Daueralarm
-  // instead, covered with V18
-  it("does not log off while a member is unmarked", () => {
-    const state = run(truppInAnmarsch(), hold(A1), press("OK"));
-    expect(state.screen).toBe("abmelden");
-    expect(state.trupps).toHaveLength(1);
-  });
-
-  // decided in "Define the key-by-screen navigation model": no auto-logoff
-  it("waits for OK once every member is marked", () => {
-    const state = run(truppInAnmarsch(), hold(A1), hold(A2));
-    expect(state.screen).toBe("abmelden");
-    expect(state.trupps).toHaveLength(1);
-  });
-
   it.each<Key>(["Up", "Down", "Check"])("ignores %s", (key) => {
     const abmelden = run(truppInAnmarsch(), hold(A1), hold(A2));
     expect(reduce(abmelden, press(key))).toBe(abmelden);
-  });
-
-  // manual 5.8 step 4; decided in "Define the key-by-screen navigation model"
-  it("returns to the Einsatzliste on X with the marks cleared and the Trupp unchanged", () => {
-    const before = truppInAnmarsch();
-    const state = run(before, hold(A1), hold(A2), press("X"));
-    expect(state.screen).toBe("einsatzliste");
-    expect(state.logoff).toBeNull();
-    expect(state.trupps).toEqual(before.trupps);
   });
 });
 
@@ -196,20 +160,6 @@ describe.each([
       return run(later, hold(A1), hold(A2), press("OK"));
     }
 
-    it("fires none of its Alarms afterwards", () => {
-      const state = loggedOff();
-      const later = reduce(state, tickAfter(state, 30 * 60_000));
-      expect(later.pendingAlarms).toEqual([]);
-      expect(later.screen).not.toBe("alarm");
-    });
-
-    it("removes the Trupp from the Einsatzliste", () => {
-      const state = loggedOff();
-      expect(state.screen).toBe("einsatzliste");
-      expect(state.trupps).toEqual([]);
-      expect(state.logoff).toBeNull();
-    });
-
     // manual 5.8 step 4: "Alle Einsatzdaten werden gespeichert"
     it("records an Einsatzprotokoll with the Einsatzstatus at logoff", () => {
       expect(loggedOff().einsatzprotokolle).toEqual([
@@ -229,58 +179,6 @@ describe.each([
     });
   },
 );
-
-describe("the Einsatzliste after a logoff", () => {
-  function twoTrupps(): State {
-    return run(
-      truppInAnmarsch(),
-      hold(B1),
-      press("OK"),
-      hold(B2),
-      press("OK"),
-      press("OK"),
-    );
-  }
-
-  it("keeps the selection on another Trupp", () => {
-    const state = run(twoTrupps(), hold(A1), hold(A2), press("OK"));
-    expect(state.trupps.map((trupp) => trupp.truppnummer)).toEqual([2]);
-    expect(state.selectedTruppnummer).toBe(2);
-  });
-
-  it("selects the first remaining Trupp when the selected one logs off", () => {
-    const state = run(twoTrupps(), hold(B1), hold(B2), press("OK"));
-    expect(state.selectedTruppnummer).toBe(1);
-  });
-});
-
-describe("the empty Einsatzliste", () => {
-  function realTickAfter(state: State, elapsedMs: number): Event {
-    return {
-      type: "tick",
-      now: state.now,
-      realNow: state.realNow + elapsedMs,
-    };
-  }
-
-  function emptied(): State {
-    return run(truppInAnmarsch(), hold(A1), hold(A2), press("OK"));
-  }
-
-  // manual p. 34; timing-and-alarm-rules §9.1: on real time
-  it("switches to Aus when the Abschaltzeit runs out after the last logoff", () => {
-    const state = emptied();
-    expect(reduce(state, realTickAfter(state, 24_999)).screen).toBe(
-      "einsatzliste",
-    );
-    expect(reduce(state, realTickAfter(state, 25_000)).screen).toBe("aus");
-  });
-
-  it("stays on while a Trupp is still logged in", () => {
-    const state = truppInAnmarsch();
-    expect(reduce(state, tickAfter(state, 60_000)).screen).toBe("einsatzliste");
-  });
-});
 
 describe("the Einsatzprotokolle", () => {
   function logInAndOff(state: State): State {
