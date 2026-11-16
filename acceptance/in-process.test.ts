@@ -7,6 +7,7 @@ import "./scenarios/alarm";
 import "./scenarios/logoff";
 import "./scenarios/sicherheitstrupp";
 import "./scenarios/daueralarm";
+import "./scenarios/einsatzstatus";
 
 for (const { name, run } of scenarios()) {
   it(name, () => run(inProcessWindow()));

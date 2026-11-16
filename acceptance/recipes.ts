@@ -24,6 +24,24 @@ export async function logIn(
 }
 
 /**
+ * Logs a Trupp of these Tallys in to Bereitschaft with `Trupp OK Bereitschaft` at 300 bar, ending
+ * on its Trupp-Ansicht. Manual 5.3; timing-and-alarm-rules §12.1.
+ */
+export async function logInToBereitschaft(
+  { trainee }: Window,
+  [first, ...others]: readonly [TallyName, ...TallyName[]],
+): Promise<void> {
+  await trainee.holdTally(first);
+  await trainee.press("OK");
+  for (const tally of others) {
+    await trainee.holdTally(tally);
+  }
+  await trainee.press("Down");
+  await trainee.press("OK");
+  await trainee.press("OK");
+}
+
+/**
  * Logs a Trupp off: each of its Atemschutzträger holds their Tally to Check, which marks them on
  * ABMELDEN, and OK logs the Trupp off. Pass every Atemschutzträger of the Trupp; with one missing,
  * OK leaves the Trupp on ABMELDEN. Manual 5.8.

@@ -1,4 +1,4 @@
-import { logIn, logOff } from "../recipes";
+import { logIn, logInToBereitschaft, logOff } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -155,14 +155,9 @@ scenario(
 );
 
 // Trupp 01 logged in to Bereitschaft with `Trupp OK Bereitschaft`, on the Einsatzliste.
-async function truppInBereitschaft({ trainee }: Window): Promise<void> {
-  await trainee.holdTally(HLF_AT_F);
-  await trainee.press("OK");
-  await trainee.holdTally(HLF_AT_M);
-  await trainee.press("Down");
-  await trainee.press("OK");
-  await trainee.press("OK");
-  await trainee.press("X");
+async function truppInBereitschaft(window: Window): Promise<void> {
+  await logInToBereitschaft(window, [HLF_AT_F, HLF_AT_M]);
+  await window.trainee.press("X");
 }
 
 // The Trupp-Menü's third item moves the Trupp on; OK accepts its Flaschendruck as it stands.

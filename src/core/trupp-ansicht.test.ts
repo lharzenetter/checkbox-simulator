@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialState, reduce, truppMenueAktionen } from "./index";
+import { createInitialState, reduce } from "./index";
 import type { Event, Key, State } from "./index";
 
 const SESSION_START = { now: 1_000_000, realNow: 500 };
@@ -71,19 +71,6 @@ function truppAtEinsatzziel(state: State): State {
   );
 }
 
-/** The Trupp at the Einsatzziel turns back at the estimate; back on the Einsatzliste. */
-function truppInRueckmarsch(state: State): State {
-  return run(
-    state,
-    press("OK"),
-    press("Down"),
-    press("Down"),
-    press("OK"),
-    press("OK"),
-    press("X"),
-  );
-}
-
 describe("the Trupp-Menü", () => {
   function truppMenue(state: State): State {
     return reduce(state, press("OK"));
@@ -94,47 +81,6 @@ describe("the Trupp-Menü", () => {
     const state = truppMenue(truppInAnmarsch());
     expect(state.screen).toBe("truppMenue");
     expect(state.selectedTruppnummer).toBe(1);
-  });
-
-  // decided in "Correct the simulator against the real Checkbox", navigation: no Rückzug antreten
-  // straight from Anmarsch
-  it("offers the Anmarsch items", () => {
-    expect(truppMenueAktionen(truppMenue(truppInAnmarsch()))).toEqual([
-      "truppEinsatz",
-      "truppBereitschaft",
-      "einsatzzielErreicht",
-      "flaschendruckAendern",
-    ]);
-  });
-
-  // decided in "Correct the simulator against the real Checkbox", navigation
-  it("offers the Einsatzziel erreicht items", () => {
-    expect(
-      truppMenueAktionen(truppMenue(truppAtEinsatzziel(truppInAnmarsch()))),
-    ).toEqual([
-      "truppEinsatz",
-      "truppBereitschaft",
-      "rueckzugAntreten",
-      "flaschendruckAendern",
-    ]);
-  });
-
-  // decided in "Correct the simulator against the real Checkbox", navigation
-  it("offers the Rückmarsch items", () => {
-    expect(
-      truppMenueAktionen(
-        truppMenue(truppInRueckmarsch(truppAtEinsatzziel(truppInAnmarsch()))),
-      ),
-    ).toEqual(["truppEinsatz", "truppBereitschaft", "flaschendruckAendern"]);
-  });
-
-  // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
-  it("offers the Bereitschaft items", () => {
-    expect(truppMenueAktionen(truppMenue(truppInBereitschaft()))).toEqual([
-      "truppEinsatz",
-      "truppBereitschaft",
-      "flaschendruckAendern",
-    ]);
   });
 
   // decided in "Define the key-by-screen navigation model": the cursor starts on the first item
