@@ -53,8 +53,8 @@ scenario(
   },
 );
 
-// timing-and-alarm-rules §12.7: no logoff with anyone missing; the logoff Daueralarm this starts
-// is #61's
+// timing-and-alarm-rules §12.7: no logoff with anyone missing; daueralarm.ts states the logoff
+// Daueralarm this starts
 scenario(
   "OK does not log the Trupp off while an Atemschutzträger is not markiert",
   async (window) => {
