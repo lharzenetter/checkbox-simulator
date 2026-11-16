@@ -1,4 +1,4 @@
-import { logIn } from "../recipes";
+import { acceptFlaschendruck, chooseInTruppMenue, logIn } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -13,30 +13,6 @@ async function sicherheitstrupp(window: Window): Promise<void> {
     anmeldeaktion: "Sicherheitstrupp OK",
   });
   await window.trainee.press("X");
-}
-
-// Opens the Trupp-Menü from the Einsatzliste and chooses its first item, `Trupp -> Einsatz`.
-async function truppEinsatz({ trainee }: Window): Promise<void> {
-  await trainee.press("OK");
-  await trainee.press("OK");
-}
-
-// Opens the Trupp-Menü from the Einsatzliste and chooses its second item,
-// `Trupp -> Bereitschaft`, which goes straight back to the Einsatzliste.
-async function truppBereitschaft({ trainee }: Window): Promise<void> {
-  await trainee.press("OK");
-  await trainee.press("Down");
-  await trainee.press("OK");
-}
-
-// The Trupp-Menü's third item moves the Trupp on; OK accepts its Flaschendruck as it stands.
-async function moveOn({ trainee }: Window): Promise<void> {
-  await trainee.press("OK");
-  await trainee.press("Down");
-  await trainee.press("Down");
-  await trainee.press("OK");
-  await trainee.press("OK");
-  await trainee.press("X");
 }
 
 // The real-device photo sicherheitstrupp-deaktivieren.jpeg: the box over Trupp 01's Trupp-Menü,
@@ -173,7 +149,7 @@ scenario(
   async (window) => {
     await sicherheitstrupp(window);
 
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await window.see.lcd().reads(DEAKTIVIEREN_ASKED);
   },
 );
@@ -184,7 +160,7 @@ scenario(
   async (window) => {
     const { trainee, see, time } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     await trainee.press("X");
     await see
@@ -207,7 +183,7 @@ scenario(
   async (window) => {
     const { trainee, see, time } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     await trainee.press("OK");
     await see
@@ -229,7 +205,7 @@ scenario(
   async (window) => {
     const { trainee, see } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     for (const key of ["Up", "Down", "Check"] as const) {
       await trainee.press(key);
@@ -251,12 +227,12 @@ scenario(
   async (window) => {
     const { trainee, see } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await trainee.press("X");
 
-    await truppBereitschaft(window);
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
     await see.lcd().shows("01 markiert  SICHER  00:30:00");
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.lcd().reads(DEAKTIVIEREN_ASKED);
   },
 );
@@ -267,7 +243,7 @@ scenario(
   async (window) => {
     const { see, time } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
 
     await time.passes({ seconds: 14 });
     await see.lcd().reads(DEAKTIVIEREN_ASKED);
@@ -284,7 +260,7 @@ scenario(
     await see.lcd().shows("01 markiert  2× Bereitschaft  00:30:00");
 
     // still a Sicherheitstrupp, so `Trupp -> Einsatz` asks again
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.lcd().reads(DEAKTIVIEREN_ASKED);
   },
 );
@@ -301,7 +277,7 @@ scenario(
     await trainee.press("Up");
     await time.passes({ minutes: 9, seconds: 50 });
 
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see.lcd().reads(DEAKTIVIEREN_ASKED);
 
     await time.passes({ seconds: 4 });
@@ -325,12 +301,12 @@ scenario(
   async (window) => {
     const { trainee, see } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await trainee.press("OK");
 
-    await truppBereitschaft(window);
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
     await see.lcd().shows("01 markiert  2× Bereitschaft  00:30:00");
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await see
       .lcd()
       .reads([
@@ -347,10 +323,10 @@ scenario(
   async (window) => {
     const { trainee, see, time } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await trainee.press("OK");
     await time.passes({ minutes: 4 });
-    await truppBereitschaft(window);
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
 
     await time.passes({ minutes: 4, seconds: 59 });
     await see.alarmLed().isOff();
@@ -367,10 +343,10 @@ scenario(
   async (window) => {
     const { trainee, see, time } = window;
     await sicherheitstrupp(window);
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await trainee.press("X");
     await time.passes({ minutes: 4 });
-    await truppBereitschaft(window);
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
     // 10× keeps the Playwright driver's clock steps few
     await trainee.setSpeed(10);
 
@@ -390,23 +366,27 @@ scenario(
     const { trainee, see, time } = window;
     await sicherheitstrupp(window);
 
-    await truppEinsatz(window);
+    await chooseInTruppMenue(window, "Trupp -> Einsatz", "Bereitschaft");
     await trainee.press("X");
     await see.lcd().shows(/^01 markiert {2}SICHER {2}/);
     await time.passes({ seconds: 1 });
     await see.lcd().shows(/^01 markiert {2}2× Anmarsch {2}/);
 
-    await moveOn(window);
+    await acceptFlaschendruck(window, "Einsatzziel erreicht", "Anmarsch");
     await see.lcd().shows(/^01 markiert {2}SICHER {2}/);
     await time.passes({ seconds: 1 });
     await see.lcd().shows(/^01 markiert {2}2× Einsatzziel erreicht {2}/);
 
-    await moveOn(window);
+    await acceptFlaschendruck(
+      window,
+      "Rückzug antreten",
+      "Einsatzziel erreicht",
+    );
     await see.lcd().shows(/^01 markiert {2}SICHER {2}/);
     await time.passes({ seconds: 1 });
     await see.lcd().shows(/^01 markiert {2}2× Rückmarsch {2}/);
 
-    await truppBereitschaft(window);
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Rückmarsch");
     await see.lcd().shows(/^01 markiert {2}SICHER {2}/);
     await time.passes({ seconds: 1 });
     await see.lcd().shows(/^01 markiert {2}2× Bereitschaft {2}/);
