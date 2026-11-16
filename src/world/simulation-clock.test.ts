@@ -213,7 +213,6 @@ describe("display timings under the speed control and pause", () => {
     "returns from the Trupp-Ansicht to the Einsatzliste after 5 s real at 10×",
   );
   it.todo("alternates SICHER and the status glyph once per real second at 10×");
-  it.todo("opens the Notausschaltung after X + Check held 4 s real at 10×");
   it.todo(
     "keeps the Restzeit and fires no Alarm on the Trupp-Menü while paused",
   );

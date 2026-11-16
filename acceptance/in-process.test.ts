@@ -9,6 +9,7 @@ import "./scenarios/sicherheitstrupp";
 import "./scenarios/daueralarm";
 import "./scenarios/einsatzstatus";
 import "./scenarios/einsatzprotokolle";
+import "./scenarios/notausschaltung";
 
 for (const { name, run } of scenarios()) {
   it(name, () => run(inProcessWindow()));

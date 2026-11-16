@@ -63,13 +63,13 @@ export function inProcessWindow(): Window {
           letTimePass(span);
           give({ type: "keyReleased", key });
         }),
-      holdTogether: (keys: readonly [Key, Key], span: Span) =>
+      holdTogether: (keys: readonly Key[], span: Span) =>
         step(() => {
           for (const key of keys) {
             give({ type: "keyPressed", key });
           }
           letTimePass(span);
-          for (const key of keys) {
+          for (const key of [...keys].reverse()) {
             give({ type: "keyReleased", key });
           }
         }),

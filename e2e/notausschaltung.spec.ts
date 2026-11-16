@@ -52,22 +52,6 @@ test("perform a Notausschaltung with the keyboard", async ({ page }) => {
   await expect(roster).not.toContainText("Trupp 01");
 });
 
-test("hold X and Check with two pointers", async ({ page }) => {
-  await page.clock.install();
-  await openSimulator(page);
-  await logInTrupp01(page);
-  const x = page.getByRole("button", { name: "Taste X" });
-  const check = page.getByRole("button", { name: "Taste Check" });
-
-  await x.dispatchEvent("pointerdown", { pointerId: 1, button: 0 });
-  await check.dispatchEvent("pointerdown", { pointerId: 2, button: 0 });
-  await page.clock.runFor(4_000);
-  await expect(page.getByRole("img")).toHaveAttribute(
-    "aria-label",
-    NOTAUSSCHALTUNG_AUSWAHL,
-  );
-});
-
 test("let go of a pointer early", async ({ page }) => {
   await page.clock.install();
   await openSimulator(page);

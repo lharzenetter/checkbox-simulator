@@ -22,8 +22,11 @@ export interface Trainee {
   press(key: Key): Promise<void>;
   /** Keeps a Key on the front panel pressed while `span` of real time passes, then lets go. */
   hold(key: Key, span: Span): Promise<void>;
-  /** Keeps two Keys pressed together while `span` of real time passes, then lets go of both. */
-  holdTogether(keys: readonly [Key, Key], span: Span): Promise<void>;
+  /**
+   * Keeps these Keys on the front panel pressed together, one finger each, while `span` of real
+   * time passes, then lets go of them in reverse order.
+   */
+  holdTogether(keys: readonly Key[], span: Span): Promise<void>;
   /** Holds a Tally of the Roster to Check. */
   holdTally(tally: TallyName): Promise<void>;
   /** Picks a speed preset ("10×") on the clock controls. */
