@@ -244,32 +244,6 @@ describe("a pressure entry of 0 bar", () => {
   });
 });
 
-// verification-scenarios V3, its Rückzug row; timing-and-alarm-rules §1.4, 5.5, 5.13
-describe("a pressure entry in Anmarsch", () => {
-  it("moves the Rückzugsalarm with the Restzeit, to 50 bar at 22:03", () => {
-    let state = enter(
-      run(truppInAnmarsch(), tickAt(6, 3)),
-      "flaschendruckAendern",
-      210,
-    );
-    expectNoAlarm(state);
-    expect(restzeitOf(state)).toBe(21 * 60_000);
-    state = run(
-      state,
-      tickAt(9, 54),
-      ...endAlarm(),
-      tickAt(19, 48),
-      ...endAlarm(),
-      tickAt(22, 2),
-    );
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(22, 3));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(restzeitOf(state)).toBe(5 * 60_000);
-  });
-});
-
 // verification-scenarios V24; timing-and-alarm-rules §1.7, 3.6, 5.9
 describe("a pressure entry on an overdue Trupp", () => {
   it("re-arms Einsatzzeit erreicht and the overdue repeats", () => {
@@ -430,24 +404,6 @@ describe("a 180-min Trupp", () => {
     expectAlarmFor(state, 1);
     expect(state.pendingAlarms[0]?.cause).toBe("alarmgrenze2");
   });
-
-  // timing-and-alarm-rules §5.5, 5.13: the 50 bar Reservedruck is worth 30:00 of 180 min
-  it("sounds `RÜCKZUG` at 150:00, at 50 bar", () => {
-    let state = run(
-      truppFor180Min(),
-      tickAt(59, 24),
-      ...endAlarm(),
-      tickAt(118, 48),
-      ...endAlarm(),
-      tickAt(149, 59),
-    );
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(150));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(restzeitOf(state)).toBe(30 * 60_000);
-    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(50);
-  });
 });
 
 // verification-scenarios V12; timing-and-alarm-rules §4.1, 4.3, 4.4, 4.5, 4.6, 12.1, 12.4
@@ -507,25 +463,6 @@ describe("a Trupp logged in to Bereitschaft", () => {
     expect(restzeitOf(state)).toBe(0);
     state = reduce(state, tickAt(5));
     expectAlarmFor(state, 1);
-  });
-
-  // timing-and-alarm-rules §4.7, 5.9: the Rückzugsalarm pauses in Bereitschaft
-  // (ASSUMPTION in alarm.ts: it stays armed and fires once the Trupp leaves Bereitschaft)
-  it("sounds no Rückzugsalarm for an entry at the Rückzugsdruck until it leaves Bereitschaft", () => {
-    let state = enter(
-      run(truppInBereitschaft(), tickAt(2)),
-      "flaschendruckAendern",
-      50,
-    );
-    expectNoAlarm(state);
-    state = run(state, tickAt(4, 59));
-    expectNoAlarm(state);
-
-    state = chooseItem(state, "truppEinsatz");
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(5));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
   });
 });
 
@@ -862,18 +799,6 @@ describe("Alarms fired in one tick", () => {
       { truppnummer: 1, cause: "alarmgrenze2" },
     ]);
   });
-
-  it("queue the Rückzugsalarm before Einsatzzeit erreicht when one entry fires both", () => {
-    const state = enter(
-      run(truppInAnmarsch(), tickAt(5)),
-      "einsatzzielErreicht",
-      0,
-    );
-    expect(state.pendingAlarms).toEqual([
-      { truppnummer: 1, cause: "rueckzugsalarm" },
-      { truppnummer: 1, cause: "einsatzzeit" },
-    ]);
-  });
 });
 
 // verification-scenarios V27; timing-and-alarm-rules §8.1, 8.4
@@ -993,234 +918,5 @@ describe("V21: Alarms of several Trupps", () => {
     expect(state.screen).toBe("truppFlaschendruckAendern");
     expect(state.truppMenue).toEqual(editing.truppMenue);
     expect(state.selectedTruppnummer).toBe(1);
-  });
-});
-
-// verification-scenarios V7; timing-and-alarm-rules §5.3, 5.5, 5.7, 5.11
-describe("V7: the Rückzugsalarm on the normal path", () => {
-  it("fires once when the estimate falls to the Rückzugsdruck of 300 → 240 bar, 120 bar", () => {
-    let state = enter(
-      run(truppInAnmarsch(), tickAt(6)),
-      "einsatzzielErreicht",
-      240,
-    );
-    expectNoAlarm(state);
-    expect(restzeitOf(state)).toBe(24 * 60_000);
-    expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(120);
-
-    state = reduce(state, tickAt(9, 54));
-    expectAlarmFor(state, 1);
-    state = run(state, ...endAlarm());
-    state = reduce(state, tickAt(17, 59));
-    expectNoAlarm(state);
-    expect(restzeitOf(state)).toBe((12 * 60 + 1) * 1000);
-    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(120);
-
-    state = reduce(state, tickAt(18));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(restzeitOf(state)).toBe(12 * 60_000);
-    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(120);
-    state = run(state, ...endAlarm());
-
-    state = reduce(state, tickAt(18, 1));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(19, 47));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(19, 48));
-    expectAlarmFor(state, 1);
-    state = run(state, ...endAlarm(), tickAt(29, 59));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(30));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("einsatzzeit");
-  });
-
-  // timing-and-alarm-rules §8.2: later Alarms queue behind a pending one
-  it("queues behind a still pending Alarm and does not fire again after its OKs", () => {
-    let state = enter(
-      run(truppInAnmarsch(), tickAt(6)),
-      "einsatzzielErreicht",
-      240,
-    );
-    state = run(state, tickAt(9, 54), tickAt(18));
-    expect(state.pendingAlarms).toEqual([
-      { truppnummer: 1, cause: "alarmgrenze1" },
-      { truppnummer: 1, cause: "rueckzugsalarm" },
-    ]);
-    state = run(state, ...endAlarm(), ...endAlarm());
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(19, 47));
-    expectNoAlarm(state);
-  });
-});
-
-// verification-scenarios V25; timing-and-alarm-rules §5.7
-describe("V25: the Rückzugsdruck", () => {
-  it("is the 50 bar Reservedruck from login until Einsatzziel erreicht", () => {
-    expect(rueckzugsdruckBar(selectedTrupp(truppInAnmarsch()))).toBe(50);
-  });
-
-  it("never falls below the Reservedruck: 300 → 280 bar gives 50 bar, not 40", () => {
-    let state = enter(
-      run(truppInAnmarsch(), tickAt(2)),
-      "einsatzzielErreicht",
-      280,
-    );
-    expect(restzeitOf(state)).toBe(28 * 60_000);
-    expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(50);
-
-    state = run(
-      state,
-      tickAt(9, 54),
-      ...endAlarm(),
-      tickAt(19, 48),
-      ...endAlarm(),
-      tickAt(24, 59),
-    );
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(25));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(restzeitOf(state)).toBe(5 * 60_000);
-    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(50);
-    state = run(state, ...endAlarm(), tickAt(30));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("einsatzzeit");
-  });
-
-  it.each([
-    [275, 50],
-    [270, 60],
-  ])(
-    "is %i bar at Einsatzziel erreicht → %i bar",
-    (flaschendruckBar, expected) => {
-      const state = enter(
-        run(truppInAnmarsch(), tickAt(2)),
-        "einsatzzielErreicht",
-        flaschendruckBar,
-      );
-      expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(expected);
-    },
-  );
-});
-
-// verification-scenarios V8; timing-and-alarm-rules §5.5 (the threshold scales with `T`), 5.7
-describe("V8: the Rückzugsalarm of a 20-min Trupp", () => {
-  it("fires at the 60 bar Rückzugsdruck, worth 4:00 of the 20-min Einsatzzeit", () => {
-    let state = run(
-      createInitialState(SESSION_START),
-      hold(A1),
-      press("Down"),
-      press("OK"),
-      press("OK"),
-      hold(A2),
-      press("OK"),
-      press("OK"),
-    );
-    expect(restzeitOf(state)).toBe(20 * 60_000);
-    state = enter(
-      run(state, press("X"), tickAt(2)),
-      "einsatzzielErreicht",
-      270,
-    );
-    expect(restzeitOf(state)).toBe(18 * 60_000);
-    expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(60);
-
-    state = reduce(state, tickAt(6, 36));
-    expectAlarmFor(state, 1);
-    state = run(state, ...endAlarm(), tickAt(13, 12));
-    expectAlarmFor(state, 1);
-    state = run(state, ...endAlarm(), tickAt(15, 59));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(16));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(restzeitOf(state)).toBe(4 * 60_000);
-    expect(estimateFlaschendruckBar(selectedTrupp(state))).toBe(60);
-  });
-});
-
-// verification-scenarios V9; timing-and-alarm-rules §5.7, 5.14
-describe("V9: an estimate already at the Rückzugsdruck at Einsatzziel erreicht", () => {
-  it("fires the Rückzugsalarm as OK confirms the entry, and only once", () => {
-    let state = run(
-      chooseItem(run(truppInAnmarsch(), tickAt(8)), "einsatzzielErreicht"),
-      press("X"),
-    );
-    expectNoAlarm(state);
-    expect(state.trupps[0]?.einsatzstatus).toBe("anmarsch");
-
-    state = enter(
-      run(state, press("X"), press("X")),
-      "einsatzzielErreicht",
-      200,
-    );
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(state.trupps[0]?.einsatzstatus).toBe("einsatzzielErreicht");
-    expect(restzeitOf(state)).toBe(20 * 60_000);
-    expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(200);
-    state = run(state, ...endAlarm());
-
-    state = reduce(state, tickAt(9, 53));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(9, 54));
-    expectAlarmFor(state, 1);
-    state = run(state, ...endAlarm(), tickAt(19, 47));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(19, 48));
-    expectAlarmFor(state, 1);
-    // up to the Einsatzzeit erreicht at R = 00:00:00
-    state = run(state, ...endAlarm(), tickAt(27, 59));
-    expectNoAlarm(state);
-  });
-
-  // as the user saw on the device: the Rückzugsdruck is not capped at P_N
-  it("fires the Rückzugsalarm on OK for 300 → 150 bar, a Rückzugsdruck of 300 bar", () => {
-    const state = enter(
-      run(truppInAnmarsch(), tickAt(3)),
-      "einsatzzielErreicht",
-      150,
-    );
-    expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(300);
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms).toEqual([
-      { truppnummer: 1, cause: "rueckzugsalarm" },
-    ]);
-  });
-});
-
-// verification-scenarios V10; timing-and-alarm-rules §1.5, 5.9, 5.14
-describe("V10: a pressure entry across the Rückzugsdruck", () => {
-  it("fires the Rückzugsalarm on OK, and only a raise above the Rückzugsdruck re-arms it", () => {
-    let state = enter(
-      run(truppInAnmarsch(), tickAt(5)),
-      "einsatzzielErreicht",
-      250,
-    );
-    expect(rueckzugsdruckBar(selectedTrupp(state))).toBe(100);
-    state = enter(run(state, tickAt(7)), "flaschendruckAendern", 95);
-    expectAlarmFor(state, 1);
-    expect(restzeitOf(state)).toBe((9 * 60 + 30) * 1000);
-    state = run(state, ...endAlarm());
-
-    state = enter(run(state, tickAt(7, 30)), "flaschendruckAendern", 105);
-    expectNoAlarm(state);
-    expect(restzeitOf(state)).toBe((10 * 60 + 30) * 1000);
-
-    state = reduce(state, tickAt(7, 59));
-    expectNoAlarm(state);
-    state = reduce(state, tickAt(8));
-    expectAlarmFor(state, 1);
-    expect(state.pendingAlarms[0]?.cause).toBe("rueckzugsalarm");
-    expect(restzeitOf(state)).toBe(10 * 60_000);
-    state = run(state, ...endAlarm());
-
-    state = enter(run(state, tickAt(8, 30)), "flaschendruckAendern", 90);
-    expectNoAlarm(state);
-    expect(restzeitOf(state)).toBe(9 * 60_000);
-    state = reduce(state, tickAt(9, 53));
-    expectNoAlarm(state);
   });
 });

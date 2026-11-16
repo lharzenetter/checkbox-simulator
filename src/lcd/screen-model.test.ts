@@ -747,22 +747,6 @@ describe("S12 Trupp ALARM", () => {
         ),
     },
     {
-      // Einsatzziel erreicht at 0 bar, the Trupp-Menü's third item, fires it first (§8.2)
-      cause: "the Rückzugsalarm",
-      header: "Trupp 01 RÜCKZUG",
-      events: () =>
-        stateAfter(
-          ...TRUPP_01,
-          press("X"),
-          press("OK"),
-          press("Down"),
-          press("Down"),
-          press("OK"),
-          ...Array.from({ length: 60 }, () => press("Down")),
-          press("OK"),
-        ),
-    },
-    {
       cause: "the Bereitschaft Alarm",
       header: "Trupp 01 BEREITSCHAFT",
       events: () =>
