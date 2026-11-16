@@ -145,8 +145,10 @@ scenario(
     const { trainee, see } = window;
     await lfTruppInAnmarsch(window);
     await trainee.removeFahrzeug("HLF");
+    // point 7: the Kurzname HLF is only kept once the HLF is really gone
+    await trainee.renameFahrzeug("LF", "HLF");
 
-    await trainee.holdTally(LF_AT_M);
+    await trainee.holdTally({ fahrzeug: "HLF", role: "Angriffstruppmann" });
     await see.lcd().reads(LF_ABMELDEN);
   },
 );
