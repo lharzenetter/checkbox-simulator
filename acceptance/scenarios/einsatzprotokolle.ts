@@ -1,4 +1,10 @@
-import { logIn, logOff, openEinsatzprotokoll, powerOn } from "../recipes";
+import {
+  chooseInTruppMenue,
+  logIn,
+  logOff,
+  openEinsatzprotokoll,
+  powerOn,
+} from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -165,10 +171,7 @@ scenario(
     await trainee.press("X");
     await trainee.setSpeed(10);
     await time.passes({ seconds: 18 });
-    // the Trupp-Menü's second item sends the Trupp to Bereitschaft
-    await trainee.press("OK");
-    await trainee.press("Down");
-    await trainee.press("OK");
+    await chooseInTruppMenue(window, "Trupp -> Bereitschaft", "Anmarsch");
     await trainee.press("X");
     await time.passes({ seconds: 12 });
     await logOff(window, [HLF_AT_F, HLF_AT_M]);
