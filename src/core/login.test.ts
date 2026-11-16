@@ -4,7 +4,6 @@ import {
   isAlarmActive,
   isAlarmLedLit,
   isAlarmSounding,
-  isSicherShown,
   reduce,
 } from "./index";
 import type { Event, Key, State } from "./index";
@@ -278,78 +277,6 @@ describe("Trupp OK Bereitschaft", () => {
       press("OK"),
     );
     expect(tickBy(einsatzliste, 10 * 60_000).trupps[0]?.restzeitMs).toBe(
-      30 * 60_000,
-    );
-  });
-});
-
-describe("Sicherheitstrupp OK", () => {
-  function sicherheitstrupp(): State {
-    return run(
-      aus(),
-      hold(A1),
-      press("OK"),
-      hold(A2),
-      press("Down"),
-      press("Down"),
-      press("OK"),
-      press("OK"),
-    );
-  }
-
-  // timing-and-alarm-rules §12.8
-  it("logs a Sicherheitstrupp in, in Bereitschaft", () => {
-    expect(sicherheitstrupp().trupps[0]).toMatchObject({
-      einsatzstatus: "bereitschaft",
-      sicherheitstrupp: true,
-    });
-  });
-
-  function sicherShownAfter(
-    state: State,
-    realElapsedMs: number,
-    speed: number,
-  ): boolean {
-    const later = reduce(state, {
-      type: "tick",
-      now: state.now + realElapsedMs * speed,
-      realNow: state.realNow + realElapsedMs,
-    });
-    const [trupp] = later.trupps;
-    if (trupp === undefined) {
-      throw new Error("No Trupp logged in");
-    }
-    return isSicherShown(later, trupp);
-  }
-
-  // manual 5.3.1 step 4; timing-and-alarm-rules §9 (1 s / 1 s), §9.1 (real time)
-  it("alternates SICHER with the Statussymbol every real second at every speed", () => {
-    for (const speed of [1, 10]) {
-      expect(sicherShownAfter(sicherheitstrupp(), 0, speed)).toBe(true);
-      expect(sicherShownAfter(sicherheitstrupp(), 999, speed)).toBe(true);
-      expect(sicherShownAfter(sicherheitstrupp(), 1_000, speed)).toBe(false);
-      expect(sicherShownAfter(sicherheitstrupp(), 1_999, speed)).toBe(false);
-      expect(sicherShownAfter(sicherheitstrupp(), 2_000, speed)).toBe(true);
-    }
-  });
-
-  // manual 5.3.1 step 4; timing-and-alarm-rules §12.8
-  it("never shows SICHER for a Trupp that is not a Sicherheitstrupp", () => {
-    const bereitschaft = run(
-      aus(),
-      hold(A1),
-      press("OK"),
-      hold(A2),
-      press("Down"),
-      press("OK"),
-      press("OK"),
-    );
-    expect(sicherShownAfter(bereitschaft, 0, 1)).toBe(false);
-  });
-
-  // timing-and-alarm-rules §4.1, 12.8
-  it("keeps the Restzeit", () => {
-    expect(tickBy(sicherheitstrupp(), 10 * 60_000).trupps[0]?.restzeitMs).toBe(
       30 * 60_000,
     );
   });

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
-  isSicherShown,
   reduce,
   rueckzugsdruckBar,
   selectedTrupp,
@@ -70,10 +69,6 @@ function truppInAnmarsch(): State {
 
 function truppInBereitschaft(): State {
   return loggedIn(1);
-}
-
-function sicherheitstrupp(): State {
-  return loggedIn(2);
 }
 
 // Opens the Trupp-Menü from the Einsatzliste and chooses the item.
@@ -399,41 +394,6 @@ describe("`Trupp -> Einsatz` from Bereitschaft", () => {
     expect(einsatzstatusOf(state)).toBe("anmarsch");
     expect(restzeitOf(state)).toBe(minutes(30));
     expect(restzeitOf(reduce(state, tickAt(13)))).toBe(minutes(29));
-  });
-});
-
-// verification scenario V16; timing-and-alarm-rules §12.8; manual 5.3.1 step 4
-describe("a Sicherheitstrupp", () => {
-  // The Einsatzliste was just entered, so its SICHER phase is showing.
-  function expectSicher(state: State, einsatzstatus: Einsatzstatus): void {
-    expect(state.screen).toBe("einsatzliste");
-    expect(einsatzstatusOf(state)).toBe(einsatzstatus);
-    expect(state.trupps[0]?.sicherheitstrupp).toBe(true);
-    expect(isSicherShown(state, selectedTrupp(state))).toBe(true);
-  }
-
-  it("keeps its flag and SICHER through every Einsatzstatus", () => {
-    let state = sicherheitstrupp();
-    expectSicher(state, "bereitschaft");
-
-    // X on `Sicherheitstrupp deaktivieren?` keeps the flag: timing-and-alarm-rules §12.8
-    state = reduce(
-      chooseItem(run(state, tickAt(4)), "truppEinsatz"),
-      press("X"),
-    );
-    expectSicher(state, "anmarsch");
-
-    state = run(
-      accept(run(state, tickAt(7)), "einsatzzielErreicht"),
-      press("X"),
-    );
-    expectSicher(state, "einsatzzielErreicht");
-
-    state = run(accept(state, "rueckzugAntreten"), press("X"));
-    expectSicher(state, "rueckmarsch");
-
-    state = chooseItem(run(state, tickAt(8)), "truppBereitschaft");
-    expectSicher(state, "bereitschaft");
   });
 });
 

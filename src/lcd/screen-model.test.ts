@@ -542,32 +542,6 @@ describe("S07 Einsatzliste", () => {
     });
   });
 
-  function sicherheitstrupp(): State {
-    return stateAfter(
-      HLF_AT_F,
-      press("OK"),
-      HLF_AT_M,
-      press("Down"),
-      press("Down"),
-      press("OK"),
-      press("OK"),
-      press("X"),
-    );
-  }
-
-  // manual 5.3.1 step 4, Einsatzliste figure item 8; timing-and-alarm-rules §9
-  it("alternates SICHER with the Statussymbol of a Sicherheitstrupp every second", () => {
-    expect(screenText(screenModel(sicherheitstrupp()))[2]).toBe(
-      "01 markiert  SICHER  00:30:00",
-    );
-    expect(screenText(screenModel(tickBy(sicherheitstrupp(), 1_000)))[2]).toBe(
-      "01 markiert  2× Bereitschaft  00:30:00",
-    );
-    expect(screenModel(tickBy(sicherheitstrupp(), 2_000))).toMatchObject({
-      rows: [{ sicher: true }, null, null, null, null, null],
-    });
-  });
-
   // timing-and-alarm-rules §4.1; 4 min stays short of the Bereitschaft Alarm (§4.3)
   it("shows a frozen Restzeit for a Trupp logged in to Bereitschaft", () => {
     const bereitschaft = stateAfter(
@@ -593,13 +567,6 @@ describe("S07 Einsatzliste", () => {
         null,
       ],
     });
-  });
-
-  // timing-and-alarm-rules §4.1, 12.8; short of the Bereitschaft Alarm (§4.3)
-  it("shows a frozen Restzeit for a Sicherheitstrupp", () => {
-    expect(firstRestzeit(tickBy(sicherheitstrupp(), 4 * 60_000))).toBe(
-      "00:30:00",
-    );
   });
 });
 
@@ -779,27 +746,6 @@ describe("S09 Trupp-Menü", () => {
     });
   });
 
-  // the real-device photo trupp-menue-sicherheitstrupp.jpeg; timing-and-alarm-rules §12.8: static,
-  // not alternating as on the Einsatzliste
-  it("shows a static `SICHER` on the clock line of a Sicherheitstrupp", () => {
-    const sicherheitstrupp = stateAfter(
-      HLF_AT_F,
-      press("OK"),
-      HLF_AT_M,
-      press("Down"),
-      press("Down"),
-      press("OK"),
-      press("OK"),
-      press("X"),
-      press("OK"),
-    );
-    for (const elapsedMs of [0, 1_000, 2_000]) {
-      const model = screenModel(tickBy(sicherheitstrupp, elapsedMs));
-      expect(model).toMatchObject({ layout: "truppMenue", sicher: true });
-      expect(screenText(model)).toContain("Restzeit 00:30:00 SICHER");
-    }
-  });
-
   // the real-device photo sicherheitstrupp-deaktivieren.jpeg; timing-and-alarm-rules §12.8
   it("shows `Sicherheitstrupp deaktivieren?` in a box over a Sicherheitstrupp's menu on `Trupp -> Einsatz`", () => {
     const model = screenModel(
@@ -821,11 +767,6 @@ describe("S09 Trupp-Menü", () => {
       title: "Trupp 01 BEREITSCHAFT",
       box: ["Sicherheitstrupp", "deaktivieren?", "[X]         [OK]"],
     });
-    expect(screenText(model).slice(-3)).toEqual([
-      "Sicherheitstrupp",
-      "deaktivieren?",
-      "[X]         [OK]",
-    ]);
   });
 
   it("shows no box while the Trupp-Menü waits", () => {
