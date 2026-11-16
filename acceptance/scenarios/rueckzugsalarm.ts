@@ -1,4 +1,4 @@
-import { logIn } from "../recipes";
+import { logIn, logInToBereitschaft } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -576,12 +576,7 @@ scenario(
   "an entry at the Rückzugsdruck in Bereitschaft sounds the Rückzugsalarm only once the Trupp leaves it",
   async (window) => {
     const { trainee, see, time } = window;
-    await trainee.holdTally(HLF_AT_F);
-    await trainee.press("OK");
-    await trainee.holdTally(HLF_AT_M);
-    await trainee.press("Down");
-    await trainee.press("OK");
-    await trainee.press("OK");
+    await logInToBereitschaft(window, [HLF_AT_F, HLF_AT_M]);
     await onEinsatzliste(window);
     await simulated(window, 2);
 
