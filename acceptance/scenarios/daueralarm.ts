@@ -106,6 +106,25 @@ scenario(
   },
 );
 
+// verification-scenarios V18, variant Notausschaltung; timing-and-alarm-rules §7.4; manual 5.9: the
+// hold works from the Einsatzliste only (decided in "Define the key-by-screen navigation model"),
+// so X takes the Daueralarm's screen away before X and Check are held
+scenario(
+  "a Notausschaltung of the Trupp with the logoff Daueralarm ends the Trupp, and the Alarm-LED stays off",
+  async (window) => {
+    const { trainee, see } = window;
+    await truppInAnmarsch(window);
+    await logoffDaueralarm(window);
+
+    await trainee.press("X");
+    await trainee.holdTogether(["X", "Check"], { seconds: 4 });
+    await trainee.press("OK");
+    await trainee.press("OK");
+    await see.lcd().reads(["FF-Musterstadt", "B1- + 11:11:04"]);
+    await see.alarmLed().isOff();
+  },
+);
+
 // verification-scenarios V18, variant time keeps running; timing-and-alarm-rules §7.4; decided in
 // "Drop the simulation to real time while an Alarm sounds", points 1 and 3: a Daueralarm drops
 // the simulation to 1×, and the speed stays there after it

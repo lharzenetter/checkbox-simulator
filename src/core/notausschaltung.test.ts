@@ -84,8 +84,3 @@ describe("holding X and Check on the Einsatzliste", () => {
     );
   });
 });
-
-describe("S15 Notausschaltung – Bestätigung", () => {
-  // timing-and-alarm-rules §7.4: lands with the logoff Daueralarm, #36
-  it.todo("ends a running logoff Daueralarm for the Trupp");
-});

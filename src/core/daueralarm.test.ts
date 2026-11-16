@@ -3,13 +3,12 @@ import {
   alarmCycleMs,
   createInitialState,
   isAlarmLedLit,
-  isAlarmSounding,
   reduce,
 } from "./index";
 import type { Event, Key, State } from "./index";
 
 // The use cases of the Daueralarme are scenarios in acceptance/scenarios/daueralarm.ts; this file
-// keeps what the screen can't show: the Notausschaltung's end of it and the siren's rhythm.
+// keeps what the screen can't show: the siren's rhythm.
 
 const SESSION_START = { now: 1_000_000, realNow: 500 };
 
@@ -24,10 +23,6 @@ function run(state: State, ...events: readonly Event[]): State {
 
 function press(key: Key): Event {
   return { type: "keyPressed", key };
-}
-
-function release(key: Key): Event {
-  return { type: "keyReleased", key };
 }
 
 function tickAfter(state: State, elapsedMs: number): Event {
@@ -63,33 +58,6 @@ function truppInAnmarsch(): State {
     press("X"),
   );
 }
-
-// verification scenario V18, variant Notausschaltung; timing-and-alarm-rules §7.4
-describe("V18: the logoff Daueralarm", () => {
-  // manual 5.9; the hold works from the Einsatzliste only (decided in "Define the key-by-screen
-  // navigation model"), so X takes the Daueralarm's screen away before Check joins it
-  it("stops for a Notausschaltung of the Trupp, which ends it", () => {
-    const daueralarm = run(truppInAnmarsch(), hold(A1), press("OK"));
-    const leaving = run(daueralarm, press("X"), press("Check"));
-    expect(isAlarmSounding(leaving)).toBe(false);
-
-    const holding = run(
-      leaving,
-      release("X"),
-      release("Check"),
-      press("X"),
-      press("Check"),
-    );
-    const state = run(
-      holding,
-      tickAfter(holding, 4_000),
-      press("OK"),
-      press("OK"),
-    );
-    expect(state.trupps).toHaveLength(0);
-    expect(isAlarmSounding(state)).toBe(false);
-  });
-});
 
 // verification scenario V22; decided in "Decide how alarms are presented", point 4: the signal
 // runs while anything is pending or a Daueralarm is active, so S12 taking over must not restart
