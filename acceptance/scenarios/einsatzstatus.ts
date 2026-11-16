@@ -1,4 +1,4 @@
-import { logIn, logInToBereitschaft } from "../recipes";
+import { logIn } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -231,7 +231,9 @@ for (const { einsatzstatus, reach, title, restzeit, third } of [
   {
     einsatzstatus: "Bereitschaft",
     reach: async (window: Window) => {
-      await logInToBereitschaft(window, [HLF_AT_F, HLF_AT_M]);
+      await logIn(window, [HLF_AT_F, HLF_AT_M], {
+        anmeldeaktion: "Trupp OK Bereitschaft",
+      });
       await window.trainee.press("X");
       await window.trainee.setSpeed(10);
     },
@@ -462,7 +464,9 @@ scenario(
   "`Trupp -> Einsatz` sends a Trupp logged in to Bereitschaft into Anmarsch",
   async (window) => {
     const { trainee, see } = window;
-    await logInToBereitschaft(window, [HLF_AT_F, HLF_AT_M]);
+    await logIn(window, [HLF_AT_F, HLF_AT_M], {
+      anmeldeaktion: "Trupp OK Bereitschaft",
+    });
     // decided in "Define the key-by-screen navigation model", its Trupp-Menü table
     await see.lcd().shows("Trupp 01 BEREITSCHAFT");
     await trainee.press("X");
