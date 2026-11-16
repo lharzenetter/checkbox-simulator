@@ -83,6 +83,74 @@ export async function logIn(
   await trainee.press("OK");
 }
 
+/** A Trupp's Einsatzstatus, as the Einsatzliste names it. */
+export type Einsatzstatus =
+  "Anmarsch" | "Einsatzziel erreicht" | "Rückmarsch" | "Bereitschaft";
+
+/** An item of the Trupp-Menü, as the LCD shows it. */
+export type TruppMenueItem =
+  | "Trupp -> Einsatz"
+  | "Trupp -> Bereitschaft"
+  | "Einsatzziel erreicht"
+  | "Rückzug antreten"
+  | "Druck ändern";
+
+// decided in "Define the key-by-screen navigation model", its Trupp-Menü table, as amended in
+// "Correct the simulator against the real Checkbox": both status items first, then the item that
+// depends on the Einsatzstatus, if any, then Druck ändern
+const TRUPP_MENUE: Readonly<Record<Einsatzstatus, readonly TruppMenueItem[]>> =
+  {
+    Anmarsch: [
+      "Trupp -> Einsatz",
+      "Trupp -> Bereitschaft",
+      "Einsatzziel erreicht",
+      "Druck ändern",
+    ],
+    "Einsatzziel erreicht": [
+      "Trupp -> Einsatz",
+      "Trupp -> Bereitschaft",
+      "Rückzug antreten",
+      "Druck ändern",
+    ],
+    Rückmarsch: ["Trupp -> Einsatz", "Trupp -> Bereitschaft", "Druck ändern"],
+    Bereitschaft: ["Trupp -> Einsatz", "Trupp -> Bereitschaft", "Druck ändern"],
+  };
+
+/**
+ * Chooses an item on the Trupp-Menü of the markiert Trupp, which is in this Einsatzstatus: OK on
+ * the Einsatzliste opens the Trupp-Menü with the cursor on its first item, Down moves it to the
+ * item, and OK chooses it. Manual 5.6.2, Trupp-Menü figure.
+ */
+export async function chooseInTruppMenue(
+  { trainee }: Window,
+  item: TruppMenueItem,
+  einsatzstatus: Einsatzstatus,
+): Promise<void> {
+  const position = TRUPP_MENUE[einsatzstatus].indexOf(item);
+  if (position < 0) {
+    throw new Error(`The Trupp-Menü in ${einsatzstatus} offers no ${item}`);
+  }
+  await trainee.press("OK");
+  for (let down = 0; down < position; down++) {
+    await trainee.press("Down");
+  }
+  await trainee.press("OK");
+}
+
+/**
+ * Chooses a pressure item on the Trupp-Menü, enters the Flaschendruck its editor opens at with
+ * OK, and leaves the Trupp-Ansicht for the Einsatzliste with X. Manual 5.4, 5.7.
+ */
+export async function acceptFlaschendruck(
+  window: Window,
+  item: TruppMenueItem,
+  einsatzstatus: Einsatzstatus,
+): Promise<void> {
+  await chooseInTruppMenue(window, item, einsatzstatus);
+  await window.trainee.press("OK");
+  await window.trainee.press("X");
+}
+
 /**
  * Logs a Trupp off: each of its Atemschutzträger holds their Tally to Check, which marks them on
  * ABMELDEN, and OK logs the Trupp off. Pass every Atemschutzträger of the Trupp; with one missing,
