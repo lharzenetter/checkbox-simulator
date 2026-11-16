@@ -1,16 +1,15 @@
 import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 import type { Key } from "../src/core/index";
-import { roleCode } from "../src/world/index";
 import type { Speed } from "../src/world/index";
 import { openSimulator } from "../e2e/first-launch";
 import {
   expectAlarmLed,
   expectLcdReads,
   expectLcdShows,
-  rosterTally,
   spanMs,
   START_UHRZEIT,
+  tallyLabel,
   TICK_MS,
 } from "./drivers";
 import type { Span, TallyName, Window } from "./window";
@@ -57,6 +56,47 @@ export async function playwrightWindow(page: Page): Promise<Window> {
     }
   }
 
+  // A disabled button does nothing, as for the Trainee, rather than waiting to be enabled.
+  async function clickIfEnabled(button: Locator): Promise<void> {
+    if (await button.isEnabled()) {
+      await button.click();
+    }
+  }
+
+  // Opens Einstellungen, changes the names form, and leaves it with "Speichern", or with
+  // "Abbrechen" while the form cannot be saved.
+  async function inEinstellungen(
+    change: (dialog: Locator) => Promise<void>,
+  ): Promise<void> {
+    await page.getByRole("button", { name: "Einstellungen" }).click();
+    const dialog = page.getByRole("dialog", { name: "Einstellungen" });
+    await change(dialog);
+    const save = dialog.getByRole("button", { name: "Speichern" });
+    await (
+      (await save.isEnabled())
+        ? save
+        : dialog.getByRole("button", { name: "Abbrechen" })
+    ).click();
+    await expect(dialog).toBeHidden();
+  }
+
+  // The fields of the Fahrzeug whose Kurzname reads `kurzname`, by position in the names form.
+  async function fahrzeugFields(
+    dialog: Locator,
+    kurzname: string,
+  ): Promise<Locator> {
+    const fields = dialog.getByRole("group", { name: /^Fahrzeug \d+$/ });
+    for (const fahrzeug of await fields.all()) {
+      const shown = await fahrzeug
+        .getByRole("textbox", { name: "Kurzname" })
+        .inputValue();
+      if (shown === kurzname) {
+        return fahrzeug;
+      }
+    }
+    throw new Error(`The Roster has no Fahrzeug ${kurzname}`);
+  }
+
   async function lcdLines(): Promise<readonly string[]> {
     const label = await lcd.getAttribute("aria-label");
     return label === null || label === "Display aus" ? [] : label.split("\n");
@@ -97,10 +137,9 @@ export async function playwrightWindow(page: Page): Promise<Window> {
         }
       },
       holdTally: async (tally: TallyName) => {
-        const code = roleCode(rosterTally(tally));
         await page
           .getByRole("button", {
-            name: `${tally.fahrzeug} ${code} auflegen`,
+            name: `${tallyLabel(tally)} auflegen`,
             exact: true,
           })
           .click();
@@ -123,6 +162,28 @@ export async function playwrightWindow(page: Page): Promise<Window> {
         clickIfPresent(
           page.getByRole("button", { name: "Weiter", exact: true }),
         ),
+      addFahrzeug: () =>
+        inEinstellungen(async (dialog) => {
+          await clickIfEnabled(
+            dialog.getByRole("button", { name: "Fahrzeug hinzufügen" }),
+          );
+        }),
+      removeFahrzeug: (kurzname: string) =>
+        inEinstellungen(async (dialog) => {
+          await clickIfEnabled(
+            (await fahrzeugFields(dialog, kurzname)).getByRole("button", {
+              name: "Fahrzeug entfernen",
+            }),
+          );
+        }),
+      renameFahrzeug: (kurzname: string, newKurzname: string) =>
+        inEinstellungen(async (dialog) => {
+          await (
+            await fahrzeugFields(dialog, kurzname)
+          )
+            .getByRole("textbox", { name: "Kurzname" })
+            .fill(newKurzname);
+        }),
     },
     see: {
       lcd: () => ({

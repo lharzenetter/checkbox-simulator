@@ -1,5 +1,5 @@
-import { DEFAULT_FAHRZEUGE, rosterTallys } from "../src/world/index";
-import type { RosterTally } from "../src/world/index";
+import { DEFAULT_FAHRZEUGE, roleCode, rosterTallys } from "../src/world/index";
+import type { Fahrzeug, Fahrzeuge, RosterTally } from "../src/world/index";
 import type { LineSeen, Span, TallyName } from "./window";
 
 // What every driver shares, so a scenario passes or fails the same way on each.
@@ -22,19 +22,46 @@ export function spanMs({ minutes = 0, seconds = 0 }: Span): number {
   return (minutes * 60 + seconds) * 1000;
 }
 
-/** The default Roster's Tally of this Kurzname and Role. */
-export function rosterTally({ fahrzeug, role }: TallyName): RosterTally {
-  const named = DEFAULT_FAHRZEUGE.find(
-    (candidate) => candidate.kurzname === fahrzeug,
+/** The Roster's Fahrzeug of this Kurzname. */
+export function fahrzeugNamed(
+  fahrzeuge: Fahrzeuge,
+  kurzname: string,
+): Fahrzeug {
+  const named = fahrzeuge.find((candidate) => candidate.kurzname === kurzname);
+  if (named === undefined) {
+    throw new Error(`The Roster has no Fahrzeug ${kurzname}`);
+  }
+  return named;
+}
+
+/** The Roster's Tally of this Kurzname and Role. */
+export function rosterTally(
+  fahrzeuge: Fahrzeuge,
+  { fahrzeug, role }: TallyName,
+): RosterTally {
+  const named = fahrzeugNamed(fahrzeuge, fahrzeug);
+  const tally = rosterTallys(fahrzeuge).find(
+    (candidate) => candidate.fahrzeugId === named.id && candidate.role === role,
   );
-  const tally = rosterTallys(DEFAULT_FAHRZEUGE).find(
-    (candidate) =>
-      candidate.fahrzeugId === named?.id && candidate.role === role,
-  );
-  if (named === undefined || tally === undefined) {
+  if (tally === undefined) {
     throw new Error(`The Roster has no Tally ${fahrzeug} ${role}`);
   }
   return tally;
+}
+
+/**
+ * The name the Roster gives a Tally, `HLF AT-F`. Every Fahrzeug has the same role codes, so the
+ * default Roster's code serves for a Fahrzeug of any Kurzname.
+ */
+export function tallyLabel({ fahrzeug, role }: TallyName): string {
+  const [first] = DEFAULT_FAHRZEUGE;
+  if (first === undefined) {
+    throw new Error("The default Roster has no Fahrzeug");
+  }
+  const code = roleCode(
+    rosterTally(DEFAULT_FAHRZEUGE, { fahrzeug: first.kurzname, role }),
+  );
+  return `${fahrzeug} ${code}`;
 }
 
 function matches(text: string, line: LineSeen): boolean {

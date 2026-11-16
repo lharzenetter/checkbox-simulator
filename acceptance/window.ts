@@ -16,7 +16,10 @@ export interface Span {
   readonly seconds?: number;
 }
 
-/** What the Trainee does with their hands: the Keys, the Tallys and the clock controls. */
+/**
+ * What the Trainee does with their hands: the Keys, the Tallys, the clock controls and the
+ * Fahrzeuge in Einstellungen.
+ */
 export interface Trainee {
   /** Presses a Key on the front panel ("Taste OK") and lets go at once. */
   press(key: Key): Promise<void>;
@@ -35,6 +38,21 @@ export interface Trainee {
   pause(): Promise<void>;
   /** "Weiter" on the clock controls. */
   play(): Promise<void>;
+  /**
+   * "Fahrzeug hinzufügen" in Einstellungen, then "Speichern". Does nothing while the button is
+   * disabled.
+   */
+  addFahrzeug(): Promise<void>;
+  /**
+   * "Fahrzeug entfernen" on the Fahrzeug of this Kurzname in Einstellungen, then "Speichern".
+   * Does nothing while the button is disabled.
+   */
+  removeFahrzeug(kurzname: string): Promise<void>;
+  /**
+   * Types a new Kurzname over the Fahrzeug of this Kurzname in Einstellungen, then "Speichern",
+   * or "Abbrechen" while "Speichern" is disabled.
+   */
+  renameFahrzeug(kurzname: string, newKurzname: string): Promise<void>;
 }
 
 /** One expected LCD line: the exact text, or a pattern it matches. */
@@ -77,7 +95,7 @@ export interface Time {
 
 /** The simulator as one Trainee uses it, fresh for each scenario. */
 export interface Window {
-  /** The Trainee's hands on the front panel, the Roster and the clock controls. */
+  /** The Trainee's hands on the front panel, the Roster, the clock controls and Einstellungen. */
   readonly trainee: Trainee;
   /** The Trainee's eyes on the front panel. */
   readonly see: See;

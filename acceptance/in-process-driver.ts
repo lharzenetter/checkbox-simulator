@@ -2,16 +2,25 @@ import { FACTORY_FEUERWEHRNAME, isAlarmSounding } from "../src/core/index";
 import type { Key } from "../src/core/index";
 import { screenModel, screenText } from "../src/lcd/index";
 import {
+  addFahrzeug,
   DEFAULT_FAHRZEUGE,
+  isValidRoster,
   reduceSimulator,
+  removalBlocker,
+  removeFahrzeug,
   startSimulator,
   tallyHeld,
 } from "../src/world/index";
-import type { DeviceInput, SimulatorEvent } from "../src/world/index";
+import type {
+  DeviceInput,
+  Fahrzeuge,
+  SimulatorEvent,
+} from "../src/world/index";
 import {
   expectAlarmLed,
   expectLcdReads,
   expectLcdShows,
+  fahrzeugNamed,
   rosterTally,
   spanMs,
   START_UHRZEIT,
@@ -27,6 +36,8 @@ import type { Span, TallyName, Window } from "./window";
 export function inProcessWindow(): Window {
   let realMs = 0;
   let simulator = startSimulator({ realNow: realMs, uhrzeit: START_UHRZEIT });
+  // The UI keeps the Roster beside the simulator, not in it.
+  let fahrzeuge: Fahrzeuge = DEFAULT_FAHRZEUGE;
 
   // The same reducer the UI's useSimulator runs, so the pause and the drop to real time are not
   // restated here.
@@ -75,7 +86,7 @@ export function inProcessWindow(): Window {
         }),
       holdTally: (tally: TallyName) =>
         step(() => {
-          give(tallyHeld(rosterTally(tally), DEFAULT_FAHRZEUGE));
+          give(tallyHeld(rosterTally(fahrzeuge, tally), fahrzeuge));
         }),
       setSpeed: (speed) =>
         step(() => {
@@ -88,6 +99,31 @@ export function inProcessWindow(): Window {
       play: () =>
         step(() => {
           dispatch({ type: "played", realNow: realMs });
+        }),
+      // The names form's rules, as its buttons apply them: a disabled button does nothing, and
+      // a Roster the form would not save is dropped as by "Abbrechen".
+      addFahrzeug: () =>
+        step(() => {
+          fahrzeuge = addFahrzeug(fahrzeuge);
+        }),
+      removeFahrzeug: (kurzname: string) =>
+        step(() => {
+          const { id } = fahrzeugNamed(fahrzeuge, kurzname);
+          if (removalBlocker(simulator.state, fahrzeuge, id) === undefined) {
+            fahrzeuge = removeFahrzeug(fahrzeuge, id);
+          }
+        }),
+      renameFahrzeug: (kurzname: string, newKurzname: string) =>
+        step(() => {
+          const { id } = fahrzeugNamed(fahrzeuge, kurzname);
+          const renamed = fahrzeuge.map((fahrzeug) =>
+            fahrzeug.id === id
+              ? { ...fahrzeug, kurzname: newKurzname }
+              : fahrzeug,
+          );
+          if (isValidRoster(renamed)) {
+            fahrzeuge = renamed;
+          }
         }),
     },
     see: {

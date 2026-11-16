@@ -29,11 +29,6 @@ function tap(index: number): Event {
   return tallyHeld(tally(DEFAULT_FAHRZEUGE, index), DEFAULT_FAHRZEUGE);
 }
 
-// The LCD text the Checkbox reads off a tapped Tally.
-function lcdName(tally: RosterTally, fahrzeuge: Fahrzeuge): string {
-  return tallyHeld(tally, fahrzeuge).name;
-}
-
 function stateAfter(...events: readonly Event[]): State {
   return events.reduce(reduce, createInitialState({ now: 0, realNow: 0 }));
 }
@@ -70,24 +65,6 @@ const LOG_IN_HLF_ANGRIFFSTRUPP: readonly Event[] = [
 
 describe("the Roster", () => {
   // decided in "Decide the contents of the fixed Tally roster"
-  it("starts with two Fahrzeuge of four Tallys, each read by the Checkbox as its LCD text", () => {
-    expect(
-      rosterTallys(DEFAULT_FAHRZEUGE).map((entry) =>
-        lcdName(entry, DEFAULT_FAHRZEUGE),
-      ),
-    ).toEqual([
-      "HLF AT-F",
-      "HLF AT-M",
-      "HLF WT-F",
-      "HLF WT-M",
-      "LF AT-F",
-      "LF AT-M",
-      "LF WT-F",
-      "LF WT-M",
-    ]);
-  });
-
-  // decided in "Decide the contents of the fixed Tally roster"
   it("marks each Tally with its role code", () => {
     expect(rosterTallys(DEFAULT_FAHRZEUGE).map(roleCode)).toEqual([
       "AT-F",
@@ -101,17 +78,6 @@ describe("the Roster", () => {
     ]);
   });
 
-  // decided in "Decide the contents of the fixed Tally roster"
-  it("names each Tally after its Fahrzeug's renamed Kurzname", () => {
-    const fahrzeuge = renamed(
-      DEFAULT_FAHRZEUGE,
-      ["Florian Musterstadt 1/46-1", "HLF 1"],
-      ["Florian Musterstadt 1/44-1", "LF Süd"],
-    );
-    expect(lcdName(tally(fahrzeuge, 0), fahrzeuge)).toBe("HLF 1 AT-F");
-    expect(lcdName(tally(fahrzeuge, 7), fahrzeuge)).toBe("LF Süd WT-M");
-  });
-
   it("gives every Tally its own id", () => {
     const fahrzeuge = addFahrzeug(addFahrzeug(DEFAULT_FAHRZEUGE));
     const ids = rosterTallys(fahrzeuge).map((entry) => entry.tallyId);
@@ -121,7 +87,7 @@ describe("the Roster", () => {
 
 describe("adding a Fahrzeug", () => {
   // decided in "Let the Trainee add and remove Fahrzeuge", point 6
-  it("appends Fahrzeuge prefilled with the first free names, up to four", () => {
+  it("prefills an appended Fahrzeug's Funkrufname along with its Kurzname", () => {
     const fahrzeuge = addFahrzeug(addFahrzeug(DEFAULT_FAHRZEUGE));
     expect(names(fahrzeuge)).toEqual([
       ["1/43", "HLF"],
@@ -129,28 +95,6 @@ describe("adding a Fahrzeug", () => {
       ["1/33", "DLK"],
       ["1/23", "TLF"],
     ]);
-    expect(
-      rosterTallys(fahrzeuge)
-        .map((entry) => lcdName(entry, fahrzeuge))
-        .slice(8),
-    ).toEqual([
-      "DLK AT-F",
-      "DLK AT-M",
-      "DLK WT-F",
-      "DLK WT-M",
-      "TLF AT-F",
-      "TLF AT-M",
-      "TLF WT-F",
-      "TLF WT-M",
-    ]);
-  });
-
-  // decided in "Let the Trainee add and remove Fahrzeuge", point 6
-  it("skips a prefill whose Kurzname is taken, ignoring case", () => {
-    const fahrzeuge = addFahrzeug(
-      renamed(DEFAULT_FAHRZEUGE, ["1/43", "hlf"], ["1/33", "DLK "]),
-    );
-    expect(names(fahrzeuge)[2]).toEqual(["1/45", "LF"]);
   });
 
   // decided in "Let the Trainee add and remove Fahrzeuge", point 1
@@ -163,34 +107,6 @@ describe("adding a Fahrzeug", () => {
 });
 
 describe("removing a Fahrzeug", () => {
-  // decided in "Let the Trainee add and remove Fahrzeuge", point 3
-  it("keeps the other Fahrzeuge' Tallys", () => {
-    const fahrzeuge = addFahrzeug(DEFAULT_FAHRZEUGE);
-    const lfTallys = rosterTallys(fahrzeuge).slice(4);
-    const [hlf] = fahrzeuge;
-    if (hlf === undefined) {
-      throw new Error("The Roster has no Fahrzeug");
-    }
-    const remaining = removeFahrzeug(fahrzeuge, hlf.id);
-    expect(names(remaining)).toEqual([
-      ["1/45", "LF"],
-      ["1/33", "DLK"],
-    ]);
-    expect(rosterTallys(remaining)).toEqual(lfTallys);
-  });
-
-  // decided in "Let the Trainee add and remove Fahrzeuge", point 3
-  it("gives a Fahrzeug added after a removal Tallys of its own", () => {
-    const three = addFahrzeug(DEFAULT_FAHRZEUGE);
-    const [hlf] = three;
-    if (hlf === undefined) {
-      throw new Error("The Roster has no Fahrzeug");
-    }
-    const readded = addFahrzeug(removeFahrzeug(three, hlf.id));
-    const ids = rosterTallys(readded).map((entry) => entry.tallyId);
-    expect(new Set(ids).size).toBe(12);
-  });
-
   // decided in "Let the Trainee add and remove Fahrzeuge", point 5
   it("keeps the last Fahrzeug", () => {
     const [hlf, lf] = DEFAULT_FAHRZEUGE;
