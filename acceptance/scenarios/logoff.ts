@@ -1,4 +1,4 @@
-import { logIn, logInToBereitschaft, logOff } from "../recipes";
+import { logIn, logOff } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -156,7 +156,9 @@ scenario(
 
 // Trupp 01 logged in to Bereitschaft with `Trupp OK Bereitschaft`, on the Einsatzliste.
 async function truppInBereitschaft(window: Window): Promise<void> {
-  await logInToBereitschaft(window, [HLF_AT_F, HLF_AT_M]);
+  await logIn(window, [HLF_AT_F, HLF_AT_M], {
+    anmeldeaktion: "Trupp OK Bereitschaft",
+  });
   await window.trainee.press("X");
 }
 
