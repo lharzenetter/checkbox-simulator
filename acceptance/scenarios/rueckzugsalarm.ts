@@ -1,4 +1,4 @@
-import { logIn, logInToBereitschaft } from "../recipes";
+import { logIn } from "../recipes";
 import { scenario } from "../scenario";
 import type { TallyName, Window } from "../window";
 
@@ -154,15 +154,8 @@ scenario(
 scenario(
   "a Trupp logged in at 270 bar sounds the Rückzugsalarm at 22:00",
   async (window) => {
-    const { trainee, see } = window;
-    await trainee.holdTally(HLF_AT_F);
-    await trainee.press("OK");
-    await trainee.holdTally(HLF_AT_M);
-    await trainee.press("OK");
-    for (let step = 0; step < 6; step++) {
-      await trainee.press("Down");
-    }
-    await trainee.press("OK");
+    const { see } = window;
+    await logIn(window, [HLF_AT_F, HLF_AT_M], { anfangsdruckBar: 270 });
     await see.lcd().shows("Restzeit 00:27:00");
     await onEinsatzliste(window);
 
@@ -217,14 +210,8 @@ scenario(
 scenario(
   "a 180-min Trupp sounds the Rückzugsalarm at 150:00",
   async (window) => {
-    const { trainee, see } = window;
-    await trainee.holdTally(HLF_AT_F);
-    await trainee.press("Up");
-    await trainee.press("OK");
-    await trainee.press("OK");
-    await trainee.holdTally(HLF_AT_M);
-    await trainee.press("OK");
-    await trainee.press("OK");
+    const { see } = window;
+    await logIn(window, [HLF_AT_F, HLF_AT_M], { einsatzzeitMinutes: 180 });
     await see.lcd().shows("Restzeit 03:00:00");
     await onEinsatzliste(window);
 
@@ -336,15 +323,10 @@ for (const { anfangsdruck, toBar, rueckzugsdruck } of [
   scenario(
     `${String(anfangsdruck)} → ${String(toBar)} bar at Einsatzziel erreicht gives a Rückzugsdruck of ${String(rueckzugsdruck)} bar`,
     async (window) => {
-      const { trainee, see } = window;
-      await trainee.holdTally(HLF_AT_F);
-      await trainee.press("OK");
-      await trainee.holdTally(HLF_AT_M);
-      await trainee.press("OK");
-      for (let step = 0; step < (300 - anfangsdruck) / 5; step++) {
-        await trainee.press("Down");
-      }
-      await trainee.press("OK");
+      const { see } = window;
+      await logIn(window, [HLF_AT_F, HLF_AT_M], {
+        anfangsdruckBar: anfangsdruck,
+      });
       await onEinsatzliste(window);
       await simulated(window, 2);
 
@@ -392,13 +374,7 @@ scenario(
   "a 20-min Trupp sounds the Rückzugsalarm at its 60 bar Rückzugsdruck, at 16:00",
   async (window) => {
     const { trainee, see } = window;
-    await trainee.holdTally(HLF_AT_F);
-    await trainee.press("Down");
-    await trainee.press("OK");
-    await trainee.press("OK");
-    await trainee.holdTally(HLF_AT_M);
-    await trainee.press("OK");
-    await trainee.press("OK");
+    await logIn(window, [HLF_AT_F, HLF_AT_M], { einsatzzeitMinutes: 20 });
     await see.lcd().shows("Restzeit 00:20:00");
     await onEinsatzliste(window);
     await simulated(window, 2);
@@ -576,7 +552,9 @@ scenario(
   "an entry at the Rückzugsdruck in Bereitschaft sounds the Rückzugsalarm only once the Trupp leaves it",
   async (window) => {
     const { trainee, see, time } = window;
-    await logInToBereitschaft(window, [HLF_AT_F, HLF_AT_M]);
+    await logIn(window, [HLF_AT_F, HLF_AT_M], {
+      anmeldeaktion: "Trupp OK Bereitschaft",
+    });
     await onEinsatzliste(window);
     await simulated(window, 2);
 
