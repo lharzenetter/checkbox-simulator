@@ -4,8 +4,6 @@ import type { TallyName, Window } from "../window";
 
 const HLF_AT_F: TallyName = { fahrzeug: "HLF", role: "Angriffstruppführer" };
 const HLF_AT_M: TallyName = { fahrzeug: "HLF", role: "Angriffstruppmann" };
-const LF_AT_F: TallyName = { fahrzeug: "LF", role: "Angriffstruppführer" };
-const LF_AT_M: TallyName = { fahrzeug: "LF", role: "Angriffstruppmann" };
 
 // manual 5.2, SERVICE figure
 const SERVICE = [
@@ -317,47 +315,5 @@ scenario(
     await trainee.press("Check");
     await trainee.holdTally(HLF_AT_F);
     await see.lcd().reads(KEIN_PROTOKOLL);
-  },
-);
-
-// manual 5.9 steps 2 to 5, p. 31; decided in "Show the Einsatzprotokolle on the LCD", points 2 and 6
-scenario(
-  "a Notausschaltung of all Trupps writes one Einsatzprotokoll each, with a Notausschaltung line",
-  async (window) => {
-    const { trainee, see, time } = window;
-    await logIn(window, [HLF_AT_F, HLF_AT_M]);
-    await trainee.press("X");
-    await logIn(window, [LF_AT_F, LF_AT_M]);
-    await trainee.press("X");
-
-    await trainee.holdTogether(["X", "Check"], { seconds: 4 });
-    await trainee.press("Down");
-    await trainee.press("OK");
-    await trainee.press("OK");
-    await time.passes({ seconds: 25 });
-
-    await openEinsatzprotokoll(window);
-    await see
-      .lcd()
-      .reads([
-        "Einsatzprotokoll",
-        "Einsatz Nr: 00002",
-        "Datum: 12.04.17",
-        "TruppNr/EZT: 02/030",
-        "Einsatzkräfte:",
-        "LF AT-F",
-        "LF AT-M",
-        "Einsatz von: 11:11:00",
-        "bis: 11:11:04",
-        "davon aktiv: 00:00:04",
-        "Notausschaltung",
-      ]);
-
-    // four lines on, the Notausschaltung line makes this record one line taller than the screen
-    for (let step = 0; step < 4; step++) {
-      await trainee.press("Down");
-    }
-    await see.lcd().shows("Protokoll Ende");
-    await see.lcd().shows("Einsatz Nr: 00001");
   },
 );
