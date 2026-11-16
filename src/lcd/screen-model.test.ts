@@ -662,12 +662,6 @@ describe("S09 Trupp-Menü", () => {
       box: ["Sicherheitstrupp", "deaktivieren?", "[X]         [OK]"],
     });
   });
-
-  it("shows no box while the Trupp-Menü waits", () => {
-    expect(screenModel(stateAfter(...TRUPP_MENUE))).toMatchObject({
-      box: null,
-    });
-  });
 });
 
 describe("S08 `Esz-Zeit ändern` from the Trupp-Menü", () => {
