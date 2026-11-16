@@ -368,9 +368,16 @@ scenario(
     await openEinsatzprotokoll(window);
     await see.lcd().reads(einsatzprotokoll("00002", "02", "LF"));
 
-    // Down scrolls one line, so the newer record's 16 lines, its rules included, bring the older
-    // one to the top
-    for (let line = 0; line < 16; line += 1) {
+    // Down scrolls one line; four lines on, the Notausschaltung line makes the newer record one
+    // line taller than the screen, so it ends on Protokoll Ende
+    for (let line = 0; line < 4; line += 1) {
+      await trainee.press("Down");
+    }
+    await see.lcd().shows("Protokoll Ende");
+    await see.lcd().shows("Einsatz Nr: 00001");
+
+    // the newer record's 16 lines, its rules included, bring the older one to the top
+    for (let line = 4; line < 16; line += 1) {
       await trainee.press("Down");
     }
     await see.lcd().reads(einsatzprotokoll("00001", "01", "HLF"));
