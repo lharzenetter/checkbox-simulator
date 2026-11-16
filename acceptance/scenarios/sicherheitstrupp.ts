@@ -8,15 +8,11 @@ const LF_AT_F: TallyName = { fahrzeug: "LF", role: "Angriffstruppführer" };
 const LF_AT_M: TallyName = { fahrzeug: "LF", role: "Angriffstruppmann" };
 
 // Trupp 01 logged in with `Sicherheitstrupp OK` for 30 min at 300 bar, on the Einsatzliste.
-async function sicherheitstrupp({ trainee }: Window): Promise<void> {
-  await trainee.holdTally(HLF_AT_F);
-  await trainee.press("OK");
-  await trainee.holdTally(HLF_AT_M);
-  await trainee.press("Down");
-  await trainee.press("Down");
-  await trainee.press("OK");
-  await trainee.press("OK");
-  await trainee.press("X");
+async function sicherheitstrupp(window: Window): Promise<void> {
+  await logIn(window, [HLF_AT_F, HLF_AT_M], {
+    anmeldeaktion: "Sicherheitstrupp OK",
+  });
+  await window.trainee.press("X");
 }
 
 // Opens the Trupp-Menü from the Einsatzliste and chooses its first item, `Trupp -> Einsatz`.
@@ -63,13 +59,9 @@ scenario(
   "`Sicherheitstrupp OK` logs a Sicherheitstrupp in, in Bereitschaft",
   async (window) => {
     const { trainee, see } = window;
-    await trainee.holdTally(HLF_AT_F);
-    await trainee.press("OK");
-    await trainee.holdTally(HLF_AT_M);
-    await trainee.press("Down");
-    await trainee.press("Down");
-    await trainee.press("OK");
-    await trainee.press("OK");
+    await logIn(window, [HLF_AT_F, HLF_AT_M], {
+      anmeldeaktion: "Sicherheitstrupp OK",
+    });
     await see
       .lcd()
       .reads([
@@ -118,13 +110,11 @@ for (const speed of [1, 10] as const) {
 // manual 5.3.1 step 4; timing-and-alarm-rules §12.8
 scenario(
   "a Trupp logged in with `Trupp OK Bereitschaft` never shows SICHER",
-  async ({ trainee, see, time }) => {
-    await trainee.holdTally(HLF_AT_F);
-    await trainee.press("OK");
-    await trainee.holdTally(HLF_AT_M);
-    await trainee.press("Down");
-    await trainee.press("OK");
-    await trainee.press("OK");
+  async (window) => {
+    const { trainee, see, time } = window;
+    await logIn(window, [HLF_AT_F, HLF_AT_M], {
+      anmeldeaktion: "Trupp OK Bereitschaft",
+    });
     await trainee.press("X");
     await see.lcd().shows("01 markiert  2× Bereitschaft  00:30:00");
 
