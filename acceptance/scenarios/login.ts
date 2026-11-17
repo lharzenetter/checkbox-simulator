@@ -1,3 +1,4 @@
+import { logIn } from "../recipes";
 import { scenario } from "../scenario";
 
 // manual 5.3; decided in "Define the key-by-screen navigation model", as amended in "Correct the
@@ -69,5 +70,30 @@ scenario(
         "01 markiert  3× Anmarsch  00:30:00",
       ]);
     await see.alarmLed().isOff();
+  },
+);
+
+// decided in "Correct the simulator against the real Checkbox": the Trupp-Ansicht closes after
+// 5 s of real time
+scenario(
+  "the Trupp-Ansicht after a login closes by itself after 5 s",
+  async (window) => {
+    const { see, time } = window;
+    await logIn(window, [
+      { fahrzeug: "HLF", role: "Angriffstruppführer" },
+      { fahrzeug: "HLF", role: "Angriffstruppmann" },
+    ]);
+
+    await time.passes({ seconds: 4 });
+    await see.lcd().shows("Ansicht");
+
+    await time.passes({ seconds: 1 });
+    await see
+      .lcd()
+      .reads([
+        "FF-Musterstadt",
+        "B1- + 11:11:05",
+        "01 markiert  2× Anmarsch  00:29:55",
+      ]);
   },
 );
